@@ -1,0 +1,74 @@
+<div class="products-container">
+  <div class="header">
+    <h1>Products Management</h1>
+    <button class="btn btn-primary" routerLink="/products/new">
+      <i class="icon">+</i> Add New Product
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading products...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-message">
+      <i class="icon">⚠️</i>
+      <p>{{ error() }}</p>
+      <button class="btn btn-secondary" (click)="loadProducts()">Retry</button>
+    </div>
+  }
+
+  <!-- Products Grid -->
+  @if (!loading() && !error()) {
+    <div class="products-grid">
+      @if (products().length === 0) {
+        <div class="empty-state">
+          <i class="icon">📦</i>
+          <h2>No Products Found</h2>
+          <p>Start by creating your first product</p>
+          <button class="btn btn-primary" routerLink="/products/new">Create Product</button>
+        </div>
+      } @else {
+        @for (product of products(); track product.id) {
+          <div class="product-card" [class.inactive]="!product.isActive">
+            <div class="product-header">
+              <h3>{{ product.name }}</h3>
+              <span class="price">${{ product.price | number:'1.2-2' }}</span>
+            </div>
+            
+            <div class="product-body">
+              <p class="description">{{ product.description }}</p>
+              <div class="status">
+                <span class="status-badge" [class.active]="product.isActive" [class.inactive]="!product.isActive">
+                  {{ product.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="product-actions">
+              <button class="btn btn-sm btn-secondary" [routerLink]="['/products', product.id, 'edit']">
+                <i class="icon">✏️</i> Edit
+              </button>
+              <button 
+                class="btn btn-sm" 
+                [class.btn-success]="!product.isActive"
+                [class.btn-warning]="product.isActive"
+                (click)="toggleProductStatus(product)">
+                <i class="icon">{{ product.isActive ? '⏸️' : '▶️' }}</i>
+                {{ product.isActive ? 'Deactivate' : 'Activate' }}
+              </button>
+              <button class="btn btn-sm btn-danger" (click)="deleteProduct(product.id)">
+                <i class="icon">🗑️</i> Delete
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+</div>
