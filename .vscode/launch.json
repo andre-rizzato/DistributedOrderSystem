@@ -1,0 +1,64 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "OrderService",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/OrderService/bin/Debug/net10.0/OrderService.dll",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build OrderService",
+            "cwd": "${workspaceFolder}/src/OrderService"
+
+        },
+        {
+            "name": "InventoryService",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/InventoryService/bin/Debug/net10.0/InventoryService.dll",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build InventoryService",
+            "cwd": "${workspaceFolder}/src/InventoryService"
+
+        },
+         {
+             "name": "NotificationService",
+             "type": "coreclr",
+             "request": "launch",
+             "program": "${workspaceFolder}/src/NotificationService/bin/Debug/net10.0/NotificationService.dll",
+             "console": "integratedTerminal",
+             "preLaunchTask": "build NotificationService",
+             "cwd": "${workspaceFolder}/src/NotificationService"
+
+        },
+         {
+            "name": "PaymentService",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/PaymentService/bin/Debug/net10.0/PaymentService.dll",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build PaymentService",
+            "cwd": "${workspaceFolder}/src/PaymentService"
+        },   {
+            "name": "ProductService",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/ProductService/bin/Debug/net10.0/ProductService.dll",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build ProductService",
+            "cwd": "${workspaceFolder}/src/ProductService"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Start All Microservices",
+            "configurations": [
+                "OrderService",
+                "InventoryService",
+                "NotificationService",
+                "PaymentService",
+                "ProductService"
+            ]
+        }
+    ]
+}

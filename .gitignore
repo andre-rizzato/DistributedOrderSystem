@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+packages/
+
+# Build outputs
+bin/
+obj/
+dist/
+build/
+
+# IDE/Editor files
+.vs/
+.vscode/settings.json
+*.suo
+*.user
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+
+# Docker
+docker-compose.override.yml
+
+# Database files
+*.db
+*.sqlite
+
+# Temporary files
+*.tmp
+*.temp
