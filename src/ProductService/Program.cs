@@ -78,7 +78,8 @@ using (var scope = app.Services.CreateScope())
     context.Database.EnsureCreated();
 }
 
-app.UseHttpsRedirection();
+// Comment out HTTPS redirection for development to avoid issues with frontend
+// app.UseHttpsRedirection();
 
 // Enable CORS if configured
 if (app.Environment.IsDevelopment())
