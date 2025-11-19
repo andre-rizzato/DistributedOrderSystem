@@ -5,7 +5,7 @@
             "name": "OrderService",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/src/OrderService/bin/Debug/net10.0/OrderService.dll",
+            "program": "${workspaceFolder}/src/OrderService/bin/Debug/net9.0/OrderService.dll",
             "console": "integratedTerminal",
             "preLaunchTask": "build OrderService",
             "cwd": "${workspaceFolder}/src/OrderService"
@@ -15,7 +15,7 @@
             "name": "InventoryService",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/src/InventoryService/bin/Debug/net10.0/InventoryService.dll",
+            "program": "${workspaceFolder}/src/InventoryService/bin/Debug/net9.0/InventoryService.dll",
             "console": "integratedTerminal",
             "preLaunchTask": "build InventoryService",
             "cwd": "${workspaceFolder}/src/InventoryService"
@@ -25,7 +25,7 @@
              "name": "NotificationService",
              "type": "coreclr",
              "request": "launch",
-             "program": "${workspaceFolder}/src/NotificationService/bin/Debug/net10.0/NotificationService.dll",
+             "program": "${workspaceFolder}/src/NotificationService/bin/Debug/net9.0/NotificationService.dll",
              "console": "integratedTerminal",
              "preLaunchTask": "build NotificationService",
              "cwd": "${workspaceFolder}/src/NotificationService"
@@ -35,7 +35,7 @@
             "name": "PaymentService",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/src/PaymentService/bin/Debug/net10.0/PaymentService.dll",
+            "program": "${workspaceFolder}/src/PaymentService/bin/Debug/net9.0/PaymentService.dll",
             "console": "integratedTerminal",
             "preLaunchTask": "build PaymentService",
             "cwd": "${workspaceFolder}/src/PaymentService"
@@ -43,10 +43,18 @@
             "name": "ProductService",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/src/ProductService/bin/Debug/net10.0/ProductService.dll",
+            "program": "${workspaceFolder}/src/ProductService/bin/Debug/net9.0/ProductService.dll",
             "console": "integratedTerminal",
             "preLaunchTask": "build ProductService",
             "cwd": "${workspaceFolder}/src/ProductService"
+        },
+        {
+            "name": "Frontend (Angular)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm start",
+            "cwd": "${workspaceFolder}/frontend/distributed-order-app",
+            "preLaunchTask": "npm: install - frontend"
         }
     ],
     "compounds": [
@@ -59,6 +67,18 @@
                 "PaymentService",
                 "ProductService"
             ]
+        },
+        {
+            "name": "Start All (Backend + Frontend)",
+            "configurations": [
+                "OrderService",
+                "InventoryService",
+                "NotificationService",
+                "PaymentService",
+                "ProductService",
+                "Frontend (Angular)"
+            ],
+            "stopAll": true
         }
     ]
 }

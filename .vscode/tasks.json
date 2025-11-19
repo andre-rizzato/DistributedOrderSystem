@@ -60,6 +60,26 @@
                 "/consoleloggerparameters:NoSummary"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "npm: install - frontend",
+            "type": "npm",
+            "script": "install",
+            "path": "frontend/distributed-order-app/",
+            "problemMatcher": [],
+            "detail": "Install frontend dependencies"
+        },
+        {
+            "label": "npm: start - frontend",
+            "type": "npm",
+            "script": "start",
+            "path": "frontend/distributed-order-app/",
+            "problemMatcher": [],
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
         }
     ]
 }
