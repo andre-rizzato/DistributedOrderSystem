@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { ProductsComponent } from './components/products/products';
 import { ProductFormComponent } from './components/product-form/product-form';
+import { NotFoundComponent } from './components/not-found/not-found';
 
 /**
  * Configurazione delle Routes dell'applicazione
@@ -33,12 +34,17 @@ export const routes: Routes = [
     title: 'Add Product'             // Titolo della pagina
   },
   {
-    path: 'products/edit/:id',       // Route per modificare un prodotto (:id è un parametro dinamico)
+    path: 'products/:id/edit',       // Route per modificare un prodotto (:id è un parametro dinamico)
     component: ProductFormComponent, // Usa lo stesso form component (modalità modifica)
     title: 'Edit Product'            // Titolo della pagina
   },
   {
+    path: 'not-found',               // Route per pagina 404
+    component: NotFoundComponent,    // Componente per gestire errori 404
+    title: 'Page Not Found'          // Titolo della pagina
+  },
+  {
     path: '**',                      // Wildcard route: corrisponde a qualsiasi percorso non definito sopra
-    redirectTo: '/products'          // Reindirizza alla lista prodotti (gestione 404)
+    component: NotFoundComponent     // Mostra la pagina 404 invece di reindirizzare
   }
 ];

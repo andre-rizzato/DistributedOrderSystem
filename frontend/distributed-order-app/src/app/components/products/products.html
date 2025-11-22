@@ -1,7 +1,7 @@
 <div class="products-container">
   <div class="header">
     <h1>Products Management</h1>
-    <button class="btn btn-primary" routerLink="/products/new">
+    <button class="btn btn-primary" (click)="navigateToCreate()">
       <i class="icon">+</i> Add New Product
     </button>
   </div>
@@ -51,7 +51,7 @@
             </div>
             
             <div class="product-actions">
-              <button class="btn btn-sm btn-secondary" [routerLink]="['/products', product.id, 'edit']">
+              <button class="btn btn-sm btn-secondary" (click)="navigateToEdit(product.id)">
                 <i class="icon">✏️</i> Edit
               </button>
               <button 

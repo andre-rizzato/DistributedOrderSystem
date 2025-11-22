@@ -1,7 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, RouterLink, Router } from '@angular/router';
 import { ProductService } from '../../services/product';
+import { NavigationService } from '../../services/navigation';
 import { Product } from '../../models/product';
 
 /**
@@ -22,7 +23,7 @@ import { Product } from '../../models/product';
  */
 @Component({
   selector: 'app-products',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, RouterLink],
   templateUrl: './products.html',
   styleUrl: './products.scss'
 })
@@ -39,8 +40,14 @@ export class ProductsComponent implements OnInit {
   /**
    * Costruttore
    * @param productService - Servizio iniettato per le operazioni sui prodotti
+   * @param navigationService - Servizio per gestire navigazione con error handling
+   * @param router - Router di Angular per navigazione programmatica
    */
-  constructor(private productService: ProductService) {}
+  constructor(
+    private productService: ProductService,
+    private navigationService: NavigationService,
+    private router: Router
+  ) {}
 
   /**
    * Lifecycle hook eseguito all'inizializzazione del componente
@@ -129,5 +136,50 @@ export class ProductsComponent implements OnInit {
         console.error('Errore nell\'aggiornamento del prodotto:', error);
       }
     });
+  }
+
+  /**
+   * Naviga alla pagina di modifica del prodotto con gestione errori
+   * 
+   * @param productId ID del prodotto da modificare
+   */
+  async navigateToEdit(productId: number): Promise<void> {
+    try {
+      const success = await this.navigationService.navigateWithErrorHandling(['/products', productId.toString(), 'edit']);
+      if (!success) {
+        this.error.set(`Impossibile navigare alla pagina di modifica del prodotto ${productId}`);
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+      this.error.set('Errore durante la navigazione. Verifica che la pagina esista.');
+    }
+  }
+
+  /**
+   * Naviga alla pagina di creazione nuovo prodotto con gestione errori
+   */
+  async navigateToCreate(): Promise<void> {
+    try {
+      const success = await this.navigationService.navigateWithErrorHandling(['/products/new']);
+      if (!success) {
+        this.error.set('Impossibile navigare alla pagina di creazione prodotto');
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+      this.error.set('Errore durante la navigazione.');
+    }
+  }
+
+  /**
+   * Verifica che un prodotto sia valido prima di operazioni critiche
+   * 
+   * @param product Prodotto da verificare
+   * @returns true se il prodotto è valido, false altrimenti
+   */
+  private isValidProduct(product: Product): boolean {
+    if (!product) return false;
+    if (typeof product.id !== 'number' || product.id <= 0) return false;
+    if (!product.name || product.name.trim().length === 0) return false;
+    return true;
   }
 }
