@@ -1,41 +1,77 @@
+using InventoryService.Cache;
+using InventoryService.Cache.Interfaces;
+using InventoryService.Configuration;
+using InventoryService.Data;
+using InventoryService.Services;
+using InventoryService.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
+using Microsoft.OpenApi.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// EF Core + SQL Server
+builder.Services.AddDbContext<InventoryContext>(options =>
+{
+    var cs = builder.Configuration.GetConnectionString("InventoryDb")
+             ?? "Server=localhost,1433;Database=InventoryDb;User Id=sa;Password=YourStrong_Password123;TrustServerCertificate=True;";
+    options.UseSqlServer(cs);
+});
+
+// Redis
+builder.Services.Configure<RedisSettings>(
+    builder.Configuration.GetSection("Redis"));
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+{
+    var conn = builder.Configuration.GetSection("Redis:ConnectionString").Value
+               ?? "localhost:6379";
+    return ConnectionMultiplexer.Connect(conn);
+});
+
+// Register IDatabase from IConnectionMultiplexer
+builder.Services.AddSingleton<IDatabase>(provider =>
+{
+    var connectionMultiplexer = provider.GetRequiredService<IConnectionMultiplexer>();
+    return connectionMultiplexer.GetDatabase();
+});
+// Dependency Injection
+builder.Services.AddSingleton<IInventoryCache, RedisInventoryCache>();
+builder.Services.AddScoped<IInventoryWorkerService, InventoryWorkerService>();
+
+builder.Services.AddControllers();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "Inventory Service API", 
+        Version = "v1",
+        Description = "API for managing inventory items"
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Ensure database is created and updated
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<InventoryContext>();
+    context.Database.EnsureCreated();
+}
+
+// Configure Swagger middleware (only in development)
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Inventory Service API V1");
+    });
 }
 
 app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
+app.MapControllers();
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
