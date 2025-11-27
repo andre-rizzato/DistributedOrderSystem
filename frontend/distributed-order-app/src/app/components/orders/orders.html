@@ -1,0 +1,60 @@
+<div class="orders-container">
+  <div class="header">
+    <h1>Gestione Ordini</h1>
+    <button class="btn btn-primary" routerLink="/create-order">
+      <span class="icon">+</span>
+      Nuovo Ordine
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Caricamento ordini...</div>
+  }
+
+  @if (error()) {
+    <div class="error">{{ error() }}</div>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="orders-list">
+      @if (orders().length === 0) {
+        <div class="empty-state">
+          <p>Nessun ordine trovato</p>
+          <button class="btn btn-primary" routerLink="/create-order">
+            Crea il primo ordine
+          </button>
+        </div>
+      } @else {
+        @for (order of orders(); track order.id) {
+          <div class="order-card">
+            <div class="order-header">
+              <div class="order-info">
+                <h3>Ordine #{{ order.id }}</h3>
+                <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+              </div>
+              <div class="order-meta">
+                <span class="status-badge" [ngClass]="getStatusClass(order.status)">
+                  {{ order.status }}
+                </span>
+                <span class="order-total">{{ formatCurrency(order.total) }}</span>
+              </div>
+            </div>
+
+            <div class="order-items">
+              <h4>Articoli ({{ order.items.length }})</h4>
+              <ul>
+                @for (item of order.items; track item.id) {
+                  <li>
+                    <span class="item-product">Prodotto #{{ item.productId }}</span>
+                    <span class="item-quantity">x{{ item.quantity }}</span>
+                    <span class="item-price">{{ formatCurrency(item.unitPrice) }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+</div>

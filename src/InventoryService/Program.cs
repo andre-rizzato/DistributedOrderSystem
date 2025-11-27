@@ -4,6 +4,7 @@ using InventoryService.Configuration;
 using InventoryService.Data;
 using InventoryService.Services;
 using InventoryService.Services.Interfaces;
+using InventoryService.Messaging;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using Microsoft.OpenApi.Models;
@@ -35,9 +36,16 @@ builder.Services.AddSingleton<IDatabase>(provider =>
     var connectionMultiplexer = provider.GetRequiredService<IConnectionMultiplexer>();
     return connectionMultiplexer.GetDatabase();
 });
+
+// Configuration
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+
 // Dependency Injection
 builder.Services.AddSingleton<IInventoryCache, RedisInventoryCache>();
 builder.Services.AddScoped<IInventoryWorkerService, InventoryWorkerService>();
+
+// Kafka Consumer (Background Service)
+builder.Services.AddHostedService<OrderCreatedConsumer>();
 
 builder.Services.AddControllers();
 

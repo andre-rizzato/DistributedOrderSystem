@@ -27,4 +27,21 @@ public class QueriesController : ControllerBase
         
         return Ok(result);
     }
+
+    [HttpGet("orders")]
+    public async Task<ActionResult<List<OrderDto>>> GetOrders(CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetAllOrdersQuery(), ct);
+        return Ok(result);
+    }
+
+    [HttpGet("orders/{id:int}")]
+    public async Task<ActionResult<OrderDto>> GetOrder(int id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetOrderByIdQuery(id), ct);
+        if (result == null)
+            return NotFound($"Order with ID {id} not found");
+        
+        return Ok(result);
+    }
 }

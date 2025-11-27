@@ -31,18 +31,25 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Cre
                 throw new InvalidOperationException($"Product {id} is invalid or inactive.");
         }
 
-        // 2) Check inventory (read-only check; replace with reserve endpoint when available)
+        // 2) Get product prices and prepare order items with prices
+        var orderItems = new List<OrderItemDto>();
         foreach (var item in request.Items)
         {
+            var product = await productClient.GetFromJsonAsync<ProductDto>($"api/products/{item.ProductId}", ct);
+            if (product is null)
+                throw new InvalidOperationException($"Product {item.ProductId} not found.");
+            
             var inv = await inventoryClient.GetFromJsonAsync<InventoryDto>($"api/inventory/{item.ProductId}", ct);
             if (inv is null || inv.AvailableQuantity < item.Quantity)
             {
                 throw new InvalidOperationException($"Not enough inventory for product {item.ProductId}.");
             }
+            
+            orderItems.Add(new OrderItemDto(item.ProductId, item.Quantity, product.Price));
         }
 
-        // 3) Forward command to OrderService
-        var orderResp = await orderClient.PostAsJsonAsync("api/commands/orders", new CreateOrderRequest(request.Items), ct);
+        // 3) Forward command to OrderService with prices
+        var orderResp = await orderClient.PostAsJsonAsync("api/commands/orders", new CreateOrderRequest(orderItems), ct);
         orderResp.EnsureSuccessStatusCode();
 
         var created = await orderResp.Content.ReadFromJsonAsync<CreateOrderResponse>(cancellationToken: ct)
