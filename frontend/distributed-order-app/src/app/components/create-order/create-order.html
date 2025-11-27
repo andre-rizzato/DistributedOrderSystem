@@ -1,0 +1,118 @@
+<div class="create-order-container">
+  <div class="header">
+    <h1>Nuovo Ordine</h1>
+    <button class="btn btn-secondary" routerLink="/orders">
+      ← Indietro
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="error">{{ error() }}</div>
+  }
+
+  <div class="order-form">
+    <div class="products-section">
+      <h2>Seleziona Prodotti</h2>
+
+      @if (loading()) {
+        <div class="loading">Caricamento prodotti...</div>
+      }
+
+      @if (!loading() && products().length === 0) {
+        <div class="empty-state">Nessun prodotto disponibile</div>
+      }
+
+      @if (!loading() && products().length > 0) {
+        <div class="products-grid">
+          @for (product of products(); track product.productId) {
+            <div class="product-card">
+              <div class="product-info">
+                <h3>{{ product.name }}</h3>
+                @if (product.description) {
+                  <p class="product-description">{{ product.description }}</p>
+                }
+                <div class="product-meta">
+                  <span class="product-price">{{ formatCurrency(product.price) }}</span>
+                  <span class="product-stock"
+                        [class.low-stock]="product.availableQuantity < 10"
+                        [class.no-stock]="product.availableQuantity === 0">
+                    @if (product.availableQuantity > 0) {
+                      {{ product.availableQuantity }} disponibili
+                    } @else {
+                      Esaurito
+                    }
+                  </span>
+                </div>
+              </div>
+              <button class="btn btn-add"
+                      (click)="addItem(product)"
+                      [disabled]="product.availableQuantity === 0">
+                <span class="icon">+</span>
+                Aggiungi
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="cart-section">
+      <h2>Carrello</h2>
+
+      @if (selectedItems().size === 0) {
+        <div class="empty-cart">
+          <p>Il carrello è vuoto</p>
+          <p class="hint">Aggiungi prodotti per creare un ordine</p>
+        </div>
+      } @else {
+        <div class="cart-items">
+          @for (item of Array.from(selectedItems().values()); track item.product.productId) {
+            <div class="cart-item">
+              <div class="item-info">
+                <h4>{{ item.product.name }}</h4>
+                <span class="item-price">{{ formatCurrency(item.product.price) }}</span>
+              </div>
+              <div class="item-controls">
+                <input
+                  type="number"
+                  [value]="item.quantity"
+                  (change)="updateQuantity(item.product.productId, +$any($event.target).value)"
+                  [min]="1"
+                  [max]="item.product.availableQuantity"
+                  class="quantity-input">
+                <button class="btn btn-remove" (click)="removeItem(item.product.productId)">
+                  ×
+                </button>
+              </div>
+              <div class="item-subtotal">
+                {{ formatCurrency(item.product.price * item.quantity) }}
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="cart-summary">
+          <div class="summary-row">
+            <span class="summary-label">Totale articoli:</span>
+            <span class="summary-value">{{ selectedItems().size }}</span>
+          </div>
+          <div class="summary-row total">
+            <span class="summary-label">Totale:</span>
+            <span class="summary-value">{{ formatCurrency(getTotal()) }}</span>
+          </div>
+        </div>
+
+        <button
+          class="btn btn-primary btn-submit"
+          (click)="submitOrder()"
+          [disabled]="!canSubmit()">
+          @if (submitting()) {
+            Invio in corso...
+          } @else {
+            Crea Ordine
+          }
+        </button>
+      }
+    </div>
+  </div>
+</div>
