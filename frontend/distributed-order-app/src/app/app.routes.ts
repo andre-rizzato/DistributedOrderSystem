@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { ProductsComponent } from './components/products/products';
 import { ProductFormComponent } from './components/product-form/product-form';
+import { InventoryComponent } from './components/inventory/inventory';
 import { NotFoundComponent } from './components/not-found/not-found';
 
 /**
@@ -15,7 +16,8 @@ import { NotFoundComponent } from './components/not-found/not-found';
  * 2. /products -> Lista di tutti i prodotti
  * 3. /products/new -> Form per creare un nuovo prodotto
  * 4. /products/edit/:id -> Form per modificare un prodotto esistente
- * 5. ** (qualsiasi altro percorso) -> Reindirizza a /products (404 handler)
+ * 5. /inventory -> Gestione inventario prodotti
+ * 6. ** (qualsiasi altro percorso) -> Reindirizza a /products (404 handler)
  */
 export const routes: Routes = [
   {
@@ -37,6 +39,11 @@ export const routes: Routes = [
     path: 'products/:id/edit',       // Route per modificare un prodotto (:id è un parametro dinamico)
     component: ProductFormComponent, // Usa lo stesso form component (modalità modifica)
     title: 'Edit Product'            // Titolo della pagina
+  },
+  {
+    path: 'inventory',               // Route per la gestione inventario
+    component: InventoryComponent,   // Componente per gestire l'inventario
+    title: 'Inventory Management'    // Titolo della pagina
   },
   {
     path: 'not-found',               // Route per pagina 404

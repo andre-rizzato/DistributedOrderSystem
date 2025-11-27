@@ -1,0 +1,122 @@
+<div class="inventory-container">
+  <div class="header">
+    <h1>Inventory Management</h1>
+    <button class="btn btn-primary" (click)="loadProducts()">
+      <i class="icon">🔄</i> Refresh
+    </button>
+  </div>
+
+  <!-- Success Message -->
+  @if (success()) {
+    <div class="success-message">
+      <i class="icon">✅</i>
+      <p>{{ success() }}</p>
+      <button class="btn-close" (click)="success.set(null)">×</button>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading inventory...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="error-message">
+      <i class="icon">⚠️</i>
+      <p>{{ error() }}</p>
+      <button class="btn btn-secondary" (click)="loadProducts()">Retry</button>
+    </div>
+  }
+
+  <!-- Inventory Table -->
+  @if (!loading() && !error()) {
+    @if (products().length === 0) {
+      <div class="empty-state">
+        <i class="icon">📦</i>
+        <h2>No Products Found</h2>
+        <p>Create some products first to manage their inventory</p>
+      </div>
+    } @else {
+      <div class="inventory-table-container">
+        <table class="inventory-table">
+          <thead>
+            <tr>
+              <th>Product ID</th>
+              <th>Product Name</th>
+              <th>Price</th>
+              <th>Current Stock</th>
+              <th>Status</th>
+              <th>Adjust Quantity</th>
+              <th>Set Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (product of products(); track product.productId) {
+              <tr [class.inactive]="!product.isActive">
+                <td>{{ product.productId }}</td>
+                <td class="product-name">{{ product.name }}</td>
+                <td class="price">${{ product.price | number:'1.2-2' }}</td>
+                <td>
+                  <span class="stock-badge"
+                        [class.in-stock]="product.availableQuantity > 10"
+                        [class.low-stock]="product.availableQuantity > 0 && product.availableQuantity <= 10"
+                        [class.out-of-stock]="product.availableQuantity === 0">
+                    {{ product.availableQuantity }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge"
+                        [class.active]="product.isActive"
+                        [class.inactive]="!product.isActive">
+                    {{ product.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td class="adjust-cell">
+                  <div class="input-group">
+                    <input
+                      type="number"
+                      class="form-control"
+                      [value]="getAdjustValue(product.productId)"
+                      (input)="setAdjustValue(product.productId, $any($event.target).value)"
+                      placeholder="±qty"
+                      min="-1000"
+                      max="1000">
+                    <button
+                      class="btn btn-sm btn-primary"
+                      (click)="adjustInventory(product.productId)"
+                      [disabled]="getAdjustValue(product.productId) === 0">
+                      Adjust
+                    </button>
+                  </div>
+                  <small class="help-text">Use + to add, - to remove</small>
+                </td>
+                <td class="set-cell">
+                  <div class="input-group">
+                    <input
+                      type="number"
+                      class="form-control"
+                      [value]="getSetValue(product.productId)"
+                      (input)="setSetValue(product.productId, $any($event.target).value)"
+                      placeholder="qty"
+                      min="0"
+                      max="10000">
+                    <button
+                      class="btn btn-sm btn-success"
+                      (click)="setInventory(product.productId)">
+                      Set
+                    </button>
+                  </div>
+                  <small class="help-text">Set exact quantity</small>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</div>
