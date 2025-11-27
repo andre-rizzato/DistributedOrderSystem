@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, RouterLink, Router } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { NavigationService } from '../../services/navigation';
-import { Product } from '../../models/product';
+import { CatalogItem } from '../../models/product';
 
 /**
  * ProductsComponent
@@ -28,8 +28,8 @@ import { Product } from '../../models/product';
   styleUrl: './products.scss'
 })
 export class ProductsComponent implements OnInit {
-  // Signal che contiene l'array di prodotti (reattivo)
-  products = signal<Product[]>([]);
+  // Signal che contiene l'array di elementi del catalogo (prodotti + inventario)
+  products = signal<CatalogItem[]>([]);
 
   // Signal che indica se il componente sta caricando dati
   loading = signal(false);
@@ -94,7 +94,7 @@ export class ProductsComponent implements OnInit {
         next: () => {
           // Rimuove il prodotto eliminato dalla lista locale
           const currentProducts = this.products();
-          this.products.set(currentProducts.filter(p => p.id !== id));
+          this.products.set(currentProducts.filter(p => p.productId !== id));
         },
         error: (error) => {
           this.error.set('Impossibile eliminare il prodotto: ' + error.message);
@@ -110,26 +110,21 @@ export class ProductsComponent implements OnInit {
    * Inverte lo stato isActive del prodotto e aggiorna il backend.
    * Aggiorna anche la lista locale con il prodotto modificato.
    *
-   * @param product - Prodotto di cui modificare lo stato
+   * @param product - Elemento del catalogo di cui modificare lo stato
    */
-  toggleProductStatus(product: Product): void {
+  toggleProductStatus(product: CatalogItem): void {
     // Crea una richiesta di aggiornamento con lo stato isActive invertito
     const updateRequest = {
       name: product.name,
       price: product.price,
-      description: product.description,
+      description: product.description ?? '',
       isActive: !product.isActive
     };
 
-    this.productService.updateProduct(product.id, updateRequest).subscribe({
+    this.productService.updateProduct(product.productId, updateRequest).subscribe({
       next: (updatedProduct) => {
-        // Aggiorna il prodotto nella lista locale
-        const currentProducts = this.products();
-        const index = currentProducts.findIndex(p => p.id === product.id);
-        if (index !== -1) {
-          currentProducts[index] = updatedProduct;
-          this.products.set([...currentProducts]); // Crea un nuovo array per triggare il signal
-        }
+        // Ricarica la lista per ottenere i dati aggiornati dal catalogo
+        this.loadProducts();
       },
       error: (error) => {
         this.error.set('Impossibile aggiornare il prodotto: ' + error.message);
@@ -140,7 +135,7 @@ export class ProductsComponent implements OnInit {
 
   /**
    * Naviga alla pagina di modifica del prodotto con gestione errori
-   * 
+   *
    * @param productId ID del prodotto da modificare
    */
   async navigateToEdit(productId: number): Promise<void> {
@@ -171,14 +166,14 @@ export class ProductsComponent implements OnInit {
   }
 
   /**
-   * Verifica che un prodotto sia valido prima di operazioni critiche
-   * 
-   * @param product Prodotto da verificare
-   * @returns true se il prodotto è valido, false altrimenti
+   * Verifica che un elemento del catalogo sia valido prima di operazioni critiche
+   *
+   * @param product Elemento del catalogo da verificare
+   * @returns true se l'elemento è valido, false altrimenti
    */
-  private isValidProduct(product: Product): boolean {
+  private isValidProduct(product: CatalogItem): boolean {
     if (!product) return false;
-    if (typeof product.id !== 'number' || product.id <= 0) return false;
+    if (typeof product.productId !== 'number' || product.productId <= 0) return false;
     if (!product.name || product.name.trim().length === 0) return false;
     return true;
   }

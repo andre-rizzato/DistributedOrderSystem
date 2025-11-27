@@ -111,7 +111,7 @@ export class ProductFormComponent implements OnInit {
         this.productForm.patchValue({
           name: product.name,
           price: product.price,
-          description: product.description,
+          description: product.description ?? '',
           isActive: product.isActive
         });
         this.loading.set(false);

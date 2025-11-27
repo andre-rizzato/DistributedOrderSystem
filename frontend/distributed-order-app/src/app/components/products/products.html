@@ -34,35 +34,38 @@
           <button class="btn btn-primary" routerLink="/products/new">Create Product</button>
         </div>
       } @else {
-        @for (product of products(); track product.id) {
+        @for (product of products(); track product.productId) {
           <div class="product-card" [class.inactive]="!product.isActive">
             <div class="product-header">
               <h3>{{ product.name }}</h3>
               <span class="price">${{ product.price | number:'1.2-2' }}</span>
             </div>
-            
+
             <div class="product-body">
               <p class="description">{{ product.description }}</p>
               <div class="status">
                 <span class="status-badge" [class.active]="product.isActive" [class.inactive]="!product.isActive">
                   {{ product.isActive ? 'Active' : 'Inactive' }}
                 </span>
+                <span class="inventory-badge" [class.in-stock]="product.availableQuantity > 0" [class.out-of-stock]="product.availableQuantity === 0">
+                  Stock: {{ product.availableQuantity }}
+                </span>
               </div>
             </div>
-            
+
             <div class="product-actions">
-              <button class="btn btn-sm btn-secondary" (click)="navigateToEdit(product.id)">
+              <button class="btn btn-sm btn-secondary" (click)="navigateToEdit(product.productId)">
                 <i class="icon">✏️</i> Edit
               </button>
-              <button 
-                class="btn btn-sm" 
+              <button
+                class="btn btn-sm"
                 [class.btn-success]="!product.isActive"
                 [class.btn-warning]="product.isActive"
                 (click)="toggleProductStatus(product)">
                 <i class="icon">{{ product.isActive ? '⏸️' : '▶️' }}</i>
                 {{ product.isActive ? 'Deactivate' : 'Activate' }}
               </button>
-              <button class="btn btn-sm btn-danger" (click)="deleteProduct(product.id)">
+              <button class="btn btn-sm btn-danger" (click)="deleteProduct(product.productId)">
                 <i class="icon">🗑️</i> Delete
               </button>
             </div>
