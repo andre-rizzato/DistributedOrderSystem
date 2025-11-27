@@ -30,7 +30,17 @@
              "preLaunchTask": "build NotificationService",
              "cwd": "${workspaceFolder}/src/NotificationService"
 
-        },
+        }
+        ,
+         {
+            "name": "GatewayBff",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/GatewayBff/bin/Debug/net9.0/GatewayBff.dll",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build GatewayBff",
+            "cwd": "${workspaceFolder}/src/GatewayBff"
+        }, 
          {
             "name": "PaymentService",
             "type": "coreclr",
@@ -65,7 +75,8 @@
                 "InventoryService",
                 "NotificationService",
                 "PaymentService",
-                "ProductService"
+                "ProductService",
+                "GatewayBff"
             ]
         },
         {
@@ -76,6 +87,7 @@
                 "NotificationService",
                 "PaymentService",
                 "ProductService",
+                "GatewayBff",
                 "Frontend (Angular)"
             ],
             "stopAll": true

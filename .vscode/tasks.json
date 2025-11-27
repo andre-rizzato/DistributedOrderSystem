@@ -61,6 +61,18 @@
             ],
             "problemMatcher": "$msCompile"
         },
+                {
+            "label": "build GatewayBff",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/src/GatewayBff/GatewayBff.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
         {
             "label": "npm: install - frontend",
             "type": "npm",

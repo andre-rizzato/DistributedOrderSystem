@@ -17,4 +17,14 @@ public class QueriesController : ControllerBase
         var result = await _mediator.Send(new GetCatalogQuery(), ct);
         return Ok(result);
     }
+
+    [HttpGet("catalog/{id:int}")]
+    public async Task<ActionResult<CatalogItemDto>> GetCatalogItem(int id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetProductByIdQuery(id), ct);
+        if (result == null)
+            return NotFound($"Product with ID {id} not found");
+        
+        return Ok(result);
+    }
 }

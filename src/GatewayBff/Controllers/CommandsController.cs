@@ -26,4 +26,53 @@ public class CommandsController : ControllerBase
         var result = await _mediator.Send(new CreateOrderCommand(request.Items), ct);
         return Ok(result);
     }
+
+    [HttpPost("products")]
+    public async Task<ActionResult<ProductDto>> CreateProduct(
+        [FromBody] CreateProductRequest request,
+        CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var command = new CreateProductCommand(request.Name, request.Price, request.Description);
+        var result = await _mediator.Send(command, ct);
+        
+        return CreatedAtAction(
+            actionName: "GetCatalogItem",
+            controllerName: "Queries",
+            routeValues: new { id = result.Id },
+            value: result
+        );
+    }
+
+    [HttpPut("products/{id:int}")]
+    public async Task<ActionResult<ProductDto>> UpdateProduct(
+        int id,
+        [FromBody] UpdateProductRequest request,
+        CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var command = new UpdateProductCommand(id, request.Name, request.Price, request.Description, request.IsActive);
+        var result = await _mediator.Send(command, ct);
+        
+        return Ok(result);
+    }
+
+    [HttpDelete("products/{id:int}")]
+    public async Task<ActionResult> DeleteProduct(int id, CancellationToken ct)
+    {
+        var command = new DeleteProductCommand(id);
+        var success = await _mediator.Send(command, ct);
+        
+        if (!success)
+            return NotFound($"Product with ID {id} not found");
+
+        return NoContent();
+    }
 }
+
+public record CreateProductRequest(string Name, decimal Price, string? Description);
+public record UpdateProductRequest(string Name, decimal Price, string? Description, bool IsActive);
