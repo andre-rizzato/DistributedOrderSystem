@@ -153,20 +153,25 @@ public record OrderItemEvent
 
 ### Kafka Setup (docker-compose.yml)
 ```yaml
-zookeeper:
-  image: confluentinc/cp-zookeeper:7.4.0
-  ports: 2181:2181
-  
 kafka:
   image: confluentinc/cp-kafka:7.4.0
   ports: 9092:9092
-  depends_on: zookeeper
   environment:
-    KAFKA_BROKER_ID: 1
-    KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    # KRaft mode (Zookeeper-less)
+    KAFKA_NODE_ID: 1
+    KAFKA_PROCESS_ROLES: broker,controller
+    KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
 ```
+
+**Note**: This configuration uses **KRaft mode** (Kafka Raft metadata mode), introduced in Kafka 2.8+. 
+KRaft eliminates the dependency on Zookeeper by using Kafka's own Raft consensus protocol for metadata management.
+This simplifies deployment and improves reliability.
 
 ## Key Features
 

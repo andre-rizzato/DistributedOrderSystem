@@ -2,13 +2,15 @@
 
 ## Prerequisites
 ```bash
-# Start Docker infrastructure (SQL Server, Redis, Kafka, Zookeeper)
+# Start Docker infrastructure (SQL Server, Redis, Kafka in KRaft mode)
 cd docker
 docker-compose up -d
 
 # Verify Kafka is running
 docker ps | grep kafka
 docker logs dos_kafka | tail -20
+
+# Note: Kafka now runs in KRaft mode (no Zookeeper needed)
 ```
 
 ## Start All Services
@@ -228,14 +230,19 @@ docker exec -it dos_sqlserver /opt/mssql-tools18/bin/sqlcmd \
 
 ### Problem: Kafka not starting
 ```bash
-# Check Zookeeper is running
-docker ps | grep zookeeper
+# Check if Kafka container is running
+docker ps | grep kafka
 
-# Restart Kafka
+# View Kafka logs for errors
+docker logs dos_kafka
+
+# Restart Kafka (KRaft mode)
+cd docker
 docker-compose restart kafka
 
-# View Kafka logs
-docker logs dos_kafka
+# If issues persist, recreate Kafka
+docker-compose down kafka
+docker-compose up -d kafka
 ```
 
 ## Test Scenarios

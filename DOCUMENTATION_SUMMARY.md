@@ -140,7 +140,7 @@
 6. **Docker Compose**
    - ✅ SQL Server 2022
    - ✅ Redis 7
-   - ✅ Kafka + Zookeeper
+   - ✅ Kafka (KRaft mode - no Zookeeper)
    - ✅ Tutte porte mappate
 
 #### Messaging

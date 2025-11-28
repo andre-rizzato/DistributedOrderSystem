@@ -40,8 +40,7 @@ Un'applicazione distribuita per la gestione ordini e-commerce costruita con arch
 - Redis (cache in-memory)
 
 **Messaging**:
-- Apache Kafka 3.x (message broker)
-- Zookeeper (Kafka coordination)
+- Apache Kafka 3.x (message broker in KRaft mode)
 
 **Frontend**:
 - Angular 19
@@ -124,16 +123,14 @@ Un'applicazione distribuita per la gestione ordini e-commerce costruita con arch
 │                   MESSAGING LAYER                               │
 │                                                                 │
 │  ┌──────────────────────────────────────────────────────┐     │
-│  │    Apache Kafka (Port: 9092)                         │     │
+│  │    Apache Kafka (Port: 9092) - KRaft Mode           │     │
 │  │    Topic: order-created                              │     │
 │  │                                                      │     │
 │  │    Producer: OrderService                            │     │
 │  │    Consumer: InventoryService                        │     │
-│  └──────────────────────────────────────────────────────┘     │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────┐     │
-│  │    Zookeeper (Port: 2181)                            │     │
-│  │    Kafka Cluster Coordination                        │     │
+│  │                                                      │     │
+│  │    Controller: Port 9093 (Internal)                 │     │
+│  │    Metadata: Raft consensus (no Zookeeper)          │     │
 │  └──────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -149,7 +146,7 @@ Un'applicazione distribuita per la gestione ordini e-commerce costruita con arch
 | SQL Server | 1433 | TDS |
 | Redis | 6379 | RESP |
 | Kafka | 9092 | Kafka Protocol |
-| Zookeeper | 2181 | ZK Protocol |
+| Kafka Controller | 9093 | Raft (Internal) |
 
 ---
 
@@ -775,26 +772,34 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
 
-  # Message Broker Kafka
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
-
+  # Message Broker Kafka (KRaft mode - no Zookeeper)
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    depends_on:
-      - zookeeper
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka
     ports:
       - "9092:9092"
+    networks:
+      - dos_network
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KRaft Configuration (Zookeeper-less)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
+networks:
+  dos_network:
+    driver: bridge
 
 volumes:
   sqlserver_data:
