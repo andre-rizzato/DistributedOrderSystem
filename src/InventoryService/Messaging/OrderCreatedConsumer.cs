@@ -11,6 +11,7 @@ public class OrderCreatedConsumer : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<OrderCreatedConsumer> _logger;
     private readonly string _topic;
+    private bool _disposed = false;
 
     public OrderCreatedConsumer(
         IConfiguration configuration,
@@ -93,8 +94,22 @@ public class OrderCreatedConsumer : BackgroundService
         }
         finally
         {
-            _consumer.Close();
-            _consumer.Dispose();
+            CloseConsumer();
+        }
+    }
+
+    private void CloseConsumer()
+    {
+        if (!_disposed && _consumer != null)
+        {
+            try
+            {
+                _consumer.Close();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error closing Kafka consumer");
+            }
         }
     }
 
@@ -161,8 +176,29 @@ public class OrderCreatedConsumer : BackgroundService
 
     public override void Dispose()
     {
-        _consumer?.Close();
-        _consumer?.Dispose();
-        base.Dispose();
+        if (!_disposed)
+        {
+            _disposed = true;
+            
+            try
+            {
+                _consumer?.Close();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error closing Kafka consumer during dispose");
+            }
+            
+            try
+            {
+                _consumer?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error disposing Kafka consumer");
+            }
+            
+            base.Dispose();
+        }
     }
 }
