@@ -31,17 +31,17 @@ public class ProductsController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Fetching all products");
+            _logger.LogInformation("Recupero di tutti i prodotti");
             var products = await _productService.GetAllProductsAsync(ct);
             
-            _logger.LogInformation("Successfully retrieved {ProductCount} products", 
+            _logger.LogInformation("Recuperati con successo {ProductCount} prodotti", 
                 products?.Count() ?? 0);
             
             return Ok(products);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while fetching all products");
+            _logger.LogError(ex, "Errore durante il recupero di tutti i prodotti");
             return StatusCode(StatusCodes.Status500InternalServerError, 
                 "An error occurred while processing your request");
         }
@@ -64,25 +64,25 @@ public class ProductsController : ControllerBase
         {
             if (id <= 0)
             {
-                _logger.LogWarning("Invalid product ID provided: {ProductId}", id);
+                _logger.LogWarning("ID prodotto non valido fornito: {ProductId}", id);
                 return BadRequest("Product ID must be a positive integer");
             }
 
-            _logger.LogInformation("Fetching product with ID: {ProductId}", id);
+            _logger.LogInformation("Recupero prodotto con ID: {ProductId}", id);
             var product = await _productService.GetProductByIdAsync(id, ct);
 
             if (product == null)
             {
-                _logger.LogInformation("Product with ID {ProductId} not found", id);
+                _logger.LogInformation("Prodotto con ID {ProductId} non trovato", id);
                 return NotFound($"Product with ID {id} not found");
             }
 
-            _logger.LogInformation("Successfully retrieved product: {ProductId}", id);
+            _logger.LogInformation("Prodotto recuperato con successo: {ProductId}", id);
             return Ok(product);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while fetching product {ProductId}", id);
+            _logger.LogError(ex, "Errore durante il recupero del prodotto {ProductId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, 
                 "An error occurred while processing your request");
         }
@@ -104,11 +104,11 @@ public class ProductsController : ControllerBase
         {
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Invalid product model provided");
+                _logger.LogWarning("Modello prodotto non valido fornito");
                 return BadRequest(ModelState);
             }
 
-            _logger.LogInformation("Creating new product: {ProductName}", product.Name);
+            _logger.LogInformation("Creazione nuovo prodotto: {ProductName}", product.Name);
 
             var newProduct = new Product
             {
@@ -120,12 +120,12 @@ public class ProductsController : ControllerBase
 
             await _productService.AddProductAsync(newProduct, ct);
 
-            _logger.LogInformation("Successfully created product with ID: {ProductId}", newProduct.Id);
+            _logger.LogInformation("Prodotto creato con successo con ID: {ProductId}", newProduct.Id);
             return CreatedAtAction(nameof(GetProduct), new { id = newProduct.Id }, newProduct);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while creating product");
+            _logger.LogError(ex, "Errore durante la creazione del prodotto");
             return StatusCode(StatusCodes.Status500InternalServerError, 
                 "An error occurred while processing your request");
         }
@@ -149,27 +149,27 @@ public class ProductsController : ControllerBase
         {
             if (id <= 0)
             {
-                _logger.LogWarning("Invalid product ID provided: {ProductId}", id);
+                _logger.LogWarning("ID prodotto non valido fornito: {ProductId}", id);
                 return BadRequest("Product ID must be a positive integer");
             }
 
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Invalid product model provided for ID: {ProductId}", id);
+                _logger.LogWarning("Modello prodotto non valido fornito per ID: {ProductId}", id);
                 return BadRequest(ModelState);
             }
 
-            _logger.LogInformation("Updating product with ID: {ProductId}", id);
+            _logger.LogInformation("Aggiornamento prodotto con ID: {ProductId}", id);
 
-            // Check if product exists
+            // Verifica se il prodotto esistente
             var existingProduct = await _productService.GetProductByIdAsync(id, ct);
             if (existingProduct == null)
             {
-                _logger.LogInformation("Product with ID {ProductId} not found for update", id);
+                _logger.LogInformation("Prodotto con ID {ProductId} non trovato per aggiornamento", id);
                 return NotFound($"Product with ID {id} not found");
             }
 
-            // Update product properties
+            // Aggiorna le proprietà del prodotto
             existingProduct.Name = product.Name;
             existingProduct.Price = product.Price;
             existingProduct.Description = product.Description;
@@ -177,12 +177,12 @@ public class ProductsController : ControllerBase
 
             await _productService.UpdateProductAsync(existingProduct, ct);
 
-            _logger.LogInformation("Successfully updated product with ID: {ProductId}", id);
+            _logger.LogInformation("Prodotto aggiornato con successo con ID: {ProductId}", id);
             return Ok(existingProduct);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while updating product {ProductId}", id);
+            _logger.LogError(ex, "Errore durante l'aggiornamento del prodotto {ProductId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, 
                 "An error occurred while processing your request");
         }
@@ -205,26 +205,26 @@ public class ProductsController : ControllerBase
         {
             if (id <= 0)
             {
-                _logger.LogWarning("Invalid product ID provided: {ProductId}", id);
+                _logger.LogWarning("ID prodotto non valido fornito: {ProductId}", id);
                 return BadRequest("Product ID must be a positive integer");
             }
 
-            _logger.LogInformation("Deleting product with ID: {ProductId}", id);
+            _logger.LogInformation("Eliminazione prodotto con ID: {ProductId}", id);
 
             var deleted = await _productService.DeleteProductAsync(id, ct);
             if (!deleted)
             {
-                _logger.LogInformation("Product with ID {ProductId} not found for deletion", id);
+                _logger.LogInformation("Prodotto con ID {ProductId} non trovato per eliminazione", id);
                 return NotFound($"Product with ID {id} not found");
             }
 
-            _logger.LogInformation("Successfully deleted product with ID: {ProductId}", id);
+            _logger.LogInformation("Prodotto eliminato con successo con ID: {ProductId}", id);
             return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while deleting product {ProductId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, 
+            _logger.LogError(ex, "Errore durante l'eliminazione del prodotto {ProductId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError,
                 "An error occurred while processing your request");
         }
     }

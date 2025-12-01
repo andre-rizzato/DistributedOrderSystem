@@ -26,17 +26,17 @@ public class AdjustInventoryCommandHandler : IRequestHandler<AdjustInventoryComm
             delta = request.Delta
         };
 
-        _logger.LogInformation("Adjusting inventory for product {ProductId} by {Delta}", request.ProductId, request.Delta);
+        _logger.LogInformation("Regolazione inventario per il prodotto {ProductId} di {Delta}", request.ProductId, request.Delta);
 
         var response = await client.PostAsJsonAsync("api/inventory/adjust", payload, ct);
         
         if (response.IsSuccessStatusCode)
         {
-            _logger.LogInformation("Inventory adjusted for product {ProductId}", request.ProductId);
+            _logger.LogInformation("Inventario regolato per il prodotto {ProductId}", request.ProductId);
             return true;
         }
 
-        _logger.LogWarning("Failed to adjust inventory for product {ProductId}, Status: {StatusCode}", 
+        _logger.LogWarning("Fallito regolare inventario per il prodotto {ProductId}, Status: {StatusCode}", 
             request.ProductId, response.StatusCode);
         
         return false;

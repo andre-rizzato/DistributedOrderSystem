@@ -33,7 +33,7 @@ public class GetCatalogQueryHandler : IRequestHandler<GetCatalogQuery, List<Cata
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Inventory lookup failed for product {ProductId}", p.Id);
+                _logger.LogWarning(ex, "Ricerca inventario fallita per il prodotto {ProductId}", p.Id);
                 inventory[p.Id] = 0;
             }
         }

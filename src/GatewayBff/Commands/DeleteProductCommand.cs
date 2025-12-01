@@ -19,17 +19,17 @@ public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand,
     {
         var client = _clients.CreateClient("ProductService");
 
-        _logger.LogInformation("Deleting product: {ProductId}", request.Id);
+        _logger.LogInformation("Eliminazione prodotto: {ProductId}", request.Id);
 
         var response = await client.DeleteAsync($"api/products/{request.Id}", ct);
         
         if (response.IsSuccessStatusCode)
         {
-            _logger.LogInformation("Product deleted: {ProductId}", request.Id);
+            _logger.LogInformation("Prodotto eliminato: {ProductId}", request.Id);
             return true;
         }
 
-        _logger.LogWarning("Failed to delete product: {ProductId}, Status: {StatusCode}", 
+        _logger.LogWarning("Fallito eliminare prodotto: {ProductId}, Status: {StatusCode}", 
             request.Id, response.StatusCode);
         
         return false;

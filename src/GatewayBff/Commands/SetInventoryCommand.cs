@@ -29,17 +29,17 @@ public class SetInventoryCommandHandler : IRequestHandler<SetInventoryCommand, b
             }
         };
 
-        _logger.LogInformation("Setting inventory for product {ProductId} to {Quantity}", request.ProductId, request.Quantity);
+        _logger.LogInformation("Impostazione inventario per il prodotto {ProductId} a {Quantity}", request.ProductId, request.Quantity);
 
         var response = await client.PostAsJsonAsync("api/inventory/seed", payload, ct);
         
         if (response.IsSuccessStatusCode)
         {
-            _logger.LogInformation("Inventory set for product {ProductId}", request.ProductId);
+            _logger.LogInformation("Inventario impostato per il prodotto {ProductId}", request.ProductId);
             return true;
         }
 
-        _logger.LogWarning("Failed to set inventory for product {ProductId}, Status: {StatusCode}", 
+        _logger.LogWarning("Fallito impostare inventario per il prodotto {ProductId}, Status: {StatusCode}", 
             request.ProductId, response.StatusCode);
         
         return false;

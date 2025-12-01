@@ -38,7 +38,7 @@ public class OrderWorkerService : IOrderService
         _context.Orders.Add(order);
         await _context.SaveChangesAsync(ct);
         
-        _logger.LogInformation("Order {OrderId} created with {ItemCount} items", order.Id, order.Items.Count);
+        _logger.LogInformation("Ordine {OrderId} creato con {ItemCount} articoli", order.Id, order.Items.Count);
         
         return order;
     }
@@ -48,14 +48,14 @@ public class OrderWorkerService : IOrderService
         var order = await _context.Orders.FindAsync(new object[] { orderId }, ct);
         if (order == null)
         {
-            _logger.LogWarning("Order {OrderId} not found for status update", orderId);
+            _logger.LogWarning("Ordine {OrderId} non trovato per aggiornamento stato", orderId);
             return false;
         }
 
         order.Status = status;
         await _context.SaveChangesAsync(ct);
         
-        _logger.LogInformation("Order {OrderId} status updated to {Status}", orderId, status);
+        _logger.LogInformation("Stato Ordine {OrderId} aggiornato a {Status}", orderId, status);
         
         return true;
     }
