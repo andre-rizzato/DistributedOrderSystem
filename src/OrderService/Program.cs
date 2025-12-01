@@ -6,22 +6,22 @@ using OrderService.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// Aggiungi servizi al contenitore
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configuration
+// Configurazione
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
 
 // Database
 builder.Services.AddDbContext<OrderContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("OrderDb")));
 
-// Services
+// Servizi
 builder.Services.AddScoped<IOrderService, OrderWorkerService>();
 
-// Kafka Producer
+// Produttore Kafka
 builder.Services.AddSingleton<IOrderEventProducer, OrderEventProducer>();
 
 // CORS
@@ -37,7 +37,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// Configura la pipeline delle richieste HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -47,7 +47,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors();
 app.MapControllers();
 
-// Ensure database is created
+// Assicura che il database sia creato
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<OrderContext>();

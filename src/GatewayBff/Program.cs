@@ -14,7 +14,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
-// CORS configuration to allow frontend requests
+// Configurazione CORS per consentire le richieste del frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -36,7 +36,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowFrontend");
 
-// Disable HTTPS redirection in development to allow frontend HTTP calls
+// Disabilita il reindirizzamento HTTPS in sviluppo per consentire chiamate HTTP del frontend
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();

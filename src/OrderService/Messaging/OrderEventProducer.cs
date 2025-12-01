@@ -27,7 +27,7 @@ public class OrderEventProducer : IOrderEventProducer, IDisposable
         var config = new ProducerConfig
         {
             BootstrapServers = bootstrapServers,
-            Acks = Acks.Leader,
+            Acks = Acks.All,
             EnableIdempotence = true,
             MaxInFlight = 5,
             MessageSendMaxRetries = 3,
@@ -36,7 +36,7 @@ public class OrderEventProducer : IOrderEventProducer, IDisposable
 
         _producer = new ProducerBuilder<string, string>(config).Build();
         
-        _logger.LogInformation("Kafka producer initialized for topic {Topic} at {BootstrapServers}", 
+        _logger.LogInformation("Producer Kafka inizializzato per topic {Topic} su {BootstrapServers}", 
             _topic, bootstrapServers);
     }
 
@@ -57,7 +57,7 @@ public class OrderEventProducer : IOrderEventProducer, IDisposable
             var result = await _producer.ProduceAsync(_topic, message, ct);
 
             _logger.LogInformation(
-                "Published OrderCreated event for Order {OrderId} to partition {Partition} at offset {Offset}",
+                "Pubblicato evento OrderCreated per Ordine {OrderId} nella partizione {Partition} all'offset {Offset}",
                 orderEvent.OrderId,
                 result.Partition.Value,
                 result.Offset.Value);
@@ -65,7 +65,7 @@ public class OrderEventProducer : IOrderEventProducer, IDisposable
         catch (ProduceException<string, string> ex)
         {
             _logger.LogError(ex, 
-                "Failed to publish OrderCreated event for Order {OrderId}: {Error}",
+                "Impossibile pubblicare evento OrderCreated per Ordine {OrderId}: {Error}",
                 orderEvent.OrderId,
                 ex.Error.Reason);
             throw;
@@ -73,7 +73,7 @@ public class OrderEventProducer : IOrderEventProducer, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, 
-                "Unexpected error publishing OrderCreated event for Order {OrderId}",
+                "Errore imprevisto durante pubblicazione evento OrderCreated per Ordine {OrderId}",
                 orderEvent.OrderId);
             throw;
         }
@@ -85,11 +85,11 @@ public class OrderEventProducer : IOrderEventProducer, IDisposable
         {
             _producer?.Flush(TimeSpan.FromSeconds(10));
             _producer?.Dispose();
-            _logger.LogInformation("Kafka producer disposed");
+            _logger.LogInformation("Producer Kafka rilasciato");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error disposing Kafka producer");
+            _logger.LogError(ex, "Errore durante rilascio producer Kafka");
         }
     }
 }

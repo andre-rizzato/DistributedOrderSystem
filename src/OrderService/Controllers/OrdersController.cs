@@ -81,7 +81,7 @@ public class OrderCommandsController : ControllerBase
 
         var created = await _orderService.CreateOrderAsync(order, ct);
 
-        // Publish event to Kafka for asynchronous inventory update
+        // Pubblica evento su Kafka per aggiornamento inventario asincrono
         try
         {
             var orderEvent = new OrderCreatedEvent
@@ -96,12 +96,12 @@ public class OrderCommandsController : ControllerBase
             };
 
             await _eventProducer.PublishOrderCreatedAsync(orderEvent, ct);
-            _logger.LogInformation("Published OrderCreated event for Order {OrderId}", created.Id);
+            _logger.LogInformation("Pubblicato evento OrderCreated per Ordine {OrderId}", created.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to publish OrderCreated event for Order {OrderId}", created.Id);
-            // Don't fail the request if event publishing fails
+            _logger.LogError(ex, "Impossibile pubblicare evento OrderCreated per Ordine {OrderId}", created.Id);
+            // Non fallire la richiesta se la pubblicazione dell'evento fallisce
         }
 
         return CreatedAtAction(

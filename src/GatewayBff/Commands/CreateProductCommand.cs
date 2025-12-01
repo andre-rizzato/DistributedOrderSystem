@@ -28,14 +28,14 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
             description = request.Description ?? string.Empty
         };
 
-        _logger.LogInformation("Creating product: {ProductName}", request.Name);
+        _logger.LogInformation("Creazione prodotto: {ProductName}", request.Name);
 
         var response = await client.PostAsJsonAsync("api/products", payload, ct);
         response.EnsureSuccessStatusCode();
 
         var product = await response.Content.ReadFromJsonAsync<ProductDto>(ct);
         
-        _logger.LogInformation("Product created with ID: {ProductId}", product?.Id);
+        _logger.LogInformation("Prodotto creato con ID: {ProductId}", product?.Id);
         
         return product ?? throw new InvalidOperationException("Failed to create product");
     }

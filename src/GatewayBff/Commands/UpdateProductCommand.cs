@@ -29,14 +29,14 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
             isActive = request.IsActive
         };
 
-        _logger.LogInformation("Updating product: {ProductId}", request.Id);
+        _logger.LogInformation("Aggiornamento prodotto: {ProductId}", request.Id);
 
         var response = await client.PutAsJsonAsync($"api/products/{request.Id}", payload, ct);
         response.EnsureSuccessStatusCode();
 
         var product = await response.Content.ReadFromJsonAsync<ProductDto>(ct);
         
-        _logger.LogInformation("Product updated: {ProductId}", product?.Id);
+        _logger.LogInformation("Prodotto aggiornato: {ProductId}", product?.Id);
         
         return product ?? throw new InvalidOperationException("Failed to update product");
     }

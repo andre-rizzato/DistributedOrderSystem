@@ -48,6 +48,20 @@ services:
       KAFKA_LOG_RETENTION_HOURS: 168
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
 
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: dos_kafka_ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    networks:
+      - dos_network
+    environment:
+      KAFKA_CLUSTERS_0_NAME: distributed-order-system
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: 'true'
+
 networks:
   dos_network:
     driver: bridge

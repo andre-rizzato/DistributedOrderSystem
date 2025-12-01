@@ -44,7 +44,7 @@ public class OrderCreatedConsumer : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _consumer.Subscribe(_topic);
-        _logger.LogInformation("Subscribed to Kafka topic: {Topic}", _topic);
+        _logger.LogInformation("Sottoscritto al topic Kafka: {Topic}", _topic);
 
         try
         {
@@ -58,39 +58,39 @@ public class OrderCreatedConsumer : BackgroundService
                         continue;
 
                     _logger.LogInformation(
-                        "Received message from partition {Partition} at offset {Offset}",
+                        "Ricevuto messaggio dalla partizione {Partition} all'offset {Offset}",
                         consumeResult.Partition.Value,
                         consumeResult.Offset.Value);
 
                     await ProcessMessageAsync(consumeResult.Message.Value, stoppingToken);
 
-                    // Commit offset after successful processing
+                    // Conferma offset dopo elaborazione riuscita
                     _consumer.Commit(consumeResult);
                     _consumer.StoreOffset(consumeResult);
 
                     _logger.LogInformation(
-                        "Successfully processed and committed message at offset {Offset}",
+                        "Messaggio elaborato e confermato con successo all'offset {Offset}",
                         consumeResult.Offset.Value);
                 }
                 catch (ConsumeException ex)
                 {
-                    _logger.LogError(ex, "Error consuming message: {Error}", ex.Error.Reason);
+                    _logger.LogError(ex, "Errore durante il consumo del messaggio: {Error}", ex.Error.Reason);
                     
-                    // Don't commit on error - message will be reprocessed
+                    // Non confermare in caso di errore - il messaggio verrà rielaborato
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error processing message");
+                    _logger.LogError(ex, "Errore durante l'elaborazione del messaggio");
                     
-                    // Don't commit on error - message will be reprocessed
+                    // Non confermare in caso di errore - il messaggio verrà rielaborato
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
             }
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation("Kafka consumer stopped");
+            _logger.LogInformation("Consumer Kafka arrestato");
         }
         finally
         {
@@ -119,24 +119,24 @@ public class OrderCreatedConsumer : BackgroundService
         
         if (orderEvent == null)
         {
-            _logger.LogWarning("Failed to deserialize OrderCreatedEvent");
+            _logger.LogWarning("Impossibile deserializzare OrderCreatedEvent");
             return;
         }
 
         _logger.LogInformation(
-            "Processing OrderCreatedEvent for Order {OrderId} with {ItemCount} items",
+            "Elaborazione OrderCreatedEvent per Ordine {OrderId} con {ItemCount} articoli",
             orderEvent.OrderId,
             orderEvent.Items.Count);
 
         using var scope = _serviceProvider.CreateScope();
         var inventoryService = scope.ServiceProvider.GetRequiredService<IInventoryWorkerService>();
 
-        // Update inventory for each item in the order
+        // Aggiorna inventario per ogni articolo nell'ordine
         foreach (var item in orderEvent.Items)
         {
             try
             {
-                // Reduce inventory by the ordered quantity (negative delta)
+                // Riduce inventario della quantità ordinata (delta negativo)
                 var success = await inventoryService.AdjustInventoryQuantityAsync(
                     item.ProductId,
                     -item.Quantity,
@@ -145,7 +145,7 @@ public class OrderCreatedConsumer : BackgroundService
                 if (success)
                 {
                     _logger.LogInformation(
-                        "Reduced inventory for Product {ProductId} by {Quantity} units (Order {OrderId})",
+                        "Ridotto inventario per Prodotto {ProductId} di {Quantity} unità (Ordine {OrderId})",
                         item.ProductId,
                         item.Quantity,
                         orderEvent.OrderId);
@@ -153,7 +153,7 @@ public class OrderCreatedConsumer : BackgroundService
                 else
                 {
                     _logger.LogWarning(
-                        "Failed to reduce inventory for Product {ProductId} by {Quantity} units (Order {OrderId}) - insufficient inventory or product not found",
+                        "Impossibile ridurre inventario per Prodotto {ProductId} di {Quantity} unità (Ordine {OrderId}) - inventario insufficiente o prodotto non trovato",
                         item.ProductId,
                         item.Quantity,
                         orderEvent.OrderId);
@@ -162,15 +162,15 @@ public class OrderCreatedConsumer : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex,
-                    "Error updating inventory for Product {ProductId} (Order {OrderId})",
+                    "Errore durante l'aggiornamento dell'inventario per Prodotto {ProductId} (Ordine {OrderId})",
                     item.ProductId,
                     orderEvent.OrderId);
-                throw; // Re-throw to prevent commit - message will be reprocessed
+                throw; // Rilancia per evitare commit - il messaggio verrà rielaborato
             }
         }
 
         _logger.LogInformation(
-            "Completed inventory updates for Order {OrderId}",
+            "Completati aggiornamenti inventario per Ordine {OrderId}",
             orderEvent.OrderId);
     }
 

@@ -27,7 +27,7 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, C
             var product = await productClient.GetFromJsonAsync<ProductDto>($"api/products/{request.Id}", ct);
             if (product == null)
             {
-                _logger.LogWarning("Product {ProductId} not found", request.Id);
+                _logger.LogWarning("Prodotto {ProductId} non trovato", request.Id);
                 return null;
             }
 
@@ -39,7 +39,7 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, C
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Inventory lookup failed for product {ProductId}", product.Id);
+                _logger.LogWarning(ex, "Ricerca inventario fallita per il prodotto {ProductId}", product.Id);
             }
 
             return new CatalogItemDto(
@@ -53,7 +53,7 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, C
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Error fetching product {ProductId}", request.Id);
+            _logger.LogError(ex, "Errore durante il recupero del prodotto {ProductId}", request.Id);
             return null;
         }
     }
