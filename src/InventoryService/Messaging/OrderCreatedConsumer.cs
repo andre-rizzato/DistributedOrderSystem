@@ -44,10 +44,13 @@ public class OrderCreatedConsumer : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _consumer.Subscribe(_topic);
-        _logger.LogInformation("Sottoscritto al topic Kafka: {Topic}", _topic);
-
-        try
+       try
         {
+                    _logger.LogInformation("Avvio consumer Kafka per topic: {Topic}", _topic);
+        
+                    // Aggiungi un delay per permettere all'host di avviarsi completamente
+                    await Task.Delay(2000, stoppingToken);
+        
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
