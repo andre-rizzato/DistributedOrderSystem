@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Widget - Test Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .title {
+            color: #2d3748;
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 1.2rem;
+            margin-bottom: 32px;
+        }
+        
+        .config-panel {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .config-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #2d3748;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .config-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .config-label {
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #4a5568;
+        }
+        
+        .config-input, .config-select {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .config-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #3182ce;
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .preview-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .preview-content {
+            height: 400px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="%23e2e8f0" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="white"/><rect width="100%" height="100%" fill="url(%23grid)"/></svg>') center/contain no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #718096;
+            font-style: italic;
+            border: 2px dashed #e2e8f0;
+            border-radius: 6px;
+        }
+        
+        .code-section {
+            background: #1a202c;
+            color: #cbd5e0;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+        
+        .code-title {
+            color: white;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            padding: 16px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        
+        .info-box {
+            background: #ebf8ff;
+            border: 1px solid #bee3f8;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .info-title {
+            color: #1e40af;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            border-radius: 6px;
+            color: #22543d;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #48bb78;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin: 32px 0;
+        }
+        
+        .feature-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: #4299e1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+        
+        .feature-description {
+            color: #718096;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="header">
+            <h1 class="title">🤖 Distributed Chat Widget</h1>
+            <p class="subtitle">Widget di chat personalizzabile per sistema distribuito con supporto BFF e routing diretto</p>
+            
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                Chat Widget attivo e configurato
+            </div>
+        </div>
+
+        <div class="config-panel">
+            <h3 class="config-title">⚙️ Configurazione Widget</h3>
+            
+            <div class="config-grid">
+                <div class="config-item">
+                    <label class="config-label">Modalità Routing</label>
+                    <select id="routingMode" class="config-select">
+                        <option value="true">BFF Routing (DistributedOrderSystem)</option>
+                        <option value="false">Direct Service (External)</option>
+                    </select>
+                </div>
+                
+                <div class="config-item">
+                    <label class="config-label">Tema</label>
+                    <select id="theme" class="config-select">
+                        <option value="light">Chiaro</option>
+                        <option value="dark">Scuro</option>
+                        <option value="auto">Automatico</option>
+                    </select>
+                </div>
+                
+                <div class="config-item">
+                    <label class="config-label">Posizione</label>
+                    <select id="position" class="config-select">
+                        <option value="bottom-right">Basso a destra</option>
+                        <option value="bottom-left">Basso a sinistra</option>
+                        <option value="top-right">Alto a destra</option>
+                        <option value="top-left">Alto a sinistra</option>
+                    </select>
+                </div>
+                
+                <div class="config-item">
+                    <label class="config-label">Colore Primario</label>
+                    <input type="color" id="primaryColor" class="config-input" value="#4299e1">
+                </div>
+                
+                <div class="config-item">
+                    <label class="config-label">Nome Bot</label>
+                    <input type="text" id="botName" class="config-input" value="Assistente AI" placeholder="Nome del bot">
+                </div>
+                
+                <div class="config-item">
+                    <label class="config-label">Messaggio di Benvenuto</label>
+                    <input type="text" id="welcomeMessage" class="config-input" value="Ciao! Come posso aiutarti oggi?" placeholder="Messaggio iniziale">
+                </div>
+            </div>
+            
+            <div class="config-checkbox">
+                <input type="checkbox" id="autoOpen">
+                <label for="autoOpen">Apri automaticamente</label>
+            </div>
+            
+            <div class="config-checkbox">
+                <input type="checkbox" id="soundNotifications">
+                <label for="soundNotifications">Notifiche audio</label>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-primary" onclick="applyConfig()">🔄 Applica Configurazione</button>
+                <button class="btn btn-secondary" onclick="openChat()">💬 Apri Chat</button>
+                <button class="btn btn-secondary" onclick="resetWidget()">🔨 Reset Widget</button>
+                <button class="btn btn-secondary" onclick="testMessage()">🧪 Test Messaggio</button>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <h3 class="config-title">👁️ Anteprima</h3>
+            <div class="preview-content">
+                Il widget apparirà nell'angolo selezionato della pagina
+            </div>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="white">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                </div>
+                <h4 class="feature-title">Dual Routing</h4>
+                <p class="feature-description">Supporta sia BFF routing per DistributedOrderSystem che comunicazione diretta con ChatbotService per progetti esterni.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="white">
+                        <path d="M7 10l5 5 5-5z"/>
+                    </svg>
+                </div>
+                <h4 class="feature-title">Personalizzabile</h4>
+                <p class="feature-description">Temi, colori, posizione e comportamento completamente configurabili per adattarsi al design del tuo sito.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="white">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+                    </svg>
+                </div>
+                <h4 class="feature-title">Responsive</h4>
+                <p class="feature-description">Ottimizzato per dispositivi mobili con layout adattivo che si espande a schermo intero sui telefoni.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="white">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                    </svg>
+                </div>
+                <h4 class="feature-title">AI Powered</h4>
+                <p class="feature-description">Integrato con Microsoft DialoGPT-small per conversazioni naturali e intelligenti con supporto GPU.</p>
+            </div>
+        </div>
+
+        <div class="code-section">
+            <h3 class="code-title">💻 Integrazione nel tuo sito</h3>
+            
+            <div class="info-box">
+                <div class="info-title">📋 Modalità di utilizzo</div>
+                <p><strong>BFF Routing:</strong> Per integrazione in DistributedOrderSystem tramite GatewayBff</p>
+                <p><strong>Direct Service:</strong> Per progetti esterni con comunicazione diretta al ChatbotService</p>
+            </div>
+            
+            <div class="code-block" id="integrationCode">
+&lt;!-- Includi il widget nel tuo HTML --&gt;
+&lt;script src="/api/chatbot/widget/chat-widget.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  // Configurazione per BFF routing
+  window.chatWidgetConfig = {
+    useBffRouting: true,
+    bffBaseUrl: '/api/gateway/chat',
+    theme: 'light',
+    primaryColor: '#4299e1',
+    position: 'bottom-right',
+    autoOpen: false,
+    botName: 'Assistente AI',
+    welcomeMessage: 'Ciao! Come posso aiutarti oggi?'
+  };
+  
+  // Il widget si inizializza automaticamente
+&lt;/script&gt;
+            </div>
+            
+            <h4 class="code-title">🔧 Inizializzazione programmatica</h4>
+            <div class="code-block">
+// Per controllo avanzato
+const widget = new DistributedChatWidget({
+  useBffRouting: false, // Direct mode
+  chatbotServiceUrl: 'https://your-service.com/api/chat',
+  theme: 'dark',
+  primaryColor: '#9f7aea',
+  jwtToken: 'your-auth-token'
+});
+
+// Controlli programmatici
+widget.show();
+widget.hide();
+widget.updateConfig({ theme: 'light' });
+            </div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-title">🚀 Prossimi passi</div>
+            <ul>
+                <li>Modifica la configurazione sopra per vedere i cambiamenti in tempo reale</li>
+                <li>Testa il widget cliccando sul pulsante di chat che appare</li>
+                <li>Integra il codice nel tuo progetto usando uno dei due metodi</li>
+                <li>Personalizza ulteriormente il CSS per le tue esigenze specifiche</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Include Chat Widget -->
+    <script src="chat-widget.min.js"></script>
+    <script>
+        // Global widget instance
+        let currentWidget = null;
+
+        // Initialize default widget
+        function initWidget() {
+            const config = {
+                useBffRouting: document.getElementById('routingMode').value === 'true',
+                theme: document.getElementById('theme').value,
+                primaryColor: document.getElementById('primaryColor').value,
+                position: document.getElementById('position').value,
+                autoOpen: document.getElementById('autoOpen').checked,
+                enableSoundNotifications: document.getElementById('soundNotifications').checked,
+                botName: document.getElementById('botName').value,
+                welcomeMessage: document.getElementById('welcomeMessage').value,
+                // Development endpoints
+                bffBaseUrl: '/api/gateway/chat',
+                chatbotServiceUrl: 'https://localhost:5055/api/chat'
+            };
+
+            if (currentWidget) {
+                currentWidget.destroy();
+            }
+
+            currentWidget = new DistributedChatWidget(config);
+            return currentWidget;
+        }
+
+        // Event handlers
+        function applyConfig() {
+            initWidget();
+            updateIntegrationCode();
+            
+            // Show success message
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Applicato!';
+            btn.style.background = '#48bb78';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '#4299e1';
+            }, 2000);
+        }
+
+        function openChat() {
+            if (currentWidget) {
+                currentWidget.show();
+            } else {
+                initWidget();
+                currentWidget.show();
+            }
+        }
+
+        function resetWidget() {
+            if (currentWidget) {
+                currentWidget.destroy();
+                currentWidget = null;
+            }
+            
+            // Reset form
+            document.getElementById('routingMode').value = 'true';
+            document.getElementById('theme').value = 'light';
+            document.getElementById('primaryColor').value = '#4299e1';
+            document.getElementById('position').value = 'bottom-right';
+            document.getElementById('autoOpen').checked = false;
+            document.getElementById('soundNotifications').checked = false;
+            document.getElementById('botName').value = 'Assistente AI';
+            document.getElementById('welcomeMessage').value = 'Ciao! Come posso aiutarti oggi?';
+            
+            initWidget();
+            updateIntegrationCode();
+        }
+
+        function testMessage() {
+            if (currentWidget) {
+                currentWidget.show();
+                setTimeout(() => {
+                    currentWidget.addBotMessage("🧪 Questo è un messaggio di test! Il widget sta funzionando correttamente.");
+                }, 500);
+            } else {
+                alert('Inizializza prima il widget!');
+            }
+        }
+
+        function updateIntegrationCode() {
+            const useBff = document.getElementById('routingMode').value === 'true';
+            const theme = document.getElementById('theme').value;
+            const primaryColor = document.getElementById('primaryColor').value;
+            const position = document.getElementById('position').value;
+            const botName = document.getElementById('botName').value;
+            const welcomeMessage = document.getElementById('welcomeMessage').value;
+            
+            const code = `&lt;!-- Includi il widget nel tuo HTML --&gt;
+&lt;script src="${useBff ? '/api/chatbot/widget/' : 'https://your-chatbot-service.com/'}chat-widget.min.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.chatWidgetConfig = {
+    useBffRouting: ${useBff},
+    ${useBff ? 'bffBaseUrl: \'/api/gateway/chat\',' : 'chatbotServiceUrl: \'https://your-service.com/api/chat\','}
+    theme: '${theme}',
+    primaryColor: '${primaryColor}',
+    position: '${position}',
+    botName: '${botName}',
+    welcomeMessage: '${welcomeMessage}'
+  };
+&lt;/script&gt;`;
+            
+            document.getElementById('integrationCode').innerHTML = code;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initWidget();
+            updateIntegrationCode();
+        });
+    </script>
+</body>
+</html>
