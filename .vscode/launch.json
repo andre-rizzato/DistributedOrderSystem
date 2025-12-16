@@ -86,7 +86,7 @@
             }
         },
         {
-            "name": "🤖 ChatbotService",
+            "name": "ChatbotService",
             "type": "coreclr",
             "request": "launch",
             "program": "${workspaceFolder}/src/ChatbotService/bin/Debug/net9.0/ChatbotService.dll",
