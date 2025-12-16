@@ -8,8 +8,12 @@
             "program": "${workspaceFolder}/src/OrderService/bin/Debug/net9.0/OrderService.dll",
             "console": "integratedTerminal",
             "preLaunchTask": "build OrderService",
-            "cwd": "${workspaceFolder}/src/OrderService"
-
+            "cwd": "${workspaceFolder}/src/OrderService",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5001",
+                "ASPNETCORE_HTTPS_PORT": ""
+            }
         },
         {
             "name": "InventoryService",
@@ -18,8 +22,12 @@
             "program": "${workspaceFolder}/src/InventoryService/bin/Debug/net9.0/InventoryService.dll",
             "console": "integratedTerminal",
             "preLaunchTask": "build InventoryService",
-            "cwd": "${workspaceFolder}/src/InventoryService"
-
+            "cwd": "${workspaceFolder}/src/InventoryService",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5002",
+                "ASPNETCORE_HTTPS_PORT": ""
+            }
         },
          {
              "name": "NotificationService",
@@ -28,8 +36,12 @@
              "program": "${workspaceFolder}/src/NotificationService/bin/Debug/net9.0/NotificationService.dll",
              "console": "integratedTerminal",
              "preLaunchTask": "build NotificationService",
-             "cwd": "${workspaceFolder}/src/NotificationService"
-
+             "cwd": "${workspaceFolder}/src/NotificationService",
+             "env": {
+                 "ASPNETCORE_ENVIRONMENT": "Development",
+                 "ASPNETCORE_URLS": "http://localhost:5003",
+                 "ASPNETCORE_HTTPS_PORT": ""
+             }
         }
         ,
          {
@@ -39,7 +51,12 @@
             "program": "${workspaceFolder}/src/GatewayBff/bin/Debug/net9.0/GatewayBff.dll",
             "console": "integratedTerminal",
             "preLaunchTask": "build GatewayBff",
-            "cwd": "${workspaceFolder}/src/GatewayBff"
+            "cwd": "${workspaceFolder}/src/GatewayBff",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5000",
+                "ASPNETCORE_HTTPS_PORT": ""
+            }
         }, 
          {
             "name": "PaymentService",
@@ -48,7 +65,12 @@
             "program": "${workspaceFolder}/src/PaymentService/bin/Debug/net9.0/PaymentService.dll",
             "console": "integratedTerminal",
             "preLaunchTask": "build PaymentService",
-            "cwd": "${workspaceFolder}/src/PaymentService"
+            "cwd": "${workspaceFolder}/src/PaymentService",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5004",
+                "ASPNETCORE_HTTPS_PORT": ""
+            }
         },   {
             "name": "ProductService",
             "type": "coreclr",
@@ -56,7 +78,30 @@
             "program": "${workspaceFolder}/src/ProductService/bin/Debug/net9.0/ProductService.dll",
             "console": "integratedTerminal",
             "preLaunchTask": "build ProductService",
-            "cwd": "${workspaceFolder}/src/ProductService"
+            "cwd": "${workspaceFolder}/src/ProductService",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5006",
+                "ASPNETCORE_HTTPS_PORT": ""
+            }
+        },
+        {
+            "name": "🤖 ChatbotService",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/ChatbotService/bin/Debug/net9.0/ChatbotService.dll",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build ChatbotService",
+            "cwd": "${workspaceFolder}/src/ChatbotService",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5055"
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/swagger"
+            }
         },
         {
             "name": "Frontend (Angular)",
@@ -76,6 +121,7 @@
                 "NotificationService",
                 "PaymentService",
                 "ProductService",
+                "ChatbotService",
                 "GatewayBff"
             ]
         },
@@ -83,10 +129,11 @@
             "name": "Start All (Backend + Frontend)",
             "configurations": [
                 "OrderService",
-                "InventoryService",
+                "InventoryService", 
                 "NotificationService",
                 "PaymentService",
                 "ProductService",
+                "ChatbotService",
                 "GatewayBff",
                 "Frontend (Angular)"
             ],
