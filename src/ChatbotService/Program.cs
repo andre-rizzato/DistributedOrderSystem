@@ -111,10 +111,11 @@ builder.Services.AddHttpClient<IServiceIntegration, ServiceIntegrationService>(c
 // Gestisce la logica principale delle conversazioni e l'orchestrazione
 // builder.Services.AddScoped<IChatbotService, Services.ChatbotService>();
 
-// Servizio NLP (Natural Language Processing) leggero
-// Fornisce classificazione degli intenti senza modelli pesanti
-// Utilizza regole e pattern matching per identificare cosa vuole l'utente
-builder.Services.AddScoped<INLPService, LightweightNLPService>();
+// Servizio NLP (Natural Language Processing) Avanzato con DialoGPT
+// Fornisce classificazione degli intenti usando AI conversazionale reale
+// Utilizza Microsoft DialoGPT-small per generare risposte naturali
+builder.Services.AddScoped<INLPService, AdvancedNLPService>();
+builder.Services.AddHttpClient<AdvancedNLPService>();
 
 // Servizio di autenticazione per gestire login e registrazione utenti
 // Genera e valida token JWT per l'accesso sicuro alle API
@@ -125,8 +126,11 @@ builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IServiceIntegration, ServiceIntegrationService>();
 
 // Servizio di fine-tuning per l'addestramento personalizzato del modello AI
-// (temporaneamente disabilitato per build)
-// builder.Services.AddScoped<IFineTuningService, FineTuningService>();
+builder.Services.AddScoped<IFineTuningService, FineTuningService>();
+
+// Servizio di inizializzazione modelli AI in background
+// Scarica automaticamente DialoGPT all'avvio del servizio
+builder.Services.AddHostedService<ModelInitializationService>();
 
 /* ================================================================
  * CONFIGURAZIONE AUTENTICAZIONE JWT
@@ -336,6 +340,10 @@ if (app.Environment.IsDevelopment())
  * PIPELINE DEI MIDDLEWARE
  * ================================================================ */
 
+// Middleware per servire file statici (widget JavaScript, CSS, immagini)
+// Permette di servire il chat widget e le risorse associate
+app.UseStaticFiles();
+
 // Reindirizzamento automatico da HTTP a HTTPS per sicurezza
 app.UseHttpsRedirection();
 
@@ -385,6 +393,14 @@ appLogger.LogInformation("📊 Dashboard Admin: {AdminUrl}",
 appLogger.LogInformation("🧪 Chat Demo: {DemoUrl}", 
     app.Environment.IsDevelopment() ? "http://localhost:5055/api/chat/demo" : "/api/chat/demo");
 
+// URL della demo widget per integrazione
+appLogger.LogInformation("🎨 Widget Demo: {WidgetDemoUrl}", 
+    app.Environment.IsDevelopment() ? "http://localhost:5055/api/chatwidget/demo" : "/api/chatwidget/demo");
+
+// URL del widget JavaScript per integrazione
+appLogger.LogInformation("📦 Widget Script: {WidgetScriptUrl}", 
+    app.Environment.IsDevelopment() ? "http://localhost:5055/api/chatwidget/chat-widget.min.js" : "/api/chatwidget/chat-widget.min.js");
+
 // URL della documentazione Swagger API
 appLogger.LogInformation("📘 Documentazione API: {SwaggerUrl}", 
     app.Environment.IsDevelopment() ? "http://localhost:5055/swagger" : "/swagger");
@@ -403,6 +419,8 @@ await app.RunAsync();
  * ✅ Chat API con classificazione intenti
  * ✅ Autenticazione JWT con autorizzazione 
  * ✅ Dashboard amministrativo
+ * ✅ Chat Widget JavaScript integrato
+ * ✅ Dual routing (BFF e Direct service)
  * ✅ Integrazione con altri microservizi
  * ✅ Health checks per monitoraggio
  * ✅ Documentazione Swagger completa
@@ -420,6 +438,31 @@ await app.RunAsync();
  * - Admin Panel: GET /api/admin  
  * - Health Check: GET /health
  * - Swagger UI: GET /swagger
+ * - Widget Script: GET /api/chatwidget/chat-widget.min.js
+ * - Widget Demo: GET /api/chatwidget/demo
+ * - Widget Config: GET /api/chatwidget/config
+ * 
+ * Integrazione Widget:
+ * 
+ * 1. Modalità BFF (per DistributedOrderSystem):
+ * <script src="/api/chatwidget/chat-widget.min.js"></script>
+ * <script>
+ *   window.chatWidgetConfig = {
+ *     useBffRouting: true,
+ *     bffBaseUrl: '/api/gateway/chat',
+ *     theme: 'light'
+ *   };
+ * </script>
+ * 
+ * 2. Modalità Direct (per progetti esterni):
+ * <script src="https://your-chatbot-service.com/api/chatwidget/chat-widget.min.js"></script>
+ * <script>
+ *   window.chatWidgetConfig = {
+ *     useBffRouting: false,
+ *     chatbotServiceUrl: 'https://your-chatbot-service.com/api/chat',
+ *     theme: 'dark'
+ *   };
+ * </script>
  * 
  * Nota: Alcuni servizi avanzati (ChatbotService completo e FineTuningService)
  * sono temporaneamente commentati per garantire una build pulita durante
