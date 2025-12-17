@@ -6,6 +6,8 @@ using Microsoft.Extensions.Options;
 using NotificationService.Configuration;
 using NotificationService.Data;
 using NotificationService.Models;
+using NotificationService.Models.Requests;
+using NotificationService.Models.Responses;
 using NotificationService.Services;
 
 namespace NotificationService.Services.Implementations;
@@ -49,7 +51,7 @@ public class FirebasePushService : IPushService
             var message = new Message
             {
                 Token = request.DeviceToken,
-                Notification = new Notification
+                Notification = new FirebaseAdmin.Messaging.Notification
                 {
                     Title = request.Title,
                     Body = request.Body,
@@ -75,7 +77,7 @@ public class FirebasePushService : IPushService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante l'invio notifica push a token {Token}", request.DeviceToken);
-            return NotificationResponse.Error($"Errore invio push: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore invio push: {ex.Message}");
         }
     }
 
@@ -91,7 +93,7 @@ public class FirebasePushService : IPushService
         var messages = requests.Select(request => new Message
         {
             Token = request.DeviceToken,
-            Notification = new Notification
+            Notification = new FirebaseAdmin.Messaging.Notification
             {
                 Title = request.Title,
                 Body = request.Body,
@@ -163,11 +165,12 @@ public class FirebasePushService : IPushService
             if (!deviceTokens.Any())
             {
                 _logger.LogWarning("Nessun token dispositivo trovato per utente {UserId}", userId);
-                return NotificationResponse.Error("Nessun dispositivo registrato per l'utente");
+                return NotificationResponse.CreateError("Nessun dispositivo registrato per l'utente");
             }
 
             var requests = deviceTokens.Select(token => new SendPushNotificationRequest
             {
+                Target = token,
                 DeviceToken = token,
                 Title = title,
                 Body = body,
@@ -187,7 +190,7 @@ public class FirebasePushService : IPushService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante l'invio push all'utente {UserId}", userId);
-            return NotificationResponse.Error($"Errore invio push utente: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore invio push utente: {ex.Message}");
         }
     }
 
@@ -199,7 +202,7 @@ public class FirebasePushService : IPushService
             var message = new Message
             {
                 Topic = topic,
-                Notification = new Notification
+                Notification = new FirebaseAdmin.Messaging.Notification
                 {
                     Title = title,
                     Body = body
@@ -222,7 +225,7 @@ public class FirebasePushService : IPushService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante l'invio push al topic {Topic}", topic);
-            return NotificationResponse.Error($"Errore invio push topic: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore invio push topic: {ex.Message}");
         }
     }
 
@@ -295,8 +298,8 @@ public class FirebasePushService : IPushService
             {
                 Title = request.Title,
                 Body = request.Body,
-                Icon = request.Icon ?? _settings.DefaultAndroidIcon,
-                Color = request.Color ?? _settings.DefaultAndroidColor,
+                Icon = request.Icon ?? "ic_notification",
+                Color = "#FF0000",
                 Sound = request.Sound ?? "default",
                 ClickAction = request.ClickAction
             }

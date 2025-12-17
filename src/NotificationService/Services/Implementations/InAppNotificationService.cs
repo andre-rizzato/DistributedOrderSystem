@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Data;
 using NotificationService.Models;
+using NotificationService.Models.Requests;
+using NotificationService.Models.Responses;
 using NotificationService.Services;
 using StackExchange.Redis;
 using System.Text.Json;
@@ -42,7 +44,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
                 Recipient = request.UserId,
                 Subject = request.Title,
                 Content = request.Message,
-                Priority = request.Priority ?? NotificationPriority.Normal,
+                Priority = request.Priority,
                 Status = NotificationStatus.Sent,
                 UserId = request.UserId,
                 Source = request.Source ?? "System",
@@ -62,8 +64,8 @@ public class SignalRInAppNotificationService : IInAppNotificationService
                 id = notification.Id,
                 title = request.Title,
                 message = request.Message,
-                type = request.Type ?? "info",
-                priority = request.Priority?.ToString().ToLower(),
+                type = request.NotificationType ?? "info",
+                priority = request.Priority.ToString().ToLower(),
                 data = request.Data,
                 timestamp = DateTime.UtcNow,
                 source = request.Source,
@@ -87,7 +89,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante l'invio notifica in-app all'utente {UserId}", request.UserId);
-            return NotificationResponse.Error($"Errore invio notifica in-app: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore invio notifica in-app: {ex.Message}");
         }
     }
 

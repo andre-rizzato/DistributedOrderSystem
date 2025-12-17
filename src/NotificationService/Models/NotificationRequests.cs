@@ -59,6 +59,11 @@ public class SendNotificationRequest
     /// Servizio che ha generato la notifica
     /// </summary>
     public string? Source { get; set; }
+    
+    /// <summary>
+    /// ID dell'utente destinatario
+    /// </summary>
+    public string? UserId { get; set; }
 }
 
 /// <summary>
@@ -95,6 +100,15 @@ public class SendEmailRequest
     /// Contenuto HTML
     /// </summary>
     public string? HtmlContent { get; set; }
+    
+    /// <summary>
+    /// Contenuto testuale semplice (alias per compatibilità)
+    /// </summary>
+    public string? Content
+    {
+        get => TextContent;
+        set => TextContent = value;
+    }
     
     /// <summary>
     /// Allegati
@@ -185,6 +199,15 @@ public class SendPushNotificationRequest
     public required string Target { get; set; }
     
     /// <summary>
+    /// Device token (alias per Target)
+    /// </summary>
+    public string DeviceToken
+    {
+        get => Target;
+        set => Target = value;
+    }
+    
+    /// <summary>
     /// Titolo notifica
     /// </summary>
     public required string Title { get; set; }
@@ -205,6 +228,15 @@ public class SendPushNotificationRequest
     public string? Image { get; set; }
     
     /// <summary>
+    /// URL immagine (alias per Image)
+    /// </summary>
+    public string? ImageUrl
+    {
+        get => Image;
+        set => Image = value;
+    }
+    
+    /// <summary>
     /// Action quando si clicca la notifica
     /// </summary>
     public string? ClickAction { get; set; }
@@ -222,7 +254,7 @@ public class SendPushNotificationRequest
     /// <summary>
     /// Suono notifica
     /// </summary>
-    public string? Sound { get; set; } = \"default\";
+    public string? Sound { get; set; } = "default";
 }
 
 /// <summary>
@@ -251,6 +283,15 @@ public class SendInAppNotificationRequest
     public string? Category { get; set; }
     
     /// <summary>
+    /// Tipo di notifica (alias per Category)
+    /// </summary>
+    public string? NotificationType
+    {
+        get => Category;
+        set => Category = value;
+    }
+    
+    /// <summary>
     /// URL o action associata
     /// </summary>
     public string? ActionUrl { get; set; }
@@ -264,6 +305,26 @@ public class SendInAppNotificationRequest
     /// Dati aggiuntivi
     /// </summary>
     public Dictionary<string, string>? Data { get; set; }
+    
+    /// <summary>
+    /// Priorità notifica
+    /// </summary>
+    public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
+    
+    /// <summary>
+    /// Servizio che ha generato la notifica
+    /// </summary>
+    public string? Source { get; set; }
+    
+    /// <summary>
+    /// ID di riferimento per tracking
+    /// </summary>
+    public string? ReferenceId { get; set; }
+    
+    /// <summary>
+    /// Tipo di riferimento
+    /// </summary>
+    public string? ReferenceType { get; set; }
 }
 
 /// <summary>
@@ -295,6 +356,31 @@ public class SendTemplateNotificationRequest
     /// Priorità notifica
     /// </summary>
     public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
+    
+    /// <summary>
+    /// ID utente (opzionale)
+    /// </summary>
+    public string? UserId { get; set; }
+    
+    /// <summary>
+    /// Servizio che ha generato la notifica
+    /// </summary>
+    public string? Source { get; set; }
+    
+    /// <summary>
+    /// ID di riferimento per tracking
+    /// </summary>
+    public string? ReferenceId { get; set; }
+    
+    /// <summary>
+    /// Tipo di riferimento
+    /// </summary>
+    public string? ReferenceType { get; set; }
+    
+    /// <summary>
+    /// Metadati aggiuntivi
+    /// </summary>
+    public Dictionary<string, string>? Metadata { get; set; }
     
     /// <summary>
     /// Quando inviare la notifica

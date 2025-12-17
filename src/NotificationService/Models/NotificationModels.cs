@@ -34,7 +34,8 @@ public enum NotificationStatus
     Sent = 2,
     Failed = 3,
     Delivered = 4,
-    Read = 5
+    Read = 5,
+    Scheduled = 6
 }
 
 /// <summary>

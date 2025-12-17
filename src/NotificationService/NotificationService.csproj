@@ -10,7 +10,6 @@
     <!-- ASP.NET Core -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.8.0" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="9.0.0" />
     
     <!-- Entity Framework -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />

@@ -2,6 +2,8 @@ using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Data;
 using NotificationService.Models;
+using NotificationService.Models.Requests;
+using NotificationService.Models.Responses;
 using NotificationService.Services;
 using System.Text.Json;
 
@@ -60,7 +62,7 @@ public class NotificationService : INotificationService
             // Crea richiesta diretta dal template renderizzato
             var directRequest = new SendNotificationRequest
             {
-                Type = request.Type,
+                Type = request.Type ?? renderedTemplate.Type,
                 Recipient = request.Recipient,
                 Subject = renderedTemplate.Subject,
                 Content = renderedTemplate.Content,
@@ -79,7 +81,7 @@ public class NotificationService : INotificationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante l'invio notifica template {TemplateName}", request.TemplateName);
-            return NotificationResponse.Error($"Errore template: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore template: {ex.Message}");
         }
     }
 
@@ -115,7 +117,7 @@ public class NotificationService : INotificationService
         {
             _logger.LogError(ex, "Errore durante l'invio notifica diretta {Type} a {Recipient}", 
                 request.Type, request.Recipient);
-            return NotificationResponse.Error($"Errore invio: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore invio: {ex.Message}");
         }
     }
 
@@ -182,14 +184,14 @@ public class NotificationService : INotificationService
 
             // Crea entità notifica con stato programmato
             var notification = await CreateNotificationEntityAsync(request, cancellationToken);
-            notification.Status = NotificationStatus.Scheduled;
+            notification.Status = NotificationStatus.Pending;
             notification.ScheduledAt = scheduledAt;
             
             await _context.SaveChangesAsync(cancellationToken);
 
             // Programma job Hangfire
             var jobId = _backgroundJobClient.Schedule(
-                () => ExecuteScheduledNotificationAsync(notification.Id),
+                () => ExecuteScheduledNotificationAsync((int)notification.Id),
                 scheduledAt);
 
             // Salva l'ID del job per eventuali cancellazioni
@@ -199,7 +201,7 @@ public class NotificationService : INotificationService
             _logger.LogInformation("Notifica {NotificationId} programmata per {ScheduledAt} con job {JobId}", 
                 notification.Id, scheduledAt, jobId);
 
-            return notification.Id;
+            return (int)notification.Id;
         }
         catch (Exception ex)
         {
@@ -230,7 +232,7 @@ public class NotificationService : INotificationService
             }
 
             // Aggiorna stato notifica
-            notification.Status = NotificationStatus.Cancelled;
+            notification.Status = NotificationStatus.Failed;
             notification.ErrorMessage = "Notifica annullata dall'utente";
             
             await _context.SaveChangesAsync(cancellationToken);
@@ -264,13 +266,13 @@ public class NotificationService : INotificationService
             {
                 Success = true,
                 NotificationId = notification.Id,
-                Status = notification.Status.ToString().ToLower(),
-                Type = notification.Type.ToString(),
+                Status = notification.Status,
+                Type = notification.Type,
                 Recipient = notification.Recipient,
+                Subject = notification.Subject,
                 CreatedAt = notification.CreatedAt,
                 SentAt = notification.SentAt,
                 DeliveredAt = notification.DeliveredAt,
-                ScheduledAt = notification.ScheduledAt,
                 RetryCount = notification.RetryCount,
                 ErrorMessage = notification.ErrorMessage,
                 ExternalId = notification.ExternalId,
@@ -283,6 +285,13 @@ public class NotificationService : INotificationService
             return new NotificationStatusResponse
             {
                 Success = false,
+                NotificationId = notificationId,
+                Status = NotificationStatus.Failed,
+                Type = NotificationType.Email,
+                Recipient = "unknown",
+                Subject = "unknown",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
                 Error = ex.Message
             };
         }
@@ -307,8 +316,22 @@ public class NotificationService : INotificationService
 
             return new NotificationListResponse
             {
-                Success = true,
-                Notifications = notifications,
+                Notifications = notifications.Select(n => new NotificationStatusResponse
+                {
+                    NotificationId = n.Id,
+                    Status = n.Status,
+                    Type = n.Type,
+                    Recipient = n.Recipient,
+                    Subject = n.Subject,
+                    CreatedAt = n.CreatedAt,
+                    SentAt = n.SentAt,
+                    DeliveredAt = n.DeliveredAt,
+                    RetryCount = n.RetryCount,
+                    ErrorMessage = n.ErrorMessage,
+                    ExternalId = n.ExternalId,
+                    Success = n.Status == NotificationStatus.Sent || n.Status == NotificationStatus.Delivered,
+                    UpdatedAt = n.DeliveredAt ?? n.SentAt ?? n.CreatedAt
+                }).ToList(),
                 TotalCount = totalCount,
                 Page = page,
                 PageSize = pageSize,
@@ -320,9 +343,7 @@ public class NotificationService : INotificationService
             _logger.LogError(ex, "Errore durante il recupero notifiche utente {UserId}", userId);
             return new NotificationListResponse
             {
-                Success = false,
-                Error = ex.Message,
-                Notifications = new List<Notification>()
+                Notifications = new List<NotificationStatusResponse>()
             };
         }
     }
@@ -366,16 +387,19 @@ public class NotificationService : INotificationService
 
             return new NotificationStatsResponse
             {
-                Success = true,
                 TotalNotifications = totalCount,
-                StatusCounts = statusStats,
-                TypeCounts = typeStats,
-                PriorityCounts = priorityStats,
-                Period = new
+                StatusStats = statusStats.ToDictionary(x => Enum.Parse<NotificationStatus>(x.Key, true), x => x.Value),
+                TypeStats = typeStats.ToDictionary(x => Enum.Parse<NotificationType>(x.Key, true), x => new TypeStats
                 {
-                    FromDate = fromDate,
-                    ToDate = toDate,
-                    UserId = userId
+                    Total = x.Value,
+                    Success = 0,
+                    Failed = 0,
+                    SuccessRate = 0
+                }),
+                Period = new DateRange
+                {
+                    From = fromDate ?? DateTime.UtcNow.AddDays(-30),
+                    To = toDate ?? DateTime.UtcNow
                 }
             };
         }
@@ -384,8 +408,7 @@ public class NotificationService : INotificationService
             _logger.LogError(ex, "Errore durante il calcolo statistiche notifiche");
             return new NotificationStatsResponse
             {
-                Success = false,
-                Error = ex.Message
+                TotalNotifications = 0
             };
         }
     }
@@ -402,12 +425,12 @@ public class NotificationService : INotificationService
 
             if (notification == null)
             {
-                return NotificationResponse.Error("Notifica non trovata");
+                return NotificationResponse.CreateError("Notifica non trovata");
             }
 
             if (notification.Status == NotificationStatus.Delivered)
             {
-                return NotificationResponse.Error("La notifica è già stata consegnata con successo");
+                return NotificationResponse.CreateError("La notifica è già stata consegnata con successo");
             }
 
             // Incrementa contatore retry
@@ -445,7 +468,7 @@ public class NotificationService : INotificationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante retry notifica {NotificationId}", notificationId);
-            return NotificationResponse.Error($"Errore retry: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore retry: {ex.Message}");
         }
     }
 
@@ -492,9 +515,7 @@ public class NotificationService : INotificationService
                 NotificationType.SMS => await _smsService.SendSmsAsync(new SendSmsRequest
                 {
                     PhoneNumber = request.Recipient,
-                    Message = request.Content,
-                    Source = request.Source,
-                    Metadata = request.Metadata
+                    Message = request.Content
                 }, cancellationToken),
 
                 NotificationType.Email => await _emailService.SendEmailAsync(new SendEmailRequest
@@ -502,13 +523,12 @@ public class NotificationService : INotificationService
                     To = request.Recipient,
                     Subject = request.Subject,
                     Content = request.Content,
-                    HtmlContent = request.HtmlContent,
-                    Source = request.Source,
-                    Metadata = request.Metadata
+                    HtmlContent = request.HtmlContent
                 }, cancellationToken),
 
                 NotificationType.Push => await _pushService.SendPushNotificationAsync(new SendPushNotificationRequest
                 {
+                    Target = request.Recipient,
                     DeviceToken = request.Recipient,
                     Title = request.Subject,
                     Body = request.Content,
@@ -527,13 +547,13 @@ public class NotificationService : INotificationService
                     Data = request.Metadata
                 }, cancellationToken),
 
-                _ => NotificationResponse.Error($"Tipo notifica {request.Type} non supportato")
+                _ => NotificationResponse.CreateError($"Tipo notifica {request.Type} non supportato")
             };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante l'invio tramite provider {Type}", request.Type);
-            return NotificationResponse.Error($"Errore provider: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore provider: {ex.Message}");
         }
     }
 
@@ -601,9 +621,7 @@ public class NotificationService : INotificationService
                     var smsRequests = requests.Select(r => new SendSmsRequest
                     {
                         PhoneNumber = r.Recipient,
-                        Message = r.Content,
-                        Source = r.Source,
-                        Metadata = r.Metadata
+                        Message = r.Content
                     }).ToList();
                     bulkResult = await _smsService.SendBulkSmsAsync(smsRequests, cancellationToken);
                     break;
@@ -614,9 +632,7 @@ public class NotificationService : INotificationService
                         To = r.Recipient,
                         Subject = r.Subject,
                         Content = r.Content,
-                        HtmlContent = r.HtmlContent,
-                        Source = r.Source,
-                        Metadata = r.Metadata
+                        HtmlContent = r.HtmlContent
                     }).ToList();
                     bulkResult = await _emailService.SendBulkEmailAsync(emailRequests, cancellationToken);
                     break;
@@ -687,7 +703,7 @@ public class NotificationService : INotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante elaborazione bulk gruppo {Type}", firstRequest.Type);
+            _logger.LogError(ex, "Errore durante elaborazione bulk gruppo {Type}", requests.FirstOrDefault()?.Type);
             
             // Marca tutte come fallite
             response.FailureCount = response.TotalRequests;
@@ -709,11 +725,11 @@ public class NotificationService : INotificationService
     {
         try
         {
-            notification.Status = NotificationStatus.Scheduled;
+            notification.Status = NotificationStatus.Pending;
             notification.ScheduledAt = scheduledAt;
 
             var jobId = _backgroundJobClient.Schedule(
-                () => ExecuteScheduledNotificationAsync(notification.Id),
+                () => ExecuteScheduledNotificationAsync((int)notification.Id),
                 scheduledAt);
 
             notification.ExternalId = jobId;
@@ -730,7 +746,7 @@ public class NotificationService : INotificationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante programmazione notifica {NotificationId}", notification.Id);
-            return NotificationResponse.Error($"Errore programmazione: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore programmazione: {ex.Message}");
         }
     }
 

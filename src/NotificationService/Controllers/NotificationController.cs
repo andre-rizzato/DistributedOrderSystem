@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NotificationService.Models;
+using NotificationService.Models.Requests;
+using NotificationService.Models.Responses;
 using NotificationService.Services;
 
 namespace NotificationService.Controllers;
@@ -512,7 +514,7 @@ public class NotificationController : ControllerBase
 public class ScheduleNotificationRequest
 {
     /// <summary>Dati della notifica da programmare</summary>
-    public SendNotificationRequest NotificationRequest { get; set; } = new();
+    public required SendNotificationRequest NotificationRequest { get; set; }
     
     /// <summary>Data e ora di invio programmato (UTC)</summary>
     public DateTime ScheduledAt { get; set; }

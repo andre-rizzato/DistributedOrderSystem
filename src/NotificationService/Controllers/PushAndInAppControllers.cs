@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NotificationService.Models;
+using NotificationService.Models.Requests;
+using NotificationService.Models.Responses;
 using NotificationService.Services;
 
 namespace NotificationService.Controllers;

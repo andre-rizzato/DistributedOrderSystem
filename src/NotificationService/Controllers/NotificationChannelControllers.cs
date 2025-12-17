@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NotificationService.Models;
+using NotificationService.Models.Requests;
+using NotificationService.Models.Responses;
 using NotificationService.Services;
 
 namespace NotificationService.Controllers;
@@ -305,14 +307,14 @@ public class EmailController : ControllerBase
             }
 
             // Converti base64 attachments
-            var attachments = request.Attachments?.Select(a => new EmailAttachment
+            var attachments = request.Attachments?.Select(a => new NotificationService.Services.EmailAttachment
             {
                 FileName = a.FileName,
                 Content = Convert.FromBase64String(a.ContentBase64),
                 ContentType = a.ContentType,
                 IsInline = a.IsInline,
                 ContentId = a.ContentId
-            }).ToList() ?? new List<EmailAttachment>();
+            }).ToList() ?? new List<NotificationService.Services.EmailAttachment>();
 
             var result = await _emailService.SendEmailWithAttachmentsAsync(request.EmailRequest, attachments, cancellationToken);
             
@@ -372,7 +374,7 @@ public class EmailController : ControllerBase
 /// </summary>
 public class SendEmailWithAttachmentsRequest
 {
-    public SendEmailRequest EmailRequest { get; set; } = new();
+    public required SendEmailRequest EmailRequest { get; set; }
     public List<EmailAttachmentDto>? Attachments { get; set; }
 }
 

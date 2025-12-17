@@ -34,6 +34,57 @@ public class NotificationResponse
     /// Timestamp dell'operazione
     /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    
+    /// <summary>
+    /// ID del messaggio generato dal provider
+    /// </summary>
+    public string? MessageId { get; set; }
+    
+    /// <summary>
+    /// Status della notifica
+    /// </summary>
+    public string? Status { get; set; }
+    
+    /// <summary>
+    /// Messaggio di errore (alias per Message)
+    /// </summary>
+    public string? Error
+    {
+        get => Success ? null : Message;
+        set { if (!Success) Message = value; }
+    }
+    
+    /// <summary>
+    /// Crea una response di errore
+    /// </summary>
+    /// <param name="message">Messaggio di errore</param>
+    /// <returns>Response con errore</returns>
+    public static NotificationResponse CreateError(string message)
+    {
+        return new NotificationResponse
+        {
+            Success = false,
+            Message = message,
+            Status = "failed"
+        };
+    }
+    
+    /// <summary>
+    /// Crea una response di successo
+    /// </summary>
+    /// <param name="messageId">ID del messaggio</param>
+    /// <param name="message">Messaggio di conferma</param>
+    /// <returns>Response con successo</returns>
+    public static NotificationResponse CreateSuccess(string? messageId = null, string? message = null)
+    {
+        return new NotificationResponse
+        {
+            Success = true,
+            MessageId = messageId,
+            Message = message ?? "Notifica inviata con successo",
+            Status = "sent"
+        };
+    }
 }
 
 /// <summary>
@@ -41,6 +92,11 @@ public class NotificationResponse
 /// </summary>
 public class BulkNotificationResponse
 {
+    /// <summary>
+    /// Numero totale di richieste
+    /// </summary>
+    public int TotalRequests { get; set; }
+    
     /// <summary>
     /// Numero totale di notifiche processate
     /// </summary>
@@ -57,14 +113,55 @@ public class BulkNotificationResponse
     public int FailureCount { get; set; }
     
     /// <summary>
-    /// Lista di risultati per singola notifica
+    /// Success generale dell'operazione
     /// </summary>
-    public List<NotificationResponse> Results { get; set; } = new();
+    public bool Success { get; set; }
+    
+    /// <summary>
+    /// Lista di risultati per singola notifica bulk
+    /// </summary>
+    public List<BulkNotificationResult> Results { get; set; } = new();
     
     /// <summary>
     /// Tempo totale di processamento
     /// </summary>
     public TimeSpan ProcessingTime { get; set; }
+}
+
+/// <summary>
+/// Risultato per singola notifica in un bulk
+/// </summary>
+public class BulkNotificationResult
+{
+    /// <summary>
+    /// Destinatario
+    /// </summary>
+    public required string Recipient { get; set; }
+    
+    /// <summary>
+    /// Successo dell'invio
+    /// </summary>
+    public bool Success { get; set; }
+    
+    /// <summary>
+    /// Messaggio di errore (se presente)
+    /// </summary>
+    public string? Error { get; set; }
+    
+    /// <summary>
+    /// ID del messaggio
+    /// </summary>
+    public string? MessageId { get; set; }
+    
+    /// <summary>
+    /// ID esterno dal provider
+    /// </summary>
+    public string? ExternalId { get; set; }
+    
+    /// <summary>
+    /// Status della notifica
+    /// </summary>
+    public string? Status { get; set; }
 }
 
 /// <summary>
@@ -126,6 +223,21 @@ public class NotificationStatusResponse
     /// ID esterno provider
     /// </summary>
     public string? ExternalId { get; set; }
+    
+    /// <summary>
+    /// Indica se l'invio è stato completato con successo
+    /// </summary>
+    public bool Success { get; set; }
+    
+    /// <summary>
+    /// Data ultimo aggiornamento
+    /// </summary>
+    public DateTime UpdatedAt { get; set; }
+    
+    /// <summary>
+    /// Messaggio di errore (se presente)
+    /// </summary>
+    public string? Error { get; set; }
 }
 
 /// <summary>
