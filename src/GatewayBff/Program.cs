@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,7 +13,6 @@ builder.Services.AddHttpClient("OrderService", c => c.BaseAddress = new Uri(urls
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
-builder.Services.AddSwaggerGen();
 
 // Configurazione CORS per consentire le richieste del frontend
 builder.Services.AddCors(options =>
@@ -29,9 +29,8 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseCors("AllowFrontend");
