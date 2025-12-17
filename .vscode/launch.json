@@ -11,8 +11,13 @@
             "cwd": "${workspaceFolder}/src/OrderService",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "ASPNETCORE_URLS": "http://localhost:5001",
+                "ASPNETCORE_URLS": "http://localhost:5003",
                 "ASPNETCORE_HTTPS_PORT": ""
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/swagger"
             }
         },
         {
@@ -25,8 +30,13 @@
             "cwd": "${workspaceFolder}/src/InventoryService",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "ASPNETCORE_URLS": "http://localhost:5002",
+                "ASPNETCORE_URLS": "http://localhost:5051",
                 "ASPNETCORE_HTTPS_PORT": ""
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/swagger"
             }
         },
          {
@@ -39,9 +49,14 @@
              "cwd": "${workspaceFolder}/src/NotificationService",
              "env": {
                  "ASPNETCORE_ENVIRONMENT": "Development",
-                 "ASPNETCORE_URLS": "http://localhost:5003",
+                 "ASPNETCORE_URLS": "http://localhost:5246",
                  "ASPNETCORE_HTTPS_PORT": ""
-             }
+             },
+             "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/scalar/v1"
+            }
         }
         ,
          {
@@ -54,8 +69,13 @@
             "cwd": "${workspaceFolder}/src/GatewayBff",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "ASPNETCORE_URLS": "http://localhost:5000",
+                "ASPNETCORE_URLS": "http://localhost:5189",
                 "ASPNETCORE_HTTPS_PORT": ""
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/swagger"
             }
         }, 
          {
@@ -68,8 +88,13 @@
             "cwd": "${workspaceFolder}/src/PaymentService",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "ASPNETCORE_URLS": "http://localhost:5004",
+                "ASPNETCORE_URLS": "http://localhost:5034",
                 "ASPNETCORE_HTTPS_PORT": ""
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/scalar/v1"
             }
         },   {
             "name": "ProductService",
@@ -81,8 +106,13 @@
             "cwd": "${workspaceFolder}/src/ProductService",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "ASPNETCORE_URLS": "http://localhost:5006",
+                "ASPNETCORE_URLS": "http://localhost:5198",
                 "ASPNETCORE_HTTPS_PORT": ""
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/swagger"
             }
         },
         {
@@ -109,7 +139,12 @@
             "request": "launch",
             "command": "npm start",
             "cwd": "${workspaceFolder}/frontend/distributed-order-app",
-            "preLaunchTask": "npm: install - frontend"
+            "preLaunchTask": "npm: install - frontend",
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "Local:.*(http://\\S+)",
+                "uriFormat": "%s"
+            }
         },
         {
             "name": "CustomerWebsite",
@@ -121,8 +156,12 @@
             "cwd": "${workspaceFolder}/frontend/customer-facing e-commerce/CustomerWebsite",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "ASPNETCORE_URLS": "http://localhost:5007",
+                "ASPNETCORE_URLS": "http://localhost:5100",
                 "ASPNETCORE_HTTPS_PORT": ""
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
             }
         }
     ],
