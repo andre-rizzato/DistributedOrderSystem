@@ -8,6 +8,7 @@ using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -115,6 +116,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
     app.UseDeveloperExceptionPage();
 }
 else
