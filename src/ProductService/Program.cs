@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using ProductService.Cache.Interfaces;
 using ProductService.Cache;
@@ -38,14 +39,7 @@ builder.Services.AddScoped<IProductService, ProductWorkerServices>();
 // Servizi API
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new() { 
-        Title = "Product Service API", 
-        Version = "v1",
-        Description = "API for managing products in the distributed order system"
-    });
-});
+builder.Services.AddOpenApi();
 
 // CORS (se necessario per il frontend)
 builder.Services.AddCors(options =>
@@ -63,12 +57,8 @@ var app = builder.Build();
 // Configura la pipeline delle richieste HTTP
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Product Service API v1");
-        c.RoutePrefix = "swagger"; // Swagger UI disponibile su /swagger
-    });
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 // Assicura che il database sia creato

@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using InventoryService.Cache;
 using InventoryService.Cache.Interfaces;
 using InventoryService.Configuration;
@@ -7,7 +8,6 @@ using InventoryService.Services.Interfaces;
 using InventoryService.Messaging;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
-using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,15 +50,7 @@ builder.Services.AddHostedService<OrderCreatedConsumer>();
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "Inventory Service API", 
-        Version = "v1",
-        Description = "API for managing inventory items"
-    });
-});
+builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
@@ -69,14 +61,11 @@ using (var scope = app.Services.CreateScope())
     context.Database.EnsureCreated();
 }
 
-// Configura middleware Swagger (solo in sviluppo)
+// Configura middleware Scalar (solo in sviluppo)
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Inventory Service API V1");
-    });
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 // Disabilita il reindirizzamento HTTPS in sviluppo per consentire chiamate HTTP tra servizi

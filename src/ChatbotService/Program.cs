@@ -26,6 +26,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 // Importazione per la codifica del testo
 using System.Text;
+// Importazione per Scalar API documentation
+using Scalar.AspNetCore;
 // Importazione del contesto database del chatbot
 using ChatbotService.Data;
 // Importazione dei servizi del chatbot
@@ -181,47 +183,11 @@ builder.Services.AddAuthorization(options =>
 // Include serializzazione JSON automatica e validazione dei modelli
 builder.Services.AddControllers();
 
-// Servizio per l'esplorazione degli endpoint API (necessario per Swagger)
+// Servizio per l'esplorazione degli endpoint API (necessario per Scalar)
 builder.Services.AddEndpointsApiExplorer();
 
-// Configurazione di Swagger per la documentazione interattiva delle API
-builder.Services.AddSwaggerGen(c =>
-{
-    // Documento Swagger con informazioni di base sull'API
-    c.SwaggerDoc("v1", new() 
-    { 
-        Title = "Chatbot Service API", 
-        Version = "v1",
-        Description = "Servizio chatbot alimentato da AI per supporto clienti e vendite con capacità di fine-tuning"
-    });
-    
-    // Definizione dello schema di sicurezza Bearer per JWT
-    c.AddSecurityDefinition("Bearer", new()
-    {
-        // Tipo di sicurezza: chiave API nell'header
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        // Nome dell'header che conterrà il token
-        Name = "Authorization",
-        // Posizione del token: nell'header HTTP
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        // Descrizione per gli sviluppatori su come usare l'autenticazione
-        Description = "Header di autorizzazione JWT usando schema Bearer. Esempio: \"Authorization: Bearer {token}\""
-    });
-
-    // Requisito di sicurezza globale per tutti gli endpoint
-    c.AddSecurityRequirement(new()
-    {
-        {
-            // Riferimento al Bearer token definito sopra
-            new()
-            {
-                Reference = new() { Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "Bearer" }
-            },
-            // Array vuoto = nessun scope specifico richiesto
-            Array.Empty<string>()
-        }
-    });
-});
+// Configurazione di OpenAPI per la documentazione interattiva delle API
+builder.Services.AddOpenApi();
 
 /* ================================================================
  * CONFIGURAZIONE CORS (Cross-Origin Resource Sharing)
@@ -321,19 +287,9 @@ using (var scope = app.Services.CreateScope())
 // Configurazione specifica per l'ambiente di sviluppo
 if (app.Environment.IsDevelopment())
 {
-    // Abilita Swagger solo in sviluppo per sicurezza
-    app.UseSwagger();
-    
-    // Configurazione dell'interfaccia utente Swagger
-    app.UseSwaggerUI(c =>
-    {
-        // URL del documento JSON di Swagger
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Chatbot Service API v1");
-        // Prefisso del percorso per Swagger UI (accessibile a /swagger)
-        c.RoutePrefix = "swagger";
-        // Mostra la durata delle richieste nell'interfaccia
-        c.DisplayRequestDuration();
-    });
+    // Abilita Scalar per documentazione API moderna
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 /* ================================================================

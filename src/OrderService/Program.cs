@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Services;
@@ -9,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Aggiungi servizi al contenitore
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApi();
 
 // Configurazione
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
@@ -40,8 +41,8 @@ var app = builder.Build();
 // Configura la pipeline delle richieste HTTP
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseCors();
