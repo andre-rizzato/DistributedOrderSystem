@@ -1,4 +1,6 @@
 using NotificationService.Models;
+using NotificationService.Models.Requests;
+using NotificationService.Models.Responses;
 
 namespace NotificationService.Services;
 
@@ -349,6 +351,7 @@ public class RenderedTemplate
     public string Subject { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public string? HtmlContent { get; set; }
+    public NotificationType Type { get; set; }
 }
 
 /// <summary>

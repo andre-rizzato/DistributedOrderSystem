@@ -1,3 +1,5 @@
+using NotificationService.Models;
+
 namespace NotificationService.Configuration;
 
 /// <summary>
@@ -8,7 +10,7 @@ public class SmsSettings
     /// <summary>
     /// Provider SMS da utilizzare (twilio, nexmo, etc.)
     /// </summary>
-    public string Provider { get; set; } = \"twilio\";
+    public string Provider { get; set; } = "twilio";
     
     /// <summary>
     /// Account SID di Twilio
@@ -24,6 +26,11 @@ public class SmsSettings
     /// Numero di telefono mittente
     /// </summary>
     public required string FromNumber { get; set; }
+    
+    /// <summary>
+    /// Numero di telefono mittente (alias per compatibilità)
+    /// </summary>
+    public string FromPhoneNumber => FromNumber;
     
     /// <summary>
     /// Webhook per status callback
@@ -95,6 +102,31 @@ public class EmailSettings
     /// Numero massimo di tentativi
     /// </summary>
     public int MaxRetries { get; set; } = 3;
+    
+    /// <summary>
+    /// Host SMTP (alias per compatibilità)
+    /// </summary>
+    public string Host => SmtpHost;
+    
+    /// <summary>
+    /// Port SMTP (alias per compatibilità)
+    /// </summary>
+    public int Port => SmtpPort;
+    
+    /// <summary>
+    /// Use SSL (alias per compatibilità)
+    /// </summary>
+    public bool UseSsl => EnableSsl;
+    
+    /// <summary>
+    /// From email (alias per compatibilità)
+    /// </summary>
+    public string FromEmail => DefaultFromEmail;
+    
+    /// <summary>
+    /// From name (alias per compatibilità)
+    /// </summary>
+    public string FromName => DefaultFromName ?? "ShopVerse";
 }
 
 /// <summary>
@@ -105,12 +137,17 @@ public class PushNotificationSettings
     /// <summary>
     /// Provider push (firebase, apns, etc.)
     /// </summary>
-    public string Provider { get; set; } = \"firebase\";
+    public string Provider { get; set; } = "firebase";
     
     /// <summary>
     /// Percorso file credenziali Firebase
     /// </summary>
     public required string FirebaseCredentialsPath { get; set; }
+    
+    /// <summary>
+    /// Percorso file credenziali Firebase (alias per compatibilità)
+    /// </summary>
+    public string ServiceAccountJson => FirebaseCredentialsPath;
     
     /// <summary>
     /// Project ID Firebase
@@ -186,7 +223,7 @@ public class NotificationSettings
     /// <summary>
     /// Ora del cleanup automatico (formato HH:mm)
     /// </summary>
-    public string CleanupTime { get; set; } = \"02:00\";
+    public string CleanupTime { get; set; } = "02:00";
 }
 
 /// <summary>
@@ -202,7 +239,7 @@ public class RedisSettings
     /// <summary>
     /// Prefisso per le chiavi
     /// </summary>
-    public string KeyPrefix { get; set; } = \"notifications:\";
+    public string KeyPrefix { get; set; } = "notifications:";
     
     /// <summary>
     /// TTL di default per cache (in minuti)
@@ -223,12 +260,12 @@ public class TemplateSettings
     /// <summary>
     /// Percorso cartella template
     /// </summary>
-    public string TemplatePath { get; set; } = \"Templates\";
+    public string TemplatePath { get; set; } = "Templates";
     
     /// <summary>
     /// Linguaggio di default per template
     /// </summary>
-    public string DefaultLanguage { get; set; } = \"it\";
+    public string DefaultLanguage { get; set; } = "it";
     
     /// <summary>
     /// Abilita cache dei template

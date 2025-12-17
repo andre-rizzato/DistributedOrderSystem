@@ -4,6 +4,8 @@ using Microsoft.Extensions.Options;
 using MimeKit;
 using NotificationService.Configuration;
 using NotificationService.Models;
+using NotificationService.Models.Requests;
+using NotificationService.Models.Responses;
 using NotificationService.Services;
 using System.Text.RegularExpressions;
 
@@ -32,7 +34,7 @@ public class MailKitEmailService : IEmailService
             if (!ValidateEmail(request.To))
             {
                 _logger.LogWarning("Indirizzo email non valido: {Email}", request.To);
-                return NotificationResponse.Error("Indirizzo email non valido");
+                return NotificationResponse.CreateError("Indirizzo email non valido");
             }
 
             var message = CreateMimeMessage(request);
@@ -51,7 +53,7 @@ public class MailKitEmailService : IEmailService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante l'invio email a {Email}", request.To);
-            return NotificationResponse.Error($"Errore invio email: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore invio email: {ex.Message}");
         }
     }
 
@@ -126,7 +128,7 @@ public class MailKitEmailService : IEmailService
         {
             if (!ValidateEmail(request.To))
             {
-                return NotificationResponse.Error("Indirizzo email non valido");
+                return NotificationResponse.CreateError("Indirizzo email non valido");
             }
 
             var message = CreateMimeMessage(request, attachments);
@@ -145,7 +147,7 @@ public class MailKitEmailService : IEmailService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante l'invio email con allegati a {Email}", request.To);
-            return NotificationResponse.Error($"Errore invio email con allegati: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore invio email con allegati: {ex.Message}");
         }
     }
 
@@ -235,14 +237,7 @@ public class MailKitEmailService : IEmailService
 
         message.Body = bodyBuilder.ToMessageBody();
         
-        // Header personalizzati
-        if (request.Metadata?.Any() == true)
-        {
-            foreach (var meta in request.Metadata)
-            {
-                message.Headers.Add($"X-Custom-{meta.Key}", meta.Value);
-            }
-        }
+        // Header personalizzati - removed as Metadata property doesn't exist
 
         return message;
     }
@@ -297,7 +292,7 @@ public class MockEmailService : IEmailService
     {
         if (!ValidateEmail(request.To))
         {
-            return Task.FromResult(NotificationResponse.Error("Indirizzo email non valido"));
+            return Task.FromResult(NotificationResponse.CreateError("Indirizzo email non valido"));
         }
 
         var messageId = Guid.NewGuid().ToString();
@@ -357,7 +352,7 @@ public class MockEmailService : IEmailService
     {
         if (!ValidateEmail(request.To))
         {
-            return Task.FromResult(NotificationResponse.Error("Indirizzo email non valido"));
+            return Task.FromResult(NotificationResponse.CreateError("Indirizzo email non valido"));
         }
 
         var messageId = Guid.NewGuid().ToString();

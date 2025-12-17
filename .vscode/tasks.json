@@ -64,6 +64,18 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
+			"label": "build CustomerWebsite",
+			"command": "dotnet",
+			"type": "process",
+			"args": [
+				"build",
+				"${workspaceFolder}/frontend/customer-facing e-commerce/CustomerWebsite/CustomerWebsite.csproj",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "build GatewayBff",
 			"command": "dotnet",
 			"type": "process",

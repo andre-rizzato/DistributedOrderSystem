@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Options;
 using NotificationService.Configuration;
 using NotificationService.Models;
+using NotificationService.Models.Requests;
+using NotificationService.Models.Responses;
 using NotificationService.Services;
 using System.Text.RegularExpressions;
 using Twilio;
@@ -35,7 +37,7 @@ public class TwilioSmsService : ISmsService
             if (!ValidatePhoneNumber(request.PhoneNumber))
             {
                 _logger.LogWarning("Numero di telefono non valido: {PhoneNumber}", request.PhoneNumber);
-                return NotificationResponse.Error("Numero di telefono non valido");
+                return NotificationResponse.CreateError("Numero di telefono non valido");
             }
 
             // Crea messaggio Twilio
@@ -58,7 +60,7 @@ public class TwilioSmsService : ISmsService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante l'invio SMS a {PhoneNumber}", request.PhoneNumber);
-            return NotificationResponse.Error($"Errore invio SMS: {ex.Message}");
+            return NotificationResponse.CreateError($"Errore invio SMS: {ex.Message}");
         }
     }
 
@@ -112,7 +114,12 @@ public class TwilioSmsService : ISmsService
             return new NotificationStatusResponse
             {
                 Success = true,
-                Status = MapTwilioStatus(message.Status),
+                NotificationId = 0,
+                Status = MapTwilioStatusToEnum(message.Status),
+                Type = NotificationType.SMS,
+                Recipient = message.To,
+                Subject = "SMS",
+                CreatedAt = message.DateCreated ?? DateTime.UtcNow,
                 ExternalId = message.Sid,
                 UpdatedAt = message.DateUpdated ?? DateTime.UtcNow,
                 ErrorMessage = message.ErrorMessage
@@ -124,6 +131,13 @@ public class TwilioSmsService : ISmsService
             return new NotificationStatusResponse
             {
                 Success = false,
+                NotificationId = 0,
+                Status = NotificationStatus.Failed,
+                Type = NotificationType.SMS,
+                Recipient = "unknown",
+                Subject = "SMS",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
                 Error = $"Errore recupero stato: {ex.Message}"
             };
         }
@@ -145,15 +159,38 @@ public class TwilioSmsService : ISmsService
     /// </summary>
     private static string MapTwilioStatus(MessageResource.StatusEnum? status)
     {
-        return status switch
+        if (status == null) return "unknown";
+        
+        var statusString = status.ToString();
+        return statusString switch
         {
-            MessageResource.StatusEnum.Queued => "queued",
-            MessageResource.StatusEnum.Sending => "sending",
-            MessageResource.StatusEnum.Sent => "sent",
-            MessageResource.StatusEnum.Delivered => "delivered",
-            MessageResource.StatusEnum.Failed => "failed",
-            MessageResource.StatusEnum.Undelivered => "failed",
+            "queued" => "queued",
+            "sending" => "sending",
+            "sent" => "sent",
+            "delivered" => "delivered",
+            "failed" => "failed",
+            "undelivered" => "failed",
             _ => "unknown"
+        };
+    }
+
+    /// <summary>
+    /// Mappa gli stati Twilio agli enum NotificationStatus
+    /// </summary>
+    private static NotificationStatus MapTwilioStatusToEnum(MessageResource.StatusEnum? status)
+    {
+        if (status == null) return NotificationStatus.Failed;
+        
+        var statusString = status.ToString();
+        return statusString switch
+        {
+            "queued" => NotificationStatus.Pending,
+            "sending" => NotificationStatus.Pending,
+            "sent" => NotificationStatus.Sent,
+            "delivered" => NotificationStatus.Delivered,
+            "failed" => NotificationStatus.Failed,
+            "undelivered" => NotificationStatus.Failed,
+            _ => NotificationStatus.Failed
         };
     }
 }
@@ -176,7 +213,7 @@ public class MockSmsService : ISmsService
     {
         if (!ValidatePhoneNumber(request.PhoneNumber))
         {
-            return Task.FromResult(NotificationResponse.Error("Numero di telefono non valido"));
+            return Task.FromResult(NotificationResponse.CreateError("Numero di telefono non valido"));
         }
 
         var messageId = Guid.NewGuid().ToString();
@@ -188,7 +225,12 @@ public class MockSmsService : ISmsService
         _messageStatuses[messageId] = new NotificationStatusResponse
         {
             Success = true,
-            Status = "delivered",
+            NotificationId = 0,
+            Status = NotificationStatus.Delivered,
+            Type = NotificationType.SMS,
+            Recipient = request.PhoneNumber,
+            Subject = "SMS",
+            CreatedAt = DateTime.UtcNow,
             ExternalId = messageId,
             UpdatedAt = DateTime.UtcNow
         };
@@ -251,6 +293,13 @@ public class MockSmsService : ISmsService
         return Task.FromResult(new NotificationStatusResponse
         {
             Success = false,
+            NotificationId = 0,
+            Status = NotificationStatus.Failed,
+            Type = NotificationType.SMS,
+            Recipient = "unknown",
+            Subject = "SMS",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
             Error = "Messaggio non trovato"
         });
     }

@@ -150,13 +150,13 @@ public class NotificationContext : DbContext
             new NotificationTemplate
             {
                 Id = 1,
-                Name = \"order_confirmation\",
-                Description = \"Conferma ordine effettuato\",
+                Name = "order_confirmation",
+                Description = "Conferma ordine effettuato",
                 Type = NotificationType.Email,
-                SubjectTemplate = \"Conferma ordine #{orderId} - {companyName}\",
-                ContentTemplate = \"Ciao {customerName},\\n\\nGrazie per il tuo ordine #{orderId}!\\n\\nDettagli ordine:\\n{orderDetails}\\n\\nTotale: {total}\\n\\nGrazie per averci scelto!\\n\\n{companyName}\",
-                HtmlTemplate = \"<h2>Conferma ordine #{orderId}</h2><p>Ciao <strong>{customerName}</strong>,</p><p>Grazie per il tuo ordine!</p><div>{orderDetails}</div><p><strong>Totale: {total}</strong></p>\",
-                Variables = \"{\\\"orderId\\\": \\\"ID ordine\\\", \\\"customerName\\\": \\\"Nome cliente\\\", \\\"orderDetails\\\": \\\"Dettagli ordine\\\", \\\"total\\\": \\\"Totale ordine\\\", \\\"companyName\\\": \\\"Nome azienda\\\"}\",
+                SubjectTemplate = "Conferma ordine #{orderId} - {companyName}",
+                ContentTemplate = "Ciao {customerName},\\n\\nGrazie per il tuo ordine #{orderId}!\\n\\nDettagli ordine:\\n{orderDetails}\\n\\nTotale: {total}\\n\\nGrazie per averci scelto!\\n\\n{companyName}",
+                HtmlTemplate = "<h2>Conferma ordine #{orderId}</h2><p>Ciao <strong>{customerName}</strong>,</p><p>Grazie per il tuo ordine!</p><div>{orderDetails}</div><p><strong>Totale: {total}</strong></p>",
+                Variables = @"{""orderId"": ""ID ordine"", ""customerName"": ""Nome cliente"", ""orderDetails"": ""Dettagli ordine"", ""total"": ""Totale ordine"", ""companyName"": ""Nome azienda""}",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -164,12 +164,12 @@ public class NotificationContext : DbContext
             new NotificationTemplate
             {
                 Id = 2,
-                Name = \"order_shipped\",
-                Description = \"Notifica spedizione ordine\",
+                Name = "order_shipped",
+                Description = "Notifica spedizione ordine",
                 Type = NotificationType.SMS,
-                SubjectTemplate = \"Ordine #{orderId} spedito\",
-                ContentTemplate = \"Ciao {customerName}! Il tuo ordine #{orderId} è stato spedito. Tracking: {trackingNumber}. Consegna prevista: {deliveryDate}\",
-                Variables = \"{\\\"orderId\\\": \\\"ID ordine\\\", \\\"customerName\\\": \\\"Nome cliente\\\", \\\"trackingNumber\\\": \\\"Codice tracking\\\", \\\"deliveryDate\\\": \\\"Data consegna\\\"}\",
+                SubjectTemplate = "Ordine #{orderId} spedito",
+                ContentTemplate = "Ciao {customerName}! Il tuo ordine #{orderId} è stato spedito. Tracking: {trackingNumber}. Consegna prevista: {deliveryDate}",
+                Variables = @"{""orderId"": ""ID ordine"", ""customerName"": ""Nome cliente"", ""trackingNumber"": ""Codice tracking"", ""deliveryDate"": ""Data consegna""}",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -177,13 +177,13 @@ public class NotificationContext : DbContext
             new NotificationTemplate
             {
                 Id = 3,
-                Name = \"payment_reminder\",
-                Description = \"Promemoria pagamento in scadenza\",
+                Name = "payment_reminder",
+                Description = "Promemoria pagamento in scadenza",
                 Type = NotificationType.Email,
-                SubjectTemplate = \"Promemoria pagamento - Ordine #{orderId}\",
-                ContentTemplate = \"Ciao {customerName},\\n\\nIl pagamento per l'ordine #{orderId} scadrà il {dueDate}.\\n\\nImporto: {amount}\\n\\nEffettua il pagamento entro la scadenza per evitare interruzioni del servizio.\\n\\nGrazie!\",
-                HtmlTemplate = \"<h3>Promemoria Pagamento</h3><p>Ciao {customerName},</p><p>Il pagamento per l'ordine <strong>#{orderId}</strong> scadrà il <strong>{dueDate}</strong>.</p><p>Importo: <strong>{amount}</strong></p><p>Ti preghiamo di effettuare il pagamento entro la scadenza.</p>\",
-                Variables = \"{\\\"orderId\\\": \\\"ID ordine\\\", \\\"customerName\\\": \\\"Nome cliente\\\", \\\"dueDate\\\": \\\"Data scadenza\\\", \\\"amount\\\": \\\"Importo da pagare\\\"}\",
+                SubjectTemplate = "Promemoria pagamento - Ordine #{orderId}",
+                ContentTemplate = "Ciao {customerName},\\n\\nIl pagamento per l'ordine #{orderId} scadrà il {dueDate}.\\n\\nImporto: {amount}\\n\\nEffettua il pagamento entro la scadenza per evitare interruzioni del servizio.\\n\\nGrazie!",
+                HtmlTemplate = "<h3>Promemoria Pagamento</h3><p>Ciao {customerName},</p><p>Il pagamento per l'ordine <strong>#{orderId}</strong> scadrà il <strong>{dueDate}</strong>.</p><p>Importo: <strong>{amount}</strong></p><p>Ti preghiamo di effettuare il pagamento entro la scadenza.</p>",
+                Variables = @"{""orderId"": ""ID ordine"", ""customerName"": ""Nome cliente"", ""dueDate"": ""Data scadenza"", ""amount"": ""Importo da pagare""}",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -191,12 +191,12 @@ public class NotificationContext : DbContext
             new NotificationTemplate
             {
                 Id = 4,
-                Name = \"welcome_user\",
-                Description = \"Messaggio di benvenuto nuovo utente\",
+                Name = "welcome_user",
+                Description = "Messaggio di benvenuto nuovo utente",
                 Type = NotificationType.Push,
-                SubjectTemplate = \"Benvenuto in {appName}!\",
-                ContentTemplate = \"Ciao {userName}! Benvenuto in {appName}. Scopri tutte le funzionalità della nostra app e inizia subito a fare shopping!\",
-                Variables = \"{\\\"userName\\\": \\\"Nome utente\\\", \\\"appName\\\": \\\"Nome applicazione\\\"}\",
+                SubjectTemplate = "Benvenuto in {appName}!",
+                ContentTemplate = "Ciao {userName}! Benvenuto in {appName}. Scopri tutte le funzionalità della nostra app e inizia subito a fare shopping!",
+                Variables = @"{""userName"": ""Nome utente"", ""appName"": ""Nome applicazione""}",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -204,12 +204,12 @@ public class NotificationContext : DbContext
             new NotificationTemplate
             {
                 Id = 5,
-                Name = \"system_maintenance\",
-                Description = \"Notifica manutenzione sistema\",
+                Name = "system_maintenance",
+                Description = "Notifica manutenzione sistema",
                 Type = NotificationType.InApp,
-                SubjectTemplate = \"Manutenzione programmata sistema\",
-                ContentTemplate = \"Attenzione: il sistema sarà in manutenzione il {maintenanceDate} dalle {startTime} alle {endTime}. Alcune funzionalità potrebbero non essere disponibili.\",
-                Variables = \"{\\\"maintenanceDate\\\": \\\"Data manutenzione\\\", \\\"startTime\\\": \\\"Ora inizio\\\", \\\"endTime\\\": \\\"Ora fine\\\"}\",
+                SubjectTemplate = "Manutenzione programmata sistema",
+                ContentTemplate = "Attenzione: il sistema sarà in manutenzione il {maintenanceDate} dalle {startTime} alle {endTime}. Alcune funzionalità potrebbero non essere disponibili.",
+                Variables = @"{""maintenanceDate"": ""Data manutenzione"", ""startTime"": ""Ora inizio"", ""endTime"": ""Ora fine""}",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow

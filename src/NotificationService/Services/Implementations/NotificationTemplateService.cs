@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Data;
 using NotificationService.Models;
+using NotificationService.Models.Requests;
+using NotificationService.Models.Responses;
 using NotificationService.Services;
 using System.Text.Json;
 using System.Text.RegularExpressions;
