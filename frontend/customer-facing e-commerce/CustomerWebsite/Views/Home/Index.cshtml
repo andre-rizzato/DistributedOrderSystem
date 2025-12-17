@@ -1,0 +1,548 @@
+﻿@{
+    // Impostazione del titolo della pagina per SEO e browser tab
+    ViewData["Title"] = "ShopVerse - La Tua Piattaforma E-commerce di Fiducia";
+}
+@model HomePageViewModel
+
+<div class="homepage-container">
+    <!-- Sezione hero principale con messaggio di benvenuto e call-to-action accattivante -->
+    <div class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <!-- Titolo principale con gradient text e design moderno -->
+                    <h1 class="display-4 fw-bold mb-4">Benvenuto su ShopVerse</h1>
+                    <!-- Sottotitolo esplicativo dei vantaggi della piattaforma -->
+                    <p class="lead mb-4">Il tuo universo shopping personale! Migliaia di prodotti, spedizione veloce, prezzi imbattibili. Scopri un modo nuovo di fare acquisti online!</p>
+                    <!-- Call-to-action button per iniziare lo shopping -->
+                    <a href="#featured-products" class="btn btn-light btn-lg">
+                        <i class="fas fa-rocket"></i> Esplora ShopVerse
+                    </a>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <!-- Immagine hero rappresentativa della piattaforma e-commerce -->
+                    <img src="https://via.placeholder.com/500x300/7C3AED/ffffff?text=ShopVerse+Hero" 
+                         alt="ShopVerse - La tua piattaforma e-commerce" class="img-fluid rounded" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra di ricerca principale centralizzata per l'esperienza utente ottimale -->
+    <div class="main-search-container">
+        <div class="search-wrapper">
+            <!-- Form di ricerca con gestione categorie e termine di ricerca -->
+            <form asp-controller="Home" asp-action="Search" method="get" class="search-form">
+                <div class="search-input-group">
+                    <!-- Selettore categoria per filtrare la ricerca -->
+                    <select name="Category" class="category-selector">
+                        <option value="">Tutte le categorie</option>
+                        <!-- Le categorie vengono caricate dinamicamente dai servizi backend -->
+                        @if(Model?.Categories != null)
+                        {
+                            @foreach(var category in Model.Categories.Take(10))
+                            {
+                                <option value="@category.Name">@category.DisplayName</option>
+                            }
+                        }
+                    </select>
+                    <!-- Campo di input principale con autocomplete per migliorare UX -->
+                    <input type="text" name="SearchTerm" placeholder="Cerca su ShopVerse - prodotti, marche e molto altro..." class="search-input" autocomplete="off" />
+                    <!-- Bottone di ricerca con icona intuitiva -->
+                    <button type="submit" class="search-button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Categories Grid -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-12 text-center">
+                    <h2 class="display-5 fw-bold mb-3">Acquista per categoria</h2>
+                    <p class="lead text-muted">Scopri i nostri prodotti organizzati per categoria</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <!-- Elettronica -->
+                <div class="col-lg-3 col-md-6">
+                    <a href="/Product/Search?category=electronics" class="category-card text-decoration-none">
+                        <div class="text-center">
+                            <div class="category-icon">
+                                <i class="fas fa-laptop"></i>
+                            </div>
+                            <h5 class="mt-3 mb-2">Elettronica</h5>
+                            <p class="text-muted small">Smartphone, computer, TV</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Moda -->
+                <div class="col-lg-3 col-md-6">
+                    <a href="/Product/Search?category=fashion" class="category-card text-decoration-none">
+                        <div class="text-center">
+                            <div class="category-icon">
+                                <i class="fas fa-tshirt"></i>
+                            </div>
+                            <h5 class="mt-3 mb-2">Moda</h5>
+                            <p class="text-muted small">Abbigliamento, scarpe, borse</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Casa e Cucina -->
+                <div class="col-lg-3 col-md-6">
+                    <a href="/Product/Search?category=home" class="category-card text-decoration-none">
+                        <div class="text-center">
+                            <div class="category-icon">
+                                <i class="fas fa-home"></i>
+                            </div>
+                            <h5 class="mt-3 mb-2">Casa e Cucina</h5>
+                            <p class="text-muted small">Mobili, elettrodomestici</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Libri -->
+                <div class="col-lg-3 col-md-6">
+                    <a href="/Product/Search?category=books" class="category-card text-decoration-none">
+                        <div class="text-center">
+                            <div class="category-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <h5 class="mt-3 mb-2">Libri</h5>
+                            <p class="text-muted small">Narrativa, saggistica, guide</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Sport e tempo libero -->
+                <div class="col-lg-3 col-md-6">
+                    <a href="/Product/Search?category=sports" class="category-card text-decoration-none">
+                        <div class="text-center">
+                            <div class="category-icon">
+                                <i class="fas fa-football-ball"></i>
+                            </div>
+                            <h5 class="mt-3 mb-2">Sport</h5>
+                            <p class="text-muted small">Attrezzature, abbigliamento</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Giocattoli -->
+                <div class="col-lg-3 col-md-6">
+                    <a href="/Product/Search?category=toys" class="category-card text-decoration-none">
+                        <div class="text-center">
+                            <div class="category-icon">
+                                <i class="fas fa-gamepad"></i>
+                            </div>
+                            <h5 class="mt-3 mb-2">Giocattoli</h5>
+                            <p class="text-muted small">Bambini, videogames</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Auto e Moto -->
+                <div class="col-lg-3 col-md-6">
+                    <a href="/Product/Search?category=automotive" class="category-card text-decoration-none">
+                        <div class="text-center">
+                            <div class="category-icon">
+                                <i class="fas fa-car"></i>
+                            </div>
+                            <h5 class="mt-3 mb-2">Auto e Moto</h5>
+                            <p class="text-muted small">Ricambi, accessori</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Salute e Bellezza -->
+                <div class="col-lg-3 col-md-6">
+                    <a href="/Product/Search?category=beauty" class="category-card text-decoration-none">
+                        <div class="text-center">
+                            <div class="category-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <h5 class="mt-3 mb-2">Salute e Bellezza</h5>
+                            <p class="text-muted small">Cosmetici, benessere</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="py-5 bg-light" id="featured-products">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-12 text-center">
+                    <h2 class="display-5 fw-bold mb-3">Prodotti in evidenza</h2>
+                    <p class="lead text-muted">I migliori prodotti selezionati per te</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <!-- iPhone 15 Pro -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="product-card">
+                        <div class="position-relative">
+                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=iPhone+15+Pro" 
+                                 alt="iPhone 15 Pro" class="product-image" />
+                            <span class="deal-badge">-15%</span>
+                        </div>
+                        <div class="p-3">
+                            <h6 class="product-title">Apple iPhone 15 Pro 128GB</h6>
+                            <div class="stars mb-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <small class="text-muted ms-2">(1,234)</small>
+                            </div>
+                            <div class="mb-3">
+                                <span class="original-price">€1.229,00</span>
+                                <span class="product-price">€1.044,65</span>
+                            </div>
+                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('iphone15pro')">
+                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- MacBook Air -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="product-card">
+                        <div class="position-relative">
+                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=MacBook+Air" 
+                                 alt="MacBook Air" class="product-image" />
+                        </div>
+                        <div class="p-3">
+                            <h6 class="product-title">Apple MacBook Air M2 13"</h6>
+                            <div class="stars mb-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <small class="text-muted ms-2">(856)</small>
+                            </div>
+                            <div class="mb-3">
+                                <span class="product-price">€1.349,00</span>
+                            </div>
+                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('macbookair')">
+                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AirPods Pro -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="product-card">
+                        <div class="position-relative">
+                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=AirPods+Pro" 
+                                 alt="AirPods Pro" class="product-image" />
+                            <span class="deal-badge">-20%</span>
+                        </div>
+                        <div class="p-3">
+                            <h6 class="product-title">Apple AirPods Pro 2ª gen</h6>
+                            <div class="stars mb-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                                <small class="text-muted ms-2">(2,341)</small>
+                            </div>
+                            <div class="mb-3">
+                                <span class="original-price">€299,00</span>
+                                <span class="product-price">€239,20</span>
+                            </div>
+                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('airpodspro')">
+                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- iPad Air -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="product-card">
+                        <div class="position-relative">
+                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=iPad+Air" 
+                                 alt="iPad Air" class="product-image" />
+                        </div>
+                        <div class="p-3">
+                            <h6 class="product-title">Apple iPad Air 11" M2</h6>
+                            <div class="stars mb-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <small class="text-muted ms-2">(967)</small>
+                            </div>
+                            <div class="mb-3">
+                                <span class="product-price">€699,00</span>
+                            </div>
+                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('ipadair')">
+                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Apple Watch -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="product-card">
+                        <div class="position-relative">
+                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Apple+Watch" 
+                                 alt="Apple Watch" class="product-image" />
+                        </div>
+                        <div class="p-3">
+                            <h6 class="product-title">Apple Watch Series 9 45mm</h6>
+                            <div class="stars mb-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <small class="text-muted ms-2">(1,523)</small>
+                            </div>
+                            <div class="mb-3">
+                                <span class="product-price">€459,00</span>
+                            </div>
+                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('applewatch')">
+                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Canon Camera -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="product-card">
+                        <div class="position-relative">
+                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Canon+EOS" 
+                                 alt="Canon EOS R6" class="product-image" />
+                            <span class="deal-badge">-10%</span>
+                        </div>
+                        <div class="p-3">
+                            <h6 class="product-title">Canon EOS R6 Mark II</h6>
+                            <div class="stars mb-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                                <small class="text-muted ms-2">(423)</small>
+                            </div>
+                            <div class="mb-3">
+                                <span class="original-price">€2.799,00</span>
+                                <span class="product-price">€2.519,10</span>
+                            </div>
+                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('canoneos')">
+                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sony Headphones -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="product-card">
+                        <div class="position-relative">
+                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Sony+WH1000XM5" 
+                                 alt="Sony Headphones" class="product-image" />
+                        </div>
+                        <div class="p-3">
+                            <h6 class="product-title">Sony WH-1000XM5 Wireless</h6>
+                            <div class="stars mb-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <small class="text-muted ms-2">(3,421)</small>
+                            </div>
+                            <div class="mb-3">
+                                <span class="product-price">€379,00</span>
+                            </div>
+                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('sonyheadphones')">
+                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Nintendo Switch -->
+                <div class="col-lg-3 col-md-6">
+                    <div class="product-card">
+                        <div class="position-relative">
+                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Nintendo+Switch" 
+                                 alt="Nintendo Switch" class="product-image" />
+                            <span class="deal-badge">-25%</span>
+                        </div>
+                        <div class="p-3">
+                            <h6 class="product-title">Nintendo Switch OLED</h6>
+                            <div class="stars mb-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <small class="text-muted ms-2">(5,632)</small>
+                            </div>
+                            <div class="mb-3">
+                                <span class="original-price">€349,99</span>
+                                <span class="product-price">€262,49</span>
+                            </div>
+                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('nintendoswitch')">
+                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Banner promozionale con design accattivante e call-to-action efficaci -->
+    <section class="promo-banner">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center">
+                    <!-- Titolo promozionale con icona dinamica -->
+                    <h3><i class="fas fa-bolt"></i> Offerte Esclusive ShopVerse</h3>
+                    <!-- Descrizione dei benefici per incentivare l'azione -->
+                    <p class="mb-4">Spedizione gratuita sopra i 29€ e fino al 60% di sconto sui prodotti selezionati! Solo per oggi!</p>
+                    <!-- Button call-to-action con link alle offerte speciali -->
+                    <a href="/Product/Search?featured=true" class="btn btn-light btn-lg">
+                        <i class="fas fa-fire"></i> Scopri le Super Offerte
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Messaggio di benvenuto quando i servizi backend non sono attivi -->
+    @if(Model?.FeaturedProducts == null || !Model.FeaturedProducts.Any())
+    {
+        <div class="welcome-message">
+            <!-- Titolo di benvenuto principale -->
+            <h2>Benvenuto su ShopVerse</h2>
+            <!-- Descrizione dello stato del sistema -->
+            <p>La piattaforma è in fase di configurazione. I servizi backend non sono ancora attivi.</p>
+            <!-- Istruzioni per l'amministratore del sistema -->
+            <p>Per utilizzare tutte le funzionalità avanzate, avvia i microservizi:</p>
+            <!-- Lista dei servizi necessari per il funzionamento completo -->
+            <ul>
+                <li><strong>ProductService</strong> - Gestione catalogo prodotti</li>
+                <li><strong>OrderService</strong> - Elaborazione ordini</li>
+                <li><strong>InventoryService</strong> - Gestione inventario</li>
+                <li><strong>PaymentService</strong> - Processamento pagamenti</li>
+                <li><strong>NotificationService</strong> - Sistema notifiche</li>
+                <li><strong>ChatbotService</strong> - Assistenza clienti AI</li>
+            </ul>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Funzione per aggiungere prodotto al carrello
+        function addToCart(productId, quantity = 1) {
+            fetch('/Cart/AddItem', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    ProductId: productId,
+                    Quantity: quantity
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Aggiorna il contatore del carrello
+                    updateCartCount(data.cartItemCount);
+                    
+                    // Mostra messaggio di successo
+                    showNotification('Prodotto aggiunto al carrello!', 'success');
+                } else {
+                    showNotification(data.message || 'Errore durante l\'aggiunta al carrello', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Errore:', error);
+                showNotification('Errore durante l\'aggiunta al carrello', 'error');
+            });
+        }
+
+        // Funzione per aggiornare il contatore del carrello
+        function updateCartCount(count) {
+            const cartCounter = document.querySelector('.cart-count');
+            if (cartCounter) {
+                cartCounter.textContent = count;
+                cartCounter.style.display = count > 0 ? 'inline' : 'none';
+            }
+        }
+
+        // Funzione per mostrare notifiche
+        function showNotification(message, type = 'info') {
+            // Implementazione semplice di notifica
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                background-color: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+                color: white;
+                border-radius: 4px;
+                z-index: 10000;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Rimuovi dopo 3 secondi
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Autocomplete per la ricerca
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.querySelector('.search-input');
+            if (searchInput) {
+                let timeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(timeout);
+                    const term = this.value;
+                    
+                    if (term.length >= 2) {
+                        timeout = setTimeout(() => {
+                            fetch(`/Home/Autocomplete?term=${encodeURIComponent(term)}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    // Implementa qui la logica per mostrare i suggerimenti
+                                    console.log('Suggerimenti:', data);
+                                });
+                        }, 300);
+                    }
+                });
+            }
+        });
+    </script>
+}

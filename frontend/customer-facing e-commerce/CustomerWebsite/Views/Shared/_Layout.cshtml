@@ -1,0 +1,253 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Titolo principale del sito ShopVerse - piattaforma e-commerce moderna -->
+    <title>@ViewData["Title"] - ShopVerse</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <!-- CSS personalizzato ShopVerse con design moderno e palette colori unica -->
+    <link rel="stylesheet" href="~/css/shopverse.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/CustomerWebsite.styles.css" asp-append-version="true" />
+    <!-- FontAwesome per icone moderne e accattivanti -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+</head>
+<body>
+    <!-- Header principale del sito con navigazione e branding ShopVerse -->
+    <header class="shopverse-header">
+        <nav class="navbar navbar-expand-sm navbar-dark">
+            <div class="container-fluid">
+                <!-- Logo ShopVerse - brand principale della piattaforma e-commerce -->
+                <a class="navbar-brand shopverse-logo" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fas fa-shopping-bag me-2"></i>
+                    <span class="logo-text">ShopVerse</span>
+                </a>
+
+                <!-- Location -->
+                <div class="location-section d-none d-md-flex text-white">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <div class="location-text ms-1">
+                        <small>Consegna a</small><br>
+                        <strong>Italia</strong>
+                    </div>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="search-section flex-grow-1 mx-3">
+                    <form asp-controller="Home" asp-action="Search" method="get" class="search-form d-flex">
+                        <select name="Category" class="search-category d-none d-md-block">
+                            <option value="">Tutto</option>
+                            <option value="electronics">Elettronica</option>
+                            <option value="books">Libri</option>
+                            <option value="clothing">Abbigliamento</option>
+                            <option value="home">Casa e cucina</option>
+                            <option value="sports">Sport</option>
+                        </select>
+                        <input type="text" name="SearchTerm" class="search-input form-control" 
+                               placeholder="Cerca ShopVerse" />
+                        <button type="submit" class="search-btn btn btn-warning">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right side menu -->
+                <div class="navbar-nav d-flex flex-row">
+                    <!-- Language -->
+                    <div class="nav-item dropdown d-none d-md-flex">
+                        <a class="nav-link dropdown-toggle text-white" href="#" data-bs-toggle="dropdown">
+                            🇮🇹 IT
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">🇮🇹 Italiano</a></li>
+                            <li><a class="dropdown-item" href="#">🇬🇧 English</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Account -->
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white" href="#" data-bs-toggle="dropdown">
+                            <div class="account-text">
+                                <small>Ciao, accedi</small><br>
+                                <strong>Account e liste</strong>
+                            </div>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-user"></i> Il mio account</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-box"></i> I miei ordini</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-heart"></i> Lista dei desideri</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-sign-in-alt"></i> Accedi</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-user-plus"></i> Registrati</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Orders -->
+                    <a class="nav-link d-none d-lg-flex text-white text-decoration-none" href="#">
+                        <div class="account-text">
+                            <small>Resi e</small><br>
+                            <strong>Ordini</strong>
+                        </div>
+                    </a>
+
+                    <!-- Cart -->
+                    <a class="nav-link cart-link text-white text-decoration-none" asp-controller="Cart" asp-action="Index">
+                        <div class="cart-container">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="cart-count" style="display: @(ViewBag.CartItemCount > 0 ? "inline" : "none")">
+                                @(ViewBag.CartItemCount ?? 0)
+                            </span>
+                        </div>
+                        <span class="cart-text d-none d-md-inline">Carrello</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Sub Navigation -->
+        <nav class="sub-navbar bg-dark">
+            <div class="container-fluid">
+                <ul class="nav">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="#" data-bs-toggle="offcanvas" data-bs-target="#categoriesMenu">
+                            <i class="fas fa-bars"></i> Tutto
+                        </a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Offerte del giorno</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Servizio Clienti</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Registrati</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Wish List</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Vendi</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Categories Sidebar -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="categoriesMenu">
+        <div class="offcanvas-header bg-dark text-white">
+            <h5 class="offcanvas-title"><i class="fas fa-user"></i> Ciao, accedi</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            <div class="categories-menu">
+                <div class="menu-section p-3">
+                    <h6 class="menu-title">Acquista per categoria</h6>
+                    <ul class="menu-list list-unstyled">
+                        <li><a href="#" class="menu-link text-decoration-none">Elettronica <i class="fas fa-chevron-right float-end"></i></a></li>
+                        <li><a href="#" class="menu-link text-decoration-none">Computer <i class="fas fa-chevron-right float-end"></i></a></li>
+                        <li><a href="#" class="menu-link text-decoration-none">Casa e cucina <i class="fas fa-chevron-right float-end"></i></a></li>
+                        <li><a href="#" class="menu-link text-decoration-none">Abbigliamento <i class="fas fa-chevron-right float-end"></i></a></li>
+                        <li><a href="#" class="menu-link text-decoration-none">Libri <i class="fas fa-chevron-right float-end"></i></a></li>
+                        <li><a href="#" class="menu-link text-decoration-none">Sport e tempo libero <i class="fas fa-chevron-right float-end"></i></a></li>
+                        <li><a href="#" class="menu-link text-decoration-none">Bellezza <i class="fas fa-chevron-right float-end"></i></a></li>
+                        <li><a href="#" class="menu-link text-decoration-none">Auto e Moto <i class="fas fa-chevron-right float-end"></i></a></li>
+                    </ul>
+                </div>
+                <hr>
+                <div class="menu-section p-3">
+                    <h6 class="menu-title">Programmi e funzionalità</h6>
+                    <ul class="menu-list list-unstyled">
+                        <li><a href="#" class="menu-link text-decoration-none">ShopVerse Plus</a></li>
+                        <li><a href="#" class="menu-link text-decoration-none">ShopVerse Business</a></li>
+                        <li><a href="#" class="menu-link text-decoration-none">App di ShopVerse</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid p-0">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Footer principale ShopVerse con design moderno e informazioni complete -->
+    <footer class="shopverse-footer mt-5">
+        <div class="footer-top text-center py-3 bg-light">
+            <a href="#top" class="back-to-top text-decoration-none">Torna in cima</a>
+        </div>
+        
+        <div class="footer-main bg-dark text-white py-4">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <h6>Conoscici</h6>
+                        <ul class="footer-links list-unstyled">
+                            <li><a href="#" class="text-light text-decoration-none">Opportunità di lavoro</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Blog di ShopVerse</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Chi siamo</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Investor Relations</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <h6>Guadagna con ShopVerse</h6>
+                        <ul class="footer-links list-unstyled">
+                            <li><a href="#" class="text-light text-decoration-none">Vendi su ShopVerse</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Vendi sotto ShopVerse Business</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Associati</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Diventa un venditore di consegne</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <h6>Metodi di pagamento ShopVerse</h6>
+                        <ul class="footer-links list-unstyled">
+                            <li><a href="#" class="text-light text-decoration-none">ShopVerse Business Card</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Ricarica il tuo account</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Convertitore di Valuta ShopVerse</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <h6>Ti serve aiuto?</h6>
+                        <ul class="footer-links list-unstyled">
+                            <li><a href="#" class="text-light text-decoration-none">ShopVerse e COVID-19</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Il tuo account</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Tariffe e politiche di spedizione</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Resi e rimborsi</a></li>
+                            <li><a href="#" class="text-light text-decoration-none">Assistenza</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom bg-secondary text-white py-3">
+            <div class="container text-center">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <span style="font-weight: bold; font-size: 16px;">shopverse.it</span>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="footer-language">
+                            <a href="#" class="text-white me-3 text-decoration-none">
+                                <i class="fas fa-globe"></i> Italiano
+                            </a>
+                            <a href="#" class="text-white text-decoration-none">
+                                <i class="fas fa-euro-sign"></i> EUR - Euro
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <!-- Copyright e informazioni legali del sito -->
+                        <p class="mb-0 small">
+                            © 2024 ShopVerse - Piattaforma E-commerce Avanzata by Rizzato Sistemas
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/shopverse.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
