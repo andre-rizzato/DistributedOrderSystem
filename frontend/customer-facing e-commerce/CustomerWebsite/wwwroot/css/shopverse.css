@@ -1,0 +1,461 @@
+/* ShopVerse Styles - Piattaforma E-commerce Moderna */
+/* Palette colori principale: Viola (#7C3AED), Indaco (#4F46E5), Teal (#14B8A6) */
+
+/* Header personalizzato ShopVerse con gradiente moderno */
+.shopverse-header {
+    background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 50%, #3B82F6 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+}
+
+/* Logo ShopVerse con effetti moderni */
+.shopverse-logo {
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 24px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.shopverse-logo:hover {
+    color: #FDE047 !important;
+    text-decoration: none;
+    transform: scale(1.05);
+}
+
+.logo-text {
+    background: linear-gradient(45deg, #ffffff, #FDE047);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+}
+
+/* Barra di ricerca moderna con design ShopVerse */
+.search-bar {
+    border-radius: 50px 0 0 50px;
+    border: 2px solid #14B8A6;
+    height: 42px;
+    padding-left: 20px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.search-bar:focus {
+    border-color: #FDE047;
+    box-shadow: 0 0 0 3px rgba(253, 224, 71, 0.3);
+}
+
+/* Bottone di ricerca con gradiente accattivante */
+.search-btn {
+    background: linear-gradient(135deg, #14B8A6, #059669);
+    border: none;
+    border-radius: 0 50px 50px 0;
+    height: 42px;
+    width: 50px;
+    color: #ffffff;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-btn:hover {
+    background: linear-gradient(135deg, #0D9488, #047857);
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(20, 184, 166, 0.4);
+}
+
+/* Navigazione personalizzata ShopVerse con design moderno */
+.navbar-nav .nav-link {
+    color: #E5E7EB !important;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 10px 15px !important;
+    border-radius: 8px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #FDE047 !important;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Cards prodotti con design moderno ShopVerse */
+.product-card {
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+    padding: 20px;
+    height: 100%;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.product-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(124, 58, 237, 0.2);
+    border-color: #7C3AED;
+}
+
+/* Immagini prodotto con effetti hover eleganti */
+.product-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.product-card:hover .product-image {
+    transform: scale(1.05);
+}
+
+/* Titoli prodotti con tipografia moderna */
+.product-title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 10px;
+    height: 42px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    color: #1F2937;
+}
+
+/* Prezzi con colori distintivi ShopVerse */
+.product-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: #7C3AED;
+}
+
+/* Prezzo originale barrato con stile moderno */
+.original-price {
+    text-decoration: line-through;
+    color: #9CA3AF;
+    font-size: 14px;
+    margin-right: 8px;
+    font-weight: 400;
+}
+
+/* Sezione hero principale ShopVerse con gradiente moderno */
+.hero-section {
+    background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 25%, #3B82F6 50%, #14B8A6 75%, #10B981 100%);
+    color: white;
+    padding: 80px 0;
+    margin-bottom: 50px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+}
+
+/* Cards categoria con design elegante */
+.category-card {
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    border-radius: 20px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.4s ease;
+    border: 1px solid #E5E7EB;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.category-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #7C3AED, #4F46E5);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.category-card:hover {
+    transform: translateY(-10px) scale(1.03);
+    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.3);
+    text-decoration: none;
+    color: inherit;
+}
+
+.category-card:hover::before {
+    opacity: 0.1;
+}
+
+/* Icone categoria con gradiente colorato */
+.category-icon {
+    font-size: 52px;
+    background: linear-gradient(135deg, #7C3AED, #14B8A6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 20px;
+    transition: transform 0.3s ease;
+}
+
+.category-card:hover .category-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Banner promozionali ShopVerse con design accattivante */
+.promo-banner {
+    background: linear-gradient(45deg, #EC4899, #F97316, #EAB308);
+    color: white;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    margin: 50px 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+}
+
+.promo-banner::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    animation: sparkle 20s linear infinite;
+}
+
+@keyframes sparkle {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.promo-banner h3 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Footer personalizzato ShopVerse con design moderno */
+.shopverse-footer {
+    background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+    color: #D1D5DB;
+    padding: 50px 0 25px 0;
+    position: relative;
+}
+
+.footer-section h6 {
+    color: #ffffff;
+    font-weight: 700;
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+.footer-section a {
+    color: #D1D5DB;
+    text-decoration: none;
+    line-height: 2.2;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    padding: 2px 0;
+    border-radius: 4px;
+}
+
+.footer-section a:hover {
+    color: #7C3AED;
+    text-decoration: none;
+    transform: translateX(5px);
+}
+
+/* Elementi carrello e checkout con design ShopVerse */
+.cart-item {
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: #ffffff;
+    transition: all 0.3s ease;
+}
+
+.cart-item:hover {
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.15);
+    border-color: #7C3AED;
+}
+
+/* Sommario carrello con design elegante */
+.cart-summary {
+    background: linear-gradient(145deg, #f8fafc, #ffffff);
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    padding: 25px;
+    position: sticky;
+    top: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+/* Bottoni principali ShopVerse con gradiente */
+.btn-shopverse {
+    background: linear-gradient(135deg, #7C3AED, #4F46E5);
+    border: none;
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 50px;
+    padding: 12px 30px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+}
+
+.btn-shopverse:hover {
+    background: linear-gradient(135deg, #6D28D9, #4338CA);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
+}
+
+/* Bottone primario con stile distintivo */
+.btn-shopverse-primary {
+    background: linear-gradient(135deg, #14B8A6, #10B981);
+    border: none;
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 50px;
+    padding: 15px 35px;
+    font-size: 16px;
+}
+
+.btn-shopverse-primary:hover {
+    background: linear-gradient(135deg, #0D9488, #059669);
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+/* Variante del bottone principale per call-to-action */
+.btn-shopverse {
+    background: linear-gradient(135deg, #7C3AED, #4F46E5);
+    border: none;
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 50px;
+    padding: 10px 25px;
+    transition: all 0.3s ease;
+}
+
+.btn-shopverse:hover {
+    background: linear-gradient(135deg, #6D28D9, #4338CA);
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+.btn-shopverse-primary {
+    background: linear-gradient(135deg, #14B8A6, #10B981);
+    border: none;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.btn-shopverse-primary:hover {
+    background: linear-gradient(135deg, #0D9488, #059669);
+    color: #ffffff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 40px 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 28px;
+    }
+    
+    .search-bar {
+        font-size: 16px;
+    }
+    
+    .product-card {
+        margin-bottom: 20px;
+    }
+    
+    .category-card {
+        margin-bottom: 20px;
+    }
+}
+
+/* Sistema di valutazione stelle con colori ShopVerse */
+.stars {
+    color: #F59E0B;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.stars .empty {
+    color: #E5E7EB;
+}
+
+/* Badge offerte con design accattivante */
+.deal-badge {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 20px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Breadcrumb personalizzato con stile moderno */
+.breadcrumb {
+    background: linear-gradient(135deg, #f8fafc, #ffffff);
+    padding: 15px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    color: #7C3AED;
+    font-weight: 600;
+}
+
+.breadcrumb-item a {
+    color: #7C3AED;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: #4F46E5;
+    text-decoration: none;
+    transform: translateX(2px);
+}

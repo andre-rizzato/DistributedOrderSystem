@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Placeholder Image Generator</title>
+    <style>
+        .placeholder {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        
+        .placeholder canvas {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        .placeholder .label {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Placeholder Images for ShopVerse</h1>
+    <div id="placeholders"></div>
+    
+    <script>
+        const placeholders = [
+            { name: 'hero-banner', width: 1200, height: 400, text: 'ShopVerse Hero Banner', bg: '#232f3e', color: '#fff' },
+            { name: 'electronics', width: 300, height: 200, text: 'Elettronica', bg: '#007eb9', color: '#fff' },
+            { name: 'fashion', width: 300, height: 200, text: 'Moda', bg: '#ff6b6b', color: '#fff' },
+            { name: 'home-garden', width: 300, height: 200, text: 'Casa e Giardino', bg: '#51cf66', color: '#fff' },
+            { name: 'books', width: 300, height: 200, text: 'Libri', bg: '#ffd43b', color: '#333' },
+            { name: 'sports', width: 300, height: 200, text: 'Sport', bg: '#ff8cc8', color: '#333' },
+            { name: 'automotive', width: 300, height: 200, text: 'Auto e Moto', bg: '#495057', color: '#fff' },
+            { name: 'health-beauty', width: 300, height: 200, text: 'Salute e Bellezza', bg: '#e64980', color: '#fff' },
+            { name: 'toys', width: 300, height: 200, text: 'Giocattoli', bg: '#74c0fc', color: '#333' },
+            { name: 'smartphone', width: 250, height: 250, text: 'iPhone 15 Pro', bg: '#f8f9fa', color: '#333' },
+            { name: 'laptop', width: 250, height: 250, text: 'MacBook Air', bg: '#f8f9fa', color: '#333' },
+            { name: 'headphones', width: 250, height: 250, text: 'AirPods Pro', bg: '#f8f9fa', color: '#333' },
+            { name: 'tablet', width: 250, height: 250, text: 'iPad Air', bg: '#f8f9fa', color: '#333' },
+            { name: 'smartwatch', width: 250, height: 250, text: 'Apple Watch', bg: '#f8f9fa', color: '#333' },
+            { name: 'camera', width: 250, height: 250, text: 'Canon EOS', bg: '#f8f9fa', color: '#333' },
+        ];
+        
+        const container = document.getElementById('placeholders');
+        
+        placeholders.forEach(placeholder => {
+            const div = document.createElement('div');
+            div.className = 'placeholder';
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = placeholder.width;
+            canvas.height = placeholder.height;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Background
+            ctx.fillStyle = placeholder.bg;
+            ctx.fillRect(0, 0, placeholder.width, placeholder.height);
+            
+            // Text
+            ctx.fillStyle = placeholder.color;
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(placeholder.text, placeholder.width/2, placeholder.height/2);
+            
+            // Size info
+            ctx.font = '14px Arial';
+            ctx.fillText(`${placeholder.width}x${placeholder.height}`, placeholder.width/2, placeholder.height/2 + 30);
+            
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.textContent = placeholder.name + '.png';
+            
+            const downloadBtn = document.createElement('button');
+            downloadBtn.textContent = 'Download';
+            downloadBtn.onclick = () => downloadImage(canvas, placeholder.name);
+            
+            div.appendChild(canvas);
+            div.appendChild(label);
+            div.appendChild(downloadBtn);
+            container.appendChild(div);
+        });
+        
+        function downloadImage(canvas, name) {
+            const link = document.createElement('a');
+            link.download = name + '.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>
