@@ -69,6 +69,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Disabilita il reindirizzamento HTTPS in sviluppo per consentire chiamate HTTP tra servizi
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
