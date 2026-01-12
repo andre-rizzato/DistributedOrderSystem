@@ -188,7 +188,9 @@
             <div class="row g-4">
                 @* Rendering dinamico dei prodotti dal database usando ViewComponent con Tag Helper *@
                 @{
-                    var productsToDisplay = Model?.FeaturedProducts ?? new List<ProductDisplayModel>
+                    var productsToDisplay = (Model?.FeaturedProducts != null && Model.FeaturedProducts.Any()) 
+                        ? Model.FeaturedProducts 
+                        : new List<ProductDisplayModel>
                     {
                         new ProductDisplayModel { ProductId = Guid.NewGuid(), Name = "Apple iPhone 15 Pro 128GB", Price = 1229.00m, DiscountPrice = 1044.65m, AverageRating = 5.0, ReviewCount = 1234, QuantityAvailable = 10, IsBestseller = true, FreeShipping = true },
                         new ProductDisplayModel { ProductId = Guid.NewGuid(), Name = "Apple MacBook Air M2 13\"", Price = 1349.00m, AverageRating = 5.0, ReviewCount = 856, QuantityAvailable = 5, FreeShipping = true, IsPrimeEligible = true },
