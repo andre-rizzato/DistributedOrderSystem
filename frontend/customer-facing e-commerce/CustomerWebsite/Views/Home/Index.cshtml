@@ -186,229 +186,241 @@
             </div>
             
             <div class="row g-4">
-                <!-- iPhone 15 Pro -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="product-card">
-                        <div class="position-relative">
-                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=iPhone+15+Pro" 
-                                 alt="iPhone 15 Pro" class="product-image" />
-                            <span class="deal-badge">-15%</span>
-                        </div>
-                        <div class="p-3">
-                            <h6 class="product-title">Apple iPhone 15 Pro 128GB</h6>
-                            <div class="stars mb-2">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <small class="text-muted ms-2">(1,234)</small>
+                @* Rendering dinamico dei prodotti dal database usando ViewComponent con Tag Helper *@
+                @if(Model?.FeaturedProducts != null && Model.FeaturedProducts.Any())
+                {
+                    @foreach(var product in Model.FeaturedProducts)
+                    {
+                        <vc:product-card product="@product"></vc:product-card>
+                    }
+                }
+                else
+                {
+                    @* Prodotti statici di esempio quando il backend non è disponibile *@
+                    <!-- iPhone 15 Pro -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="product-card">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=iPhone+15+Pro" 
+                                     alt="iPhone 15 Pro" class="product-image" />
+                                <span class="deal-badge">-15%</span>
                             </div>
-                            <div class="mb-3">
-                                <span class="original-price">€1.229,00</span>
-                                <span class="product-price">€1.044,65</span>
+                            <div class="p-3">
+                                <h6 class="product-title">Apple iPhone 15 Pro 128GB</h6>
+                                <div class="stars mb-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <small class="text-muted ms-2">(1,234)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="original-price">€1.229,00</span>
+                                    <span class="product-price">€1.044,65</span>
+                                </div>
+                                <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('iphone15pro')">
+                                    <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                                </button>
                             </div>
-                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('iphone15pro')">
-                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- MacBook Air -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="product-card">
-                        <div class="position-relative">
-                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=MacBook+Air" 
-                                 alt="MacBook Air" class="product-image" />
-                        </div>
-                        <div class="p-3">
-                            <h6 class="product-title">Apple MacBook Air M2 13"</h6>
-                            <div class="stars mb-2">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <small class="text-muted ms-2">(856)</small>
-                            </div>
-                            <div class="mb-3">
-                                <span class="product-price">€1.349,00</span>
-                            </div>
-                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('macbookair')">
-                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
-                            </button>
                         </div>
                     </div>
-                </div>
-                
-                <!-- AirPods Pro -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="product-card">
-                        <div class="position-relative">
-                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=AirPods+Pro" 
-                                 alt="AirPods Pro" class="product-image" />
-                            <span class="deal-badge">-20%</span>
-                        </div>
-                        <div class="p-3">
-                            <h6 class="product-title">Apple AirPods Pro 2ª gen</h6>
-                            <div class="stars mb-2">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star-half-alt"></i>
-                                <small class="text-muted ms-2">(2,341)</small>
+                    
+                    <!-- MacBook Air -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="product-card">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=MacBook+Air" 
+                                     alt="MacBook Air" class="product-image" />
                             </div>
-                            <div class="mb-3">
-                                <span class="original-price">€299,00</span>
-                                <span class="product-price">€239,20</span>
+                            <div class="p-3">
+                                <h6 class="product-title">Apple MacBook Air M2 13"</h6>
+                                <div class="stars mb-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <small class="text-muted ms-2">(856)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="product-price">€1.349,00</span>
+                                </div>
+                                <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('macbookair')">
+                                    <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                                </button>
                             </div>
-                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('airpodspro')">
-                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
-                            </button>
                         </div>
                     </div>
-                </div>
-                
-                <!-- iPad Air -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="product-card">
-                        <div class="position-relative">
-                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=iPad+Air" 
-                                 alt="iPad Air" class="product-image" />
-                        </div>
-                        <div class="p-3">
-                            <h6 class="product-title">Apple iPad Air 11" M2</h6>
-                            <div class="stars mb-2">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <small class="text-muted ms-2">(967)</small>
+                    
+                    <!-- AirPods Pro -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="product-card">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=AirPods+Pro" 
+                                     alt="AirPods Pro" class="product-image" />
+                                <span class="deal-badge">-20%</span>
                             </div>
-                            <div class="mb-3">
-                                <span class="product-price">€699,00</span>
+                            <div class="p-3">
+                                <h6 class="product-title">Apple AirPods Pro 2ª gen</h6>
+                                <div class="stars mb-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                    <small class="text-muted ms-2">(2,341)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="original-price">€299,00</span>
+                                    <span class="product-price">€239,20</span>
+                                </div>
+                                <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('airpodspro')">
+                                    <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                                </button>
                             </div>
-                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('ipadair')">
-                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Apple Watch -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="product-card">
-                        <div class="position-relative">
-                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Apple+Watch" 
-                                 alt="Apple Watch" class="product-image" />
-                        </div>
-                        <div class="p-3">
-                            <h6 class="product-title">Apple Watch Series 9 45mm</h6>
-                            <div class="stars mb-2">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <small class="text-muted ms-2">(1,523)</small>
-                            </div>
-                            <div class="mb-3">
-                                <span class="product-price">€459,00</span>
-                            </div>
-                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('applewatch')">
-                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
-                            </button>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Canon Camera -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="product-card">
-                        <div class="position-relative">
-                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Canon+EOS" 
-                                 alt="Canon EOS R6" class="product-image" />
-                            <span class="deal-badge">-10%</span>
-                        </div>
-                        <div class="p-3">
-                            <h6 class="product-title">Canon EOS R6 Mark II</h6>
-                            <div class="stars mb-2">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star-half-alt"></i>
-                                <small class="text-muted ms-2">(423)</small>
+                    
+                    <!-- iPad Air -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="product-card">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=iPad+Air" 
+                                     alt="iPad Air" class="product-image" />
                             </div>
-                            <div class="mb-3">
-                                <span class="original-price">€2.799,00</span>
-                                <span class="product-price">€2.519,10</span>
+                            <div class="p-3">
+                                <h6 class="product-title">Apple iPad Air 11" M2</h6>
+                                <div class="stars mb-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <small class="text-muted ms-2">(967)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="product-price">€699,00</span>
+                                </div>
+                                <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('ipadair')">
+                                    <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                                </button>
                             </div>
-                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('canoneos')">
-                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
-                            </button>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Sony Headphones -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="product-card">
-                        <div class="position-relative">
-                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Sony+WH1000XM5" 
-                                 alt="Sony Headphones" class="product-image" />
-                        </div>
-                        <div class="p-3">
-                            <h6 class="product-title">Sony WH-1000XM5 Wireless</h6>
-                            <div class="stars mb-2">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <small class="text-muted ms-2">(3,421)</small>
+                    
+                    <!-- Apple Watch -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="product-card">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Apple+Watch" 
+                                     alt="Apple Watch" class="product-image" />
                             </div>
-                            <div class="mb-3">
-                                <span class="product-price">€379,00</span>
+                            <div class="p-3">
+                                <h6 class="product-title">Apple Watch Series 9 45mm</h6>
+                                <div class="stars mb-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <small class="text-muted ms-2">(1,523)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="product-price">€459,00</span>
+                                </div>
+                                <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('applewatch')">
+                                    <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                                </button>
                             </div>
-                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('sonyheadphones')">
-                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Nintendo Switch -->
-                <div class="col-lg-3 col-md-6">
-                    <div class="product-card">
-                        <div class="position-relative">
-                            <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Nintendo+Switch" 
-                                 alt="Nintendo Switch" class="product-image" />
-                            <span class="deal-badge">-25%</span>
-                        </div>
-                        <div class="p-3">
-                            <h6 class="product-title">Nintendo Switch OLED</h6>
-                            <div class="stars mb-2">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <small class="text-muted ms-2">(5,632)</small>
-                            </div>
-                            <div class="mb-3">
-                                <span class="original-price">€349,99</span>
-                                <span class="product-price">€262,49</span>
-                            </div>
-                            <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('nintendoswitch')">
-                                <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
-                            </button>
                         </div>
                     </div>
-                </div>
+                    
+                    <!-- Canon Camera -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="product-card">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Canon+EOS" 
+                                     alt="Canon EOS R6" class="product-image" />
+                                <span class="deal-badge">-10%</span>
+                            </div>
+                            <div class="p-3">
+                                <h6 class="product-title">Canon EOS R6 Mark II</h6>
+                                <div class="stars mb-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                    <small class="text-muted ms-2">(423)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="original-price">€2.799,00</span>
+                                    <span class="product-price">€2.519,10</span>
+                                </div>
+                                <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('canoneos')">
+                                    <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sony Headphones -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="product-card">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Sony+WH1000XM5" 
+                                     alt="Sony Headphones" class="product-image" />
+                            </div>
+                            <div class="p-3">
+                                <h6 class="product-title">Sony WH-1000XM5 Wireless</h6>
+                                <div class="stars mb-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <small class="text-muted ms-2">(3,421)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="product-price">€379,00</span>
+                                </div>
+                                <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('sonyheadphones')">
+                                    <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Nintendo Switch -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="product-card">
+                            <div class="position-relative">
+                                <img src="https://via.placeholder.com/250x250/f8f9fa/333333?text=Nintendo+Switch" 
+                                     alt="Nintendo Switch" class="product-image" />
+                                <span class="deal-badge">-25%</span>
+                            </div>
+                            <div class="p-3">
+                                <h6 class="product-title">Nintendo Switch OLED</h6>
+                                <div class="stars mb-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <small class="text-muted ms-2">(5,632)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="original-price">€349,99</span>
+                                    <span class="product-price">€262,49</span>
+                                </div>
+                                <button class="btn btn-shopverse btn-sm w-100" onclick="addToCart('nintendoswitch')">
+                                    <i class="fas fa-shopping-cart"></i> Aggiungi al carrello
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     </section>
