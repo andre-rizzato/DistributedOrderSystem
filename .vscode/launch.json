@@ -138,7 +138,7 @@
             "type": "node-terminal",
             "request": "launch",
             "command": "npm start",
-            "cwd": "${workspaceFolder}/frontend/distributed-order-app",
+            "cwd": "${workspaceFolder}/src/frontend/distributed-order-app",
             "preLaunchTask": "npm: install - frontend",
             "serverReadyAction": {
                 "action": "openExternally",
@@ -150,10 +150,10 @@
             "name": "CustomerWebsite",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/frontend/customer-facing e-commerce/CustomerWebsite/bin/Debug/net9.0/CustomerWebsite.dll",
+            "program": "${workspaceFolder}/src/frontend/customer-facing e-commerce/CustomerWebsite/bin/Debug/net9.0/CustomerWebsite.dll",
             "console": "integratedTerminal",
             "preLaunchTask": "build CustomerWebsite",
-            "cwd": "${workspaceFolder}/frontend/customer-facing e-commerce/CustomerWebsite",
+            "cwd": "${workspaceFolder}/src/frontend/customer-facing e-commerce/CustomerWebsite",
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
                 "ASPNETCORE_URLS": "http://localhost:5100",

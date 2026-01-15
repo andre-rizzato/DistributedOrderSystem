@@ -143,7 +143,7 @@ CustomerWebsite/
 
 #### **Avvio Locale**
 ```bash
-cd "frontend/customer-facing e-commerce/CustomerWebsite"
+cd "src/frontend/customer-facing e-commerce/CustomerWebsite"
 dotnet restore
 dotnet build
 dotnet run
