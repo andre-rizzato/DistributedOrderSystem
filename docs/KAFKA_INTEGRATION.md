@@ -230,7 +230,7 @@ This simplifies deployment and improves reliability.
    dotnet run
    
    # Terminal 4: Frontend
-   cd frontend/distributed-order-app
+   cd src/frontend/distributed-order-app
    npm start
    ```
 

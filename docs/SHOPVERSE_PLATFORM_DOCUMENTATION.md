@@ -616,7 +616,7 @@ public async Task<List<ProductDto>> GetFeaturedProductsAsync(int count = 8)
 git clone https://github.com/RizzatoSistemas/DistributedOrderSystem.git
 
 # Navigate to frontend
-cd frontend/customer-facing\ e-commerce/CustomerWebsite
+cd src/frontend/customer-facing\ e-commerce/CustomerWebsite
 
 # Restore packages
 dotnet restore

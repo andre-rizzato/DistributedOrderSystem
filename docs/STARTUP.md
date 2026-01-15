@@ -56,7 +56,7 @@ dotnet run
 
 **Terminal 4 - Angular:**
 ```bash
-cd frontend/distributed-order-app
+cd src/frontend/distributed-order-app
 npm install  # First time only
 npm start
 ```

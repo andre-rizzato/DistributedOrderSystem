@@ -1077,7 +1077,7 @@ cd src/OrderService && dotnet run &
 cd src/GatewayBff && dotnet run &
 
 # 3. Start frontend
-cd frontend/distributed-order-app
+cd src/frontend/distributed-order-app
 npm install
 npm start
 

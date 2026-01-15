@@ -45,7 +45,7 @@ dotnet run
 
 ### Terminal 5: Frontend (Port 4200)
 ```bash
-cd frontend/distributed-order-app
+cd src/frontend/distributed-order-app
 npm start
 ```
 

@@ -69,7 +69,7 @@
 			"type": "process",
 			"args": [
 				"build",
-				"${workspaceFolder}/frontend/customer-facing e-commerce/CustomerWebsite/CustomerWebsite.csproj",
+				"${workspaceFolder}/src/frontend/customer-facing e-commerce/CustomerWebsite/CustomerWebsite.csproj",
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],
@@ -91,7 +91,7 @@
 			"label": "npm: install - frontend",
 			"type": "npm",
 			"script": "install",
-			"path": "frontend/distributed-order-app/",
+			"path": "src/frontend/distributed-order-app/",
 			"problemMatcher": [],
 			"detail": "Install frontend dependencies"
 		},
@@ -99,7 +99,7 @@
 			"label": "npm: start - frontend",
 			"type": "npm",
 			"script": "start",
-			"path": "frontend/distributed-order-app/",
+			"path": "src/frontend/distributed-order-app/",
 			"problemMatcher": [],
 			"isBackground": true,
 			"presentation": {
