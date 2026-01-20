@@ -2,7 +2,7 @@ namespace GatewayBff.Commands;
 
 using MediatR;
 
-public record DeleteProductCommand(int Id) : IRequest<bool>;
+public record DeleteProductCommand(Guid Id) : IRequest<bool>;
 
 public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand, bool>
 {

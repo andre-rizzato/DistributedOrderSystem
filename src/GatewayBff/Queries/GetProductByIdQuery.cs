@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using GatewayBff.Contracts;
 using MediatR;
 
-public record GetProductByIdQuery(int Id) : IRequest<CatalogItemDto?>;
+public record GetProductByIdQuery(Guid Id) : IRequest<CatalogItemDto?>;
 
 public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, CatalogItemDto?>
 {

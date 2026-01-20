@@ -1,6 +1,6 @@
 namespace GatewayBff.Contracts;
 
-public record OrderItemDto(int ProductId, int Quantity, decimal UnitPrice);
+public record OrderItemDto(Guid ProductId, int Quantity, decimal UnitPrice);
 
 public record CreateOrderRequest(List<OrderItemDto> Items);
 
@@ -16,7 +16,7 @@ public record OrderDto(
 
 public record OrderItemDetailDto(
     int Id,
-    int ProductId,
+    Guid ProductId,
     int Quantity,
     decimal UnitPrice
 );

@@ -14,14 +14,14 @@ public class InventoryController : ControllerBase
         _inventoryWorkerService = inventoryWorkerService;
     }
 
-    [HttpGet("{productId:int}")]
-    public async Task<ActionResult<InventoryItem>> Get(int productId, CancellationToken ct)
+    [HttpGet("{productId:guid}")]
+    public async Task<ActionResult<InventoryItem>> Get(Guid productId, CancellationToken ct)
     {
         var item = await _inventoryWorkerService.GetInventoryByProductIdAsync(productId, ct);
         if (item is null) return NotFound();
         return Ok(item);
     }
-    public record SeedItem(int ProductId, int Quantity);
+    public record SeedItem(Guid ProductId, int Quantity);
 
     [HttpPost("seed")]
     public async Task<IActionResult> Seed(List<SeedItem> items, CancellationToken ct)
@@ -34,7 +34,7 @@ public class InventoryController : ControllerBase
         return Ok();
     }
 
-    public record AdjustRequest(int ProductId, int Delta);
+    public record AdjustRequest(Guid ProductId, int Delta);
 
     [HttpPost("adjust")]
     public async Task<IActionResult> Adjust(AdjustRequest request, CancellationToken ct)

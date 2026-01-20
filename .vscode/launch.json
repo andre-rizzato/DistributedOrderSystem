@@ -134,6 +134,42 @@
             }
         },
         {
+            "name": "UserService",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/UserService/bin/Debug/net9.0/UserService.dll",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build UserService",
+            "cwd": "${workspaceFolder}/src/UserService",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5010;https://localhost:5011"
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/scalar/v1"
+            }
+        },
+        {
+            "name": "CustomerService",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/CustomerService/bin/Debug/net9.0/CustomerService.dll",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build CustomerService",
+            "cwd": "${workspaceFolder}/src/CustomerService",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5009"
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s/scalar/v1"
+            }
+        },
+        {
             "name": "Frontend (Angular)",
             "type": "node-terminal",
             "request": "launch",
@@ -163,6 +199,25 @@
                 "action": "openExternally",
                 "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
             }
+        },
+        {
+            "name": "CustomerWebsite (Hot Reload)",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/frontend/customer-facing e-commerce/CustomerWebsite/bin/Debug/net9.0/CustomerWebsite.dll",
+            "console": "integratedTerminal",
+            "preLaunchTask": "watch CustomerWebsite",
+            "cwd": "${workspaceFolder}/src/frontend/customer-facing e-commerce/CustomerWebsite",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5100",
+                "ASPNETCORE_HTTPS_PORT": "",
+                "DOTNET_WATCH_RESTART_ON_RUDE_EDIT": "true"
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            }
         }
     ],
     "compounds": [
@@ -175,6 +230,8 @@
                 "PaymentService",
                 "ProductService",
                 "ChatbotService",
+                "UserService",
+                "CustomerService",
                 "GatewayBff"
             ]
         },
@@ -187,9 +244,28 @@
                 "PaymentService",
                 "ProductService",
                 "ChatbotService",
+                "UserService",
+                "CustomerService",
                 "GatewayBff",
                 "Frontend (Angular)",
                 "CustomerWebsite"
+            ],
+            "stopAll": true
+        },
+        {
+            "name": "Start All with Hot Reload",
+            "configurations": [
+                "OrderService",
+                "InventoryService", 
+                "NotificationService",
+                "PaymentService",
+                "ProductService",
+                "ChatbotService",
+                "UserService",
+                "CustomerService",
+                "GatewayBff",
+                "Frontend (Angular)",
+                "CustomerWebsite (Hot Reload)"
             ],
             "stopAll": true
         }

@@ -20,6 +20,8 @@ namespace ProductService.Data
             {
                 entity.ToTable("Products");
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id)
+                    .HasDefaultValueSql("NEWSEQUENTIALID()");
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.Description).HasMaxLength(500);

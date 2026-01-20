@@ -18,9 +18,9 @@ public class RedisProductCache : IProductCache
         _settings = options.Value;
     }
 
-    private string Key(int id) => $"{_settings.Prefix}{id}";
+    private string Key(Guid id) => $"{_settings.Prefix}{id}";
 
-    public async Task<Product?> GetProductByIdAsync(int id, CancellationToken ct = default)
+    public async Task<Product?> GetProductByIdAsync(Guid id, CancellationToken ct = default)
     {
         var value = await _db.StringGetAsync(Key(id));
         if (!value.HasValue) return null;
@@ -39,7 +39,7 @@ public class RedisProductCache : IProductCache
         await _db.StringSetAsync(Key(product.Id), json, TimeSpan.FromMinutes(5));
     }
 
-    public async Task RemoveProductAsync(int id, CancellationToken ct = default)
+    public async Task RemoveProductAsync(Guid id, CancellationToken ct = default)
     {
         await _db.KeyDeleteAsync(Key(id));
     }

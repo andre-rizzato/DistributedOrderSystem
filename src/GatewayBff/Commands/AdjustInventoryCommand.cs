@@ -3,7 +3,7 @@ namespace GatewayBff.Commands;
 using System.Net.Http.Json;
 using MediatR;
 
-public record AdjustInventoryCommand(int ProductId, int Delta) : IRequest<bool>;
+public record AdjustInventoryCommand(Guid ProductId, int Delta) : IRequest<bool>;
 
 public class AdjustInventoryCommandHandler : IRequestHandler<AdjustInventoryCommand, bool>
 {

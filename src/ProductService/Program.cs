@@ -37,9 +37,13 @@ builder.Services.AddSingleton<IProductCache, RedisProductCache>();
 builder.Services.AddScoped<IProductService, ProductWorkerServices>();
 
 // Servizi API
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi("v1");
 
 // CORS (se necessario per il frontend)
 builder.Services.AddCors(options =>
