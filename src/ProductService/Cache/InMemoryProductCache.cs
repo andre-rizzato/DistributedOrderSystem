@@ -5,10 +5,10 @@ using ProductService.Models;
 
 public class InMemoryProductCache : IProductCache
 {
-    private readonly Dictionary<int, Product> _cache = new();
+    private readonly Dictionary<Guid, Product> _cache = new();
     private readonly object _lock = new object();
 
-    public Task<Product?> GetProductByIdAsync(int id, CancellationToken ct = default)
+    public Task<Product?> GetProductByIdAsync(Guid id, CancellationToken ct = default)
     {
         lock (_lock)
         {
@@ -34,7 +34,7 @@ public class InMemoryProductCache : IProductCache
         }
     }
 
-    public Task RemoveProductAsync(int id, CancellationToken ct = default)
+    public Task RemoveProductAsync(Guid id, CancellationToken ct = default)
     {
         lock (_lock)
         {

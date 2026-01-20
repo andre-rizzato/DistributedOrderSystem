@@ -36,8 +36,8 @@ public class ShoppingCartService : IShoppingCartService
         _configuration = configuration;
         _logger = logger;
         _productService = productService;
-        _cartServiceBaseUrl = _configuration.GetValue<string>("Services:CartService:BaseUrl") ?? 
-                             "https://localhost:5004";
+        _cartServiceBaseUrl = _configuration.GetValue<string>("Services:GatewayBff:BaseUrl") ?? 
+                             "https://localhost:7000";
     }
 
     public async Task<ShoppingCartModel> GetCartAsync(string sessionId)
@@ -219,8 +219,8 @@ public class WishlistService : IWishlistService
         _configuration = configuration;
         _logger = logger;
         _productService = productService;
-        _wishlistServiceBaseUrl = _configuration.GetValue<string>("Services:WishlistService:BaseUrl") ?? 
-                                  "https://localhost:5006";
+        _wishlistServiceBaseUrl = _configuration.GetValue<string>("Services:GatewayBff:BaseUrl") ?? 
+                                  "https://localhost:7000";
     }
 
     public async Task<WishlistModel> GetWishlistAsync(Guid userId)

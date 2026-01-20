@@ -56,7 +56,7 @@ public class OrderCommandsController : ControllerBase
     }
 
     public record CreateOrderRequest(List<OrderItemDto> Items);
-    public record OrderItemDto(int ProductId, int Quantity, decimal UnitPrice);
+    public record OrderItemDto(Guid ProductId, int Quantity, decimal UnitPrice);
     public record CreateOrderResponse(int OrderId, string Status, decimal Total);
 
     [HttpPost("orders")]

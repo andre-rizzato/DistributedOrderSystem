@@ -20,7 +20,7 @@ public class ProductWorkerServices : IProductService
         return await _repository.GetAllProductsAsync(ct);
     }
 
-    public async Task<Product> GetProductByIdAsync(int id, CancellationToken ct = default)
+    public async Task<Product> GetProductByIdAsync(Guid id, CancellationToken ct = default)
     {
         var cachedProduct = await _cache.GetProductByIdAsync(id, ct);
         if (cachedProduct != null)
@@ -46,7 +46,7 @@ public class ProductWorkerServices : IProductService
         await _cache.SetProductAsync(product, ct);
     }
 
-    public async Task<bool> DeleteProductAsync(int id, CancellationToken ct = default)
+    public async Task<bool> DeleteProductAsync(Guid id, CancellationToken ct = default)
     {
         var deleted = await _repository.DeleteProductAsync(id, ct);
         if (deleted)

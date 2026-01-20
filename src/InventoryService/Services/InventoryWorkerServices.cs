@@ -21,7 +21,7 @@ public class InventoryWorkerService : IInventoryWorkerService
         _logger = logger;
     }
 
-    public async Task<bool> AdjustInventoryQuantityAsync(int productId, int delta, CancellationToken ct = default)
+    public async Task<bool> AdjustInventoryQuantityAsync(Guid productId, int delta, CancellationToken ct = default)
     {
         var item = await _db.InventoryItems.FirstOrDefaultAsync(i => i.ProductId == productId, ct);
         if (item == null)
@@ -42,7 +42,7 @@ public class InventoryWorkerService : IInventoryWorkerService
         return true;
     }
 
-    public async Task<InventoryItem?> GetInventoryByProductIdAsync(int productId, CancellationToken ct = default)
+    public async Task<InventoryItem?> GetInventoryByProductIdAsync(Guid productId, CancellationToken ct = default)
     {
        var cachedItem =  await _cache.GetInventoryItemByProductIdAsync(productId, ct);
        if (cachedItem is not null)
@@ -59,7 +59,7 @@ public class InventoryWorkerService : IInventoryWorkerService
          return item;
     }
 
-    public async Task<InventoryItem?> SetInventoryQuantityAsync(int productId, int quantity, CancellationToken ct = default)
+    public async Task<InventoryItem?> SetInventoryQuantityAsync(Guid productId, int quantity, CancellationToken ct = default)
     {
         var item = await _db.InventoryItems.FirstOrDefaultAsync(i => i.ProductId == productId,ct);
         if (item == null)

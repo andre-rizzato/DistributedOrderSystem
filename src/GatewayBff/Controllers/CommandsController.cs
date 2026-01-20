@@ -110,5 +110,5 @@ public class CommandsController : ControllerBase
 
 public record CreateProductRequest(string Name, decimal Price, string? Description);
 public record UpdateProductRequest(string Name, decimal Price, string? Description, bool IsActive);
-public record AdjustInventoryRequest(int ProductId, int Delta);
-public record SetInventoryRequest(int ProductId, int Quantity);
+public record AdjustInventoryRequest(Guid ProductId, int Delta);
+public record SetInventoryRequest(Guid ProductId, int Quantity);

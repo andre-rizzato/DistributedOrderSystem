@@ -19,8 +19,8 @@ public class RedisInventoryCache : IInventoryCache
         _settings = options.Value;
     }
 
-    private string Key(int productId) => $"{_settings.InventoryPrefix}:{productId}";
-    public async Task<InventoryItem?> GetInventoryItemByProductIdAsync(int productId, CancellationToken ct = default)
+    private string Key(Guid productId) => $"{_settings.InventoryPrefix}:{productId}";
+    public async Task<InventoryItem?> GetInventoryItemByProductIdAsync(Guid productId, CancellationToken ct = default)
     {
          var value = await _db.StringGetAsync(Key(productId));
          if (value.IsNullOrEmpty)
@@ -30,7 +30,7 @@ public class RedisInventoryCache : IInventoryCache
          return JsonSerializer.Deserialize<InventoryItem>(value.ToString());
     }
 
-    public async Task RemoveInventoryItemAsync(int productId, CancellationToken ct = default)
+    public async Task RemoveInventoryItemAsync(Guid productId, CancellationToken ct = default)
     {
         await _db.KeyDeleteAsync(Key(productId));   
     }

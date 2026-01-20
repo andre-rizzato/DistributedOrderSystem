@@ -4,7 +4,7 @@ using InventoryService.Models;
 
 public interface IInventoryCache
 {
-    Task<InventoryItem?> GetInventoryItemByProductIdAsync(int productId, CancellationToken ct = default);
+    Task<InventoryItem?> GetInventoryItemByProductIdAsync(Guid productId, CancellationToken ct = default);
     Task SetInventoryItemAsync(InventoryItem item, CancellationToken ct = default);
-    Task RemoveInventoryItemAsync(int productId, CancellationToken ct = default);
+    Task RemoveInventoryItemAsync(Guid productId, CancellationToken ct = default);
 }
