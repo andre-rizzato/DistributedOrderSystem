@@ -17,7 +17,7 @@ builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafk
 
 // Database
 builder.Services.AddDbContext<OrderContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("OrderDb")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("OrderDb")));
 
 // Servizi
 builder.Services.AddScoped<IOrderService, OrderWorkerService>();

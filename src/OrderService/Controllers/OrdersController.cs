@@ -86,11 +86,11 @@ public class OrderCommandsController : ControllerBase
         {
             var orderEvent = new OrderCreatedEvent
             {
-                OrderId = created.Id,
+                OrderId = created.Id.ToString(),
                 CreatedAt = created.CreatedAt,
                 Items = created.Items.Select(i => new OrderItemEvent
                 {
-                    ProductId = i.ProductId,
+                    ProductId = i.ProductId.ToString(),
                     Quantity = i.Quantity
                 }).ToList()
             };

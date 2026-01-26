@@ -18,8 +18,8 @@ public class QueriesController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("catalog/{id:int}")]
-    public async Task<ActionResult<CatalogItemDto>> GetCatalogItem(int id, CancellationToken ct)
+    [HttpGet("catalog/{id:guid}")]
+    public async Task<ActionResult<CatalogItemDto>> GetCatalogItem(Guid id, CancellationToken ct)
     {
         var result = await _mediator.Send(new GetProductByIdQuery(id), ct);
         if (result == null)

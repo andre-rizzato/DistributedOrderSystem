@@ -46,9 +46,9 @@ public class CommandsController : ControllerBase
         );
     }
 
-    [HttpPut("products/{id:int}")]
+    [HttpPut("products/{id:guid}")]
     public async Task<ActionResult<ProductDto>> UpdateProduct(
-        int id,
+        Guid id,
         [FromBody] UpdateProductRequest request,
         CancellationToken ct)
     {
@@ -61,8 +61,8 @@ public class CommandsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpDelete("products/{id:int}")]
-    public async Task<ActionResult> DeleteProduct(int id, CancellationToken ct)
+    [HttpDelete("products/{id:guid}")]
+    public async Task<ActionResult> DeleteProduct(Guid id, CancellationToken ct)
     {
         var command = new DeleteProductCommand(id);
         var success = await _mediator.Send(command, ct);
