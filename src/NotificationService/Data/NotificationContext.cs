@@ -146,6 +146,8 @@ public class NotificationContext : DbContext
     /// </summary>
     private static void SeedTemplates(ModelBuilder modelBuilder)
     {
+        var seedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        
         modelBuilder.Entity<NotificationTemplate>().HasData(
             new NotificationTemplate
             {
@@ -158,8 +160,8 @@ public class NotificationContext : DbContext
                 HtmlTemplate = "<h2>Conferma ordine #{orderId}</h2><p>Ciao <strong>{customerName}</strong>,</p><p>Grazie per il tuo ordine!</p><div>{orderDetails}</div><p><strong>Totale: {total}</strong></p>",
                 Variables = @"{""orderId"": ""ID ordine"", ""customerName"": ""Nome cliente"", ""orderDetails"": ""Dettagli ordine"", ""total"": ""Totale ordine"", ""companyName"": ""Nome azienda""}",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = seedDate,
+                UpdatedAt = seedDate
             },
             new NotificationTemplate
             {
@@ -171,8 +173,8 @@ public class NotificationContext : DbContext
                 ContentTemplate = "Ciao {customerName}! Il tuo ordine #{orderId} è stato spedito. Tracking: {trackingNumber}. Consegna prevista: {deliveryDate}",
                 Variables = @"{""orderId"": ""ID ordine"", ""customerName"": ""Nome cliente"", ""trackingNumber"": ""Codice tracking"", ""deliveryDate"": ""Data consegna""}",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = seedDate,
+                UpdatedAt = seedDate
             },
             new NotificationTemplate
             {
@@ -185,8 +187,8 @@ public class NotificationContext : DbContext
                 HtmlTemplate = "<h3>Promemoria Pagamento</h3><p>Ciao {customerName},</p><p>Il pagamento per l'ordine <strong>#{orderId}</strong> scadrà il <strong>{dueDate}</strong>.</p><p>Importo: <strong>{amount}</strong></p><p>Ti preghiamo di effettuare il pagamento entro la scadenza.</p>",
                 Variables = @"{""orderId"": ""ID ordine"", ""customerName"": ""Nome cliente"", ""dueDate"": ""Data scadenza"", ""amount"": ""Importo da pagare""}",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = seedDate,
+                UpdatedAt = seedDate
             },
             new NotificationTemplate
             {
@@ -198,8 +200,8 @@ public class NotificationContext : DbContext
                 ContentTemplate = "Ciao {userName}! Benvenuto in {appName}. Scopri tutte le funzionalità della nostra app e inizia subito a fare shopping!",
                 Variables = @"{""userName"": ""Nome utente"", ""appName"": ""Nome applicazione""}",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = seedDate,
+                UpdatedAt = seedDate
             },
             new NotificationTemplate
             {
@@ -211,8 +213,8 @@ public class NotificationContext : DbContext
                 ContentTemplate = "Attenzione: il sistema sarà in manutenzione il {maintenanceDate} dalle {startTime} alle {endTime}. Alcune funzionalità potrebbero non essere disponibili.",
                 Variables = @"{""maintenanceDate"": ""Data manutenzione"", ""startTime"": ""Ora inizio"", ""endTime"": ""Ora fine""}",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = seedDate,
+                UpdatedAt = seedDate
             }
         );
     }

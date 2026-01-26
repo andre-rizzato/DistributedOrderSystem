@@ -9,20 +9,20 @@ public class TrainingData
     public Guid Id { get; set; } = Guid.NewGuid();
     
     [Required]
-    [Column(TypeName = "nvarchar(max)")]
+    [Column(TypeName = "text")]
     public string Input { get; set; } = string.Empty;
     
     [Required]
-    [Column(TypeName = "nvarchar(max)")]
+    [Column(TypeName = "text")]
     public string ExpectedOutput { get; set; } = string.Empty;
     
     [MaxLength(50)]
     public string Intent { get; set; } = string.Empty;
     
-    [Column(TypeName = "nvarchar(max)")]
+    [Column(TypeName = "text")]
     public string? Entities { get; set; }
     
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
     
     public string? UserId { get; set; }
     
@@ -51,13 +51,13 @@ public class FineTuningJob
     public float CurrentLoss { get; set; }
     public float ValidationAccuracy { get; set; }
     
-    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     
-    [Column(TypeName = "nvarchar(max)")]
+    [Column(TypeName = "text")]
     public string? ErrorMessage { get; set; }
     
-    [Column(TypeName = "nvarchar(max)")]
+    [Column(TypeName = "text")]
     public string? TrainingParameters { get; set; }
     
     [MaxLength(500)]

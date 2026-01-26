@@ -25,7 +25,7 @@ public class UserDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
             entity.ToTable("Users");
             
             entity.Property(e => e.Id)
-                .HasDefaultValueSql("NEWSEQUENTIALID()");
+                .HasDefaultValueSql("gen_random_uuid()");
             
             entity.Property(e => e.FirstName)
                 .HasMaxLength(100);
@@ -52,7 +52,7 @@ public class UserDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
             entity.ToTable("Addresses");
             
             entity.Property(e => e.Id)
-                .HasDefaultValueSql("NEWSEQUENTIALID()");
+                .HasDefaultValueSql("gen_random_uuid()");
 
             entity.HasOne(e => e.User)
                 .WithMany(u => u.Addresses)
@@ -69,7 +69,7 @@ public class UserDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
             entity.ToTable("PaymentMethods");
             
             entity.Property(e => e.Id)
-                .HasDefaultValueSql("NEWSEQUENTIALID()");
+                .HasDefaultValueSql("gen_random_uuid()");
 
             entity.HasOne(e => e.User)
                 .WithMany(u => u.PaymentMethods)
@@ -86,7 +86,7 @@ public class UserDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
             entity.ToTable("RefreshTokens");
             
             entity.Property(e => e.Id)
-                .HasDefaultValueSql("NEWSEQUENTIALID()");
+                .HasDefaultValueSql("gen_random_uuid()");
 
             entity.HasIndex(e => e.Token).IsUnique();
             entity.HasIndex(e => e.UserId);
