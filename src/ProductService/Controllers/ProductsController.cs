@@ -632,25 +632,6 @@ public class ProductsController : ControllerBase
 }
 
 /// <summary>
-/// Request model for updating an existing product
-/// </summary>
-public class UpdateProductRequest
-{
-    [Required]
-    [StringLength(100, MinimumLength = 1)]
-    public string Name { get; set; } = string.Empty;
-
-    [Required]
-    [Range(0.01, 999999999.99, ErrorMessage = "Price must be greater than 0")]
-    public decimal Price { get; set; }
-
-    [StringLength(500)]
-    public string Description { get; set; } = string.Empty;
-
-    public bool IsActive { get; set; } = true;
-}
-
-/// <summary>
 /// Product review model
 /// </summary>
 public class ProductReview
@@ -680,3 +661,16 @@ public class CreateReviewRequest
     [StringLength(100, MinimumLength = 1)]
     public string ReviewerName { get; set; } = string.Empty;
 }
+
+public record CreateProductRequest(
+    [Required] string Name,
+    [Required] decimal Price,
+    string? Description
+);
+
+public record UpdateProductRequest(
+    [Required] string Name,
+    [Required] decimal Price,
+    string? Description,
+    bool IsActive
+);

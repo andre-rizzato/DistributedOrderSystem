@@ -140,7 +140,7 @@ public class OrderCreatedConsumer : BackgroundService
             {
                 // Riduce inventario della quantità ordinata (delta negativo)
                 var success = await inventoryService.AdjustInventoryQuantityAsync(
-                    item.ProductId,
+                    Guid.Parse(item.ProductId),
                     -item.Quantity,
                     ct);
 

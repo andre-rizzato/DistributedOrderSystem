@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using GatewayBff.Contracts;
 using MediatR;
 
-public record UpdateProductCommand(int Id, string Name, decimal Price, string? Description, bool IsActive) : IRequest<ProductDto>;
+public record UpdateProductCommand(Guid Id, string Name, decimal Price, string? Description, bool IsActive) : IRequest<ProductDto>;
 
 public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand, ProductDto>
 {

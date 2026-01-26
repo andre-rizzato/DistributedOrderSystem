@@ -47,14 +47,14 @@ var builder = WebApplication.CreateBuilder(args);
  * ================================================================ */
 
 // Configurazione del contesto database per Entity Framework
-// Utilizza SQL Server come database principale per memorizzare:
+// Utilizza PostgreSQL come database principale per memorizzare:
 // - Sessioni di chat degli utenti
 // - Cronologia dei messaggi
 // - Dati di training per l'AI
 // - Job di fine-tuning del modello
 builder.Services.AddDbContext<ChatContext>(options =>
-    // Connessione a SQL Server utilizzando la stringa di connessione "ChatbotDb"
-    options.UseSqlServer(builder.Configuration.GetConnectionString("ChatbotDb")));
+    // Connessione a PostgreSQL utilizzando la stringa di connessione "ChatbotDb"
+    options.UseNpgsql(builder.Configuration.GetConnectionString("ChatbotDb")));
 
 /* ================================================================
  * CONFIGURAZIONE REDIS

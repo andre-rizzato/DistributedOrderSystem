@@ -58,6 +58,6 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Cre
         return created;
     }
 
-    private record ProductDto(int Id, string Name, string? Description, decimal Price, bool IsActive);
-    private record InventoryDto(int ProductId, int AvailableQuantity, int ReservedQuantity);
+    private record ProductDto(Guid Id, string Name, string? Description, decimal Price, bool IsActive);
+    private record InventoryDto(Guid ProductId, int AvailableQuantity, int ReservedQuantity);
 }

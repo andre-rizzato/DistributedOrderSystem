@@ -23,7 +23,7 @@ public class GetCatalogQueryHandler : IRequestHandler<GetCatalogQuery, List<Cata
 
         var products = await productClient.GetFromJsonAsync<List<ProductDto>>("api/products", ct) ?? new();
 
-        var inventory = new Dictionary<int, int>();
+        var inventory = new Dictionary<Guid, int>();
         foreach (var p in products)
         {
             try
@@ -43,6 +43,6 @@ public class GetCatalogQueryHandler : IRequestHandler<GetCatalogQuery, List<Cata
         ).ToList();
     }
 
-    private record ProductDto(int Id, string Name, string? Description, decimal Price, bool IsActive);
-    private record InventoryDto(int ProductId, int AvailableQuantity, int ReservedQuantity);
+    private record ProductDto(Guid Id, string Name, string? Description, decimal Price, bool IsActive);
+    private record InventoryDto(Guid ProductId, int AvailableQuantity, int ReservedQuantity);
 }

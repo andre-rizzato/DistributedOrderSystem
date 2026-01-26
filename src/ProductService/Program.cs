@@ -12,12 +12,12 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// EF Core + SQL Server
+// EF Core + PostgreSQL
 builder.Services.AddDbContext<ProductDbContext>(options =>
 {
     var cs = builder.Configuration.GetConnectionString("ProductDb")
-             ?? "Server=localhost,1433;Database=ProductDb;User Id=sa;Password=YourStrong_Password123;TrustServerCertificate=True;";
-    options.UseSqlServer(cs);
+             ?? "Host=localhost;Port=5432;Database=ProductDb;Username=postgres;Password=YourStrong_Password123;";
+    options.UseNpgsql(cs);
 });
 
 // Configurazione Redis

@@ -22,7 +22,7 @@ public record OrderCreatedEvent
     /// ID univoco dell'ordine creato.
     /// Utilizzato per tracciare quale ordine ha triggerato l'evento.
     /// </summary>
-    public int OrderId { get; init; }
+    public string OrderId { get; init; } = string.Empty;
     
     /// <summary>
     /// Timestamp UTC di quando l'ordine è stato creato.
@@ -47,7 +47,7 @@ public record OrderItemEvent
     /// ID del prodotto ordinato.
     /// Corrisponde al ProductId in ProductService e InventoryService.
     /// </summary>
-    public int ProductId { get; init; }
+    public string ProductId { get; init; } = string.Empty;
     
     /// <summary>
     /// Quantità ordinata del prodotto.
