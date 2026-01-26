@@ -16,15 +16,15 @@ public class ChatSession
     [MaxLength(20)]
     public string? UserPhone { get; set; }
     
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime LastInteractionAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
+    public DateTime LastInteractionAt { get; set; }
     
     [MaxLength(50)]
     public string Status { get; set; } = "Active";
     
     public bool IsAuthenticated { get; set; }
     
-    [Column(TypeName = "nvarchar(max)")]
+    [Column(TypeName = "text")]
     public string? Context { get; set; }
     
     // Navigation property

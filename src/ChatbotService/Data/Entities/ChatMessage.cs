@@ -14,11 +14,11 @@ public class ChatMessage
     public string? UserId { get; set; }
     
     [Required]
-    [Column(TypeName = "nvarchar(max)")]
+    [Column(TypeName = "text")]
     public string UserMessage { get; set; } = string.Empty;
     
     [Required]
-    [Column(TypeName = "nvarchar(max)")]
+    [Column(TypeName = "text")]
     public string BotResponse { get; set; } = string.Empty;
     
     [MaxLength(50)]
@@ -29,11 +29,11 @@ public class ChatMessage
     [MaxLength(20)]
     public string Sentiment { get; set; } = "neutral";
     
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
     
     public bool RequiredHumanEscalation { get; set; }
     
-    [Column(TypeName = "nvarchar(max)")]
+    [Column(TypeName = "text")]
     public string? Metadata { get; set; }
     
     // Foreign key
