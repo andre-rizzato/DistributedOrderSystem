@@ -50,7 +50,7 @@ public class ChatController : ControllerBase
                 Message = "I'm sorry, I'm having trouble understanding right now. Please try again.",
                 Intent = "error",
                 Confidence = 0,
-                SessionId = request.SessionId
+                SessionId = request.SessionId ?? string.Empty
             });
         }
     }

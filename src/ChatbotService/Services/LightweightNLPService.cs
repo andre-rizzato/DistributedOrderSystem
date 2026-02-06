@@ -187,28 +187,28 @@ public class LightweightNLPService : INLPService
         }
     }
 
-    private async Task<Intent> ClassifyWithMLModel(string message, Dictionary<string, string> parameters)
+    private Task<Intent> ClassifyWithMLModel(string message, Dictionary<string, string> parameters)
     {
         try
         {
             var input = new IntentInput { Text = message };
             var prediction = _predictionEngine!.Predict(input);
 
-            return new Intent
+            return Task.FromResult(new Intent
             {
                 Type = prediction.Intent ?? IntentTypes.UNKNOWN,
                 Confidence = prediction.Confidence,
                 Parameters = parameters
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error with ML model prediction");
-            return new Intent { Type = IntentTypes.UNKNOWN, Confidence = 0.2f, Parameters = parameters };
+            return Task.FromResult(new Intent { Type = IntentTypes.UNKNOWN, Confidence = 0.2f, Parameters = parameters });
         }
     }
 
-    public async Task<List<EntityExtractionResult>> ExtractEntitiesAsync(string message)
+    public Task<List<EntityExtractionResult>> ExtractEntitiesAsync(string message)
     {
         var entities = new List<EntityExtractionResult>();
 
@@ -268,10 +268,10 @@ public class LightweightNLPService : INLPService
             });
         }
 
-        return entities;
+        return Task.FromResult(entities);
     }
 
-    public async Task<string> AnalyzeSentimentAsync(string message)
+    public Task<string> AnalyzeSentimentAsync(string message)
     {
         // Lightweight sentiment analysis using word lists
         var positiveWords = new[] { "bene", "ottimo", "perfetto", "grazie", "fantastico", "eccellente", "soddisfatto", "felice", "buono" };
@@ -282,17 +282,17 @@ public class LightweightNLPService : INLPService
         var negativeScore = negativeWords.Count(word => lowerMessage.Contains(word));
 
         if (negativeScore > positiveScore && negativeScore > 0)
-            return "negative";
+            return Task.FromResult("negative");
         else if (positiveScore > negativeScore && positiveScore > 0)
-            return "positive";
+            return Task.FromResult("positive");
         else
-            return "neutral";
+            return Task.FromResult("neutral");
     }
 
-    public async Task<string> GenerateResponseAsync(string message, string intent, Dictionary<string, string> parameters)
+    public Task<string> GenerateResponseAsync(string message, string intent, Dictionary<string, string> parameters)
     {
         // Simple template-based response generation
-        return intent switch
+        return Task.FromResult(intent switch
         {
             IntentTypes.GREETING => GetRandomResponse(new[]
             {
@@ -312,10 +312,10 @@ public class LightweightNLPService : INLPService
             }),
             IntentTypes.HELP => "Ecco cosa posso fare per te:\n• 📦 Verificare lo stato degli ordini\n• 🔍 Cercare prodotti\n• 💳 Fornire informazioni sui pagamenti\n• ❌ Aiutarti con le cancellazioni",
             _ => "Mi dispiace, non ho capito bene. Puoi riformulare la domanda?"
-        };
+        });
     }
 
-    public async Task<float[]> GetEmbeddingAsync(string text)
+    public Task<float[]> GetEmbeddingAsync(string text)
     {
         // Simple word-based embedding (for demonstration)
         // In production, use a real embedding model
@@ -340,10 +340,10 @@ public class LightweightNLPService : INLPService
             }
         }
 
-        return embedding;
+        return Task.FromResult(embedding);
     }
 
-    public async Task<bool> LoadModelAsync(string modelPath)
+    public Task<bool> LoadModelAsync(string modelPath)
     {
         try
         {
@@ -354,18 +354,18 @@ public class LightweightNLPService : INLPService
                 _isModelLoaded = true;
                 
                 _logger.LogInformation("Successfully loaded ML model from {ModelPath}", modelPath);
-                return true;
+                return Task.FromResult(true);
             }
             else
             {
                 _logger.LogWarning("Model file not found at {ModelPath}", modelPath);
-                return false;
+                return Task.FromResult(false);
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load model from {ModelPath}", modelPath);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
