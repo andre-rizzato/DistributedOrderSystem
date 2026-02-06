@@ -1,4 +1,5 @@
 services:
+  # ==================== Infrastructure ====================
   postgres:
     image: postgres:16-alpine
     container_name: dos_postgres
@@ -39,7 +40,7 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
@@ -64,6 +65,165 @@ services:
       KAFKA_CLUSTERS_0_NAME: distributed-order-system
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
       DYNAMIC_CONFIG_ENABLED: 'true'
+
+  # ==================== Microservices ====================
+  order-service:
+    build:
+      context: ../src
+      dockerfile: OrderService/Dockerfile
+    container_name: dos_order_service
+    ports:
+      - "5003:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - dos_network
+
+  product-service:
+    build:
+      context: ../src
+      dockerfile: ProductService/Dockerfile
+    container_name: dos_product_service
+    ports:
+      - "5198:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dos_network
+
+  inventory-service:
+    build:
+      context: ../src
+      dockerfile: InventoryService/Dockerfile
+    container_name: dos_inventory_service
+    ports:
+      - "5051:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - dos_network
+
+  payment-service:
+    build:
+      context: ../src
+      dockerfile: PaymentService/Dockerfile
+    container_name: dos_payment_service
+    ports:
+      - "5034:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - dos_network
+
+  notification-service:
+    build:
+      context: ../src
+      dockerfile: NotificationService/Dockerfile
+    container_name: dos_notification_service
+    ports:
+      - "5246:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      kafka:
+        condition: service_started
+    networks:
+      - dos_network
+
+  user-service:
+    build:
+      context: ../src
+      dockerfile: UserService/Dockerfile
+    container_name: dos_user_service
+    ports:
+      - "5010:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dos_network
+
+  customer-service:
+    build:
+      context: ../src
+      dockerfile: CustomerService/Dockerfile
+    container_name: dos_customer_service
+    ports:
+      - "5009:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dos_network
+
+  chatbot-service:
+    build:
+      context: ../src
+      dockerfile: ChatbotService/Dockerfile
+    container_name: dos_chatbot_service
+    ports:
+      - "5055:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dos_network
+
+  gateway-bff:
+    build:
+      context: ../src
+      dockerfile: GatewayBff/Dockerfile
+    container_name: dos_gateway_bff
+    ports:
+      - "5189:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      - order-service
+      - product-service
+      - inventory-service
+      - payment-service
+      - notification-service
+      - user-service
+      - customer-service
+      - chatbot-service
+    networks:
+      - dos_network
 
 volumes:
   postgres_data:

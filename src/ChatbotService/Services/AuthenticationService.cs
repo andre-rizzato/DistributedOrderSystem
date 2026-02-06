@@ -77,7 +77,7 @@ public class AuthenticationService : IAuthenticationService
         };
     }
 
-    public async Task<bool> ValidateTokenAsync(string token)
+    public Task<bool> ValidateTokenAsync(string token)
     {
         try
         {
@@ -96,11 +96,11 @@ public class AuthenticationService : IAuthenticationService
                 ClockSkew = TimeSpan.Zero
             }, out SecurityToken validatedToken);
 
-            return true;
+            return Task.FromResult(true);
         }
         catch
         {
-            return false;
+            return Task.FromResult(false);
         }
     }
 

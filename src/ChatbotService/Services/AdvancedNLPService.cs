@@ -20,7 +20,9 @@ public class AdvancedNLPService : INLPService, IDisposable
     private readonly HttpClient _httpClient;
     
     // ONNX Runtime session for the model
+#pragma warning disable CS0649 // Field is assigned dynamically via model loading
     private InferenceSession? _inferenceSession;
+#pragma warning restore CS0649
     private bool _isModelLoaded;
     private readonly Dictionary<string, List<string>> _intentPatterns;
     private readonly Dictionary<string, string[]> _responseTemplates;

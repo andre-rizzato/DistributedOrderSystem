@@ -36,7 +36,7 @@ public class AiDashboardController : ControllerBase
     /// Get comprehensive AI dashboard
     /// </summary>
     [HttpGet("")]
-    public async Task<IActionResult> GetDashboard()
+    public Task<IActionResult> GetDashboard()
     {
         var html = $@"
 <!DOCTYPE html>
@@ -411,14 +411,14 @@ public class AiDashboardController : ControllerBase
 </body>
 </html>";
 
-        return Content(html, "text/html");
+        return Task.FromResult<IActionResult>(Content(html, "text/html"));
     }
 
     /// <summary>
     /// Get current model status
     /// </summary>
     [HttpGet("model-status")]
-    public async Task<IActionResult> GetModelStatus()
+    public Task<IActionResult> GetModelStatus()
     {
         try
         {
@@ -431,7 +431,7 @@ public class AiDashboardController : ControllerBase
                 modelName = isLoaded ? "Microsoft DialoGPT-small" : "DialoGPT (Non caricato)";
             }
 
-            return Ok(new
+            return Task.FromResult<IActionResult>(Ok(new
             {
                 isLoaded,
                 modelName,
@@ -439,12 +439,12 @@ public class AiDashboardController : ControllerBase
                 language = "Italian/English",
                 version = "1.0.0",
                 lastUpdate = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
-            });
+            }));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting model status");
-            return StatusCode(500, new { error = "Error retrieving model status" });
+            return Task.FromResult<IActionResult>(StatusCode(500, new { error = "Error retrieving model status" }));
         }
     }
 
