@@ -1,230 +1,64 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using ProductService.Models;
-using ProductService.Services.Interfaces;
 using System.ComponentModel.DataAnnotations;
+using ProductService.Application.Commands.CreateProduct;
+using ProductService.Application.Commands.UpdateProduct;
+using ProductService.Application.Commands.DeleteProduct;
+using ProductService.Application.Queries.GetAllProducts;
+using ProductService.Application.Queries.GetProductById;
+using ProductService.Application.Queries.SearchProducts;
+using ProductService.Application.DTOs;
 
 namespace ProductService.Controllers;
 
+/// <summary>
+/// Controller thin per i prodotti — Clean Architecture + Full CQRS.
+/// OGNI operazione passa attraverso MediatR (Send) come Command o Query.
+/// Il controller non contiene logica di business: solo mapping HTTP → CQRS.
+/// 
+/// Pipeline MediatR:
+///   Request → ValidationBehavior → LoggingBehavior → Handler → Response
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
 public class ProductsController : ControllerBase
 {
-    private readonly IProductService _productService;
+    private readonly IMediator _mediator;
     private readonly ILogger<ProductsController> _logger;
 
-    public ProductsController(IProductService productService, ILogger<ProductsController> logger)
+    public ProductsController(IMediator mediator, ILogger<ProductsController> logger)
     {
-        _productService = productService ?? throw new ArgumentNullException(nameof(productService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _mediator = mediator;
+        _logger = logger;
     }
 
-    /// <summary>
-    /// Get all products
-    /// </summary>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>List of all products</returns>
+    // ── QUERIES (read-side) ──────────────────────────────────────
+
+    /// <summary>GET api/products</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<Product>>> GetAllProducts(CancellationToken ct = default)
+    [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAllProducts(CancellationToken ct)
     {
-        try
-        {
-            _logger.LogInformation("Recupero di tutti i prodotti");
-            var products = await _productService.GetAllProductsAsync(ct);
-            
-            _logger.LogInformation("Recuperati con successo {ProductCount} prodotti", 
-                products?.Count() ?? 0);
-            
-            return Ok(products);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante il recupero di tutti i prodotti");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+        var result = await _mediator.Send(new GetAllProductsQuery(), ct);
+        return Ok(result);
     }
 
-    /// <summary>
-    /// Get product by ID
-    /// </summary>
-    /// <param name="id">Product ID</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>Product details</returns>
+    /// <summary>GET api/products/{id}</summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<Product>> GetProduct(Guid id, CancellationToken ct = default)
+    public async Task<ActionResult<ProductDto>> GetProduct(Guid id, CancellationToken ct)
     {
-        try
-        {
-            _logger.LogInformation("Recupero prodotto con ID: {ProductId}", id);
-            var product = await _productService.GetProductByIdAsync(id, ct);
-
-            if (product == null)
-            {
-                _logger.LogInformation("Prodotto con ID {ProductId} non trovato", id);
-                return NotFound($"Product with ID {id} not found");
-            }
-
-            _logger.LogInformation("Prodotto recuperato con successo: {ProductId}", id);
-            return Ok(product);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante il recupero del prodotto {ProductId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+        var result = await _mediator.Send(new GetProductByIdQuery(id), ct);
+        if (result is null) return NotFound($"Product with ID {id} not found");
+        return Ok(result);
     }
 
-    /// <summary>
-    /// Create a new product
-    /// </summary>
-    /// <param name="product">Product to create</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>Created product</returns>
-    [HttpPost]
-    [ProducesResponseType(typeof(Product), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<Product>> CreateProduct([FromBody] CreateProductRequest product, CancellationToken ct = default)
-    {
-        try
-        {
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Modello prodotto non valido fornito");
-                return BadRequest(ModelState);
-            }
-
-            _logger.LogInformation("Creazione nuovo prodotto: {ProductName}", product.Name);
-
-            var newProduct = new Product
-            {
-                Name = product.Name,
-                Price = product.Price,
-                Description = product.Description,
-                IsActive = true
-            };
-
-            await _productService.AddProductAsync(newProduct, ct);
-
-            _logger.LogInformation("Prodotto creato con successo con ID: {ProductId}", newProduct.Id);
-            return CreatedAtAction(nameof(GetProduct), new { id = newProduct.Id }, newProduct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante la creazione del prodotto");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
-    }
-
-    /// <summary>
-    /// Update an existing product
-    /// </summary>
-    /// <param name="id">Product ID</param>
-    /// <param name="product">Updated product data</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>Updated product</returns>
-    [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<Product>> UpdateProduct(Guid id, [FromBody] UpdateProductRequest product, CancellationToken ct = default)
-    {
-        try
-        {
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Modello prodotto non valido fornito per ID: {ProductId}", id);
-                return BadRequest(ModelState);
-            }
-
-            _logger.LogInformation("Aggiornamento prodotto con ID: {ProductId}", id);
-
-            // Verifica se il prodotto esistente
-            var existingProduct = await _productService.GetProductByIdAsync(id, ct);
-            if (existingProduct == null)
-            {
-                _logger.LogInformation("Prodotto con ID {ProductId} non trovato per aggiornamento", id);
-                return NotFound($"Product with ID {id} not found");
-            }
-
-            // Aggiorna le proprietà del prodotto
-            existingProduct.Name = product.Name;
-            existingProduct.Price = product.Price;
-            existingProduct.Description = product.Description;
-            existingProduct.IsActive = product.IsActive;
-
-            await _productService.UpdateProductAsync(existingProduct, ct);
-
-            _logger.LogInformation("Prodotto aggiornato con successo con ID: {ProductId}", id);
-            return Ok(existingProduct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante l'aggiornamento del prodotto {ProductId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
-    }
-
-    /// <summary>
-    /// Delete a product
-    /// </summary>
-    /// <param name="id">Product ID</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>No content if successful</returns>
-    [HttpDelete("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> DeleteProduct(Guid id, CancellationToken ct = default)
-    {
-        try
-        {
-            _logger.LogInformation("Eliminazione prodotto con ID: {ProductId}", id);
-
-            var deleted = await _productService.DeleteProductAsync(id, ct);
-            if (!deleted)
-            {
-                _logger.LogInformation("Prodotto con ID {ProductId} non trovato per eliminazione", id);
-                return NotFound($"Product with ID {id} not found");
-            }
-
-            _logger.LogInformation("Prodotto eliminato con successo con ID: {ProductId}", id);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante l'eliminazione del prodotto {ProductId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                "An error occurred while processing your request");
-        }
-    }
-
-    /// <summary>
-    /// Search products with filters
-    /// </summary>
-    /// <param name="searchTerm">Search term for product name or description</param>
-    /// <param name="category">Filter by category</param>
-    /// <param name="minPrice">Minimum price filter</param>
-    /// <param name="maxPrice">Maximum price filter</param>
-    /// <param name="isActive">Filter by active status</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>List of matching products</returns>
+    /// <summary>GET api/products/search</summary>
     [HttpGet("search")]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<Product>>> SearchProducts(
+    [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> SearchProducts(
         [FromQuery] string? searchTerm = null,
         [FromQuery] string? category = null,
         [FromQuery] decimal? minPrice = null,
@@ -232,408 +66,197 @@ public class ProductsController : ControllerBase
         [FromQuery] bool? isActive = true,
         CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Ricerca prodotti con filtri: SearchTerm={SearchTerm}, Category={Category}", searchTerm, category);
-            
-            var products = await _productService.GetAllProductsAsync(ct);
-            
-            // Apply filters
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                products = products.Where(p => 
-                    p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    p.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
-            }
-            
-            if (!string.IsNullOrWhiteSpace(category))
-            {
-                // For now, we'll add category support later
-                _logger.LogWarning("Category filtering not yet implemented");
-            }
-            
-            if (minPrice.HasValue)
-            {
-                products = products.Where(p => p.Price >= minPrice.Value);
-            }
-            
-            if (maxPrice.HasValue)
-            {
-                products = products.Where(p => p.Price <= maxPrice.Value);
-            }
-            
-            if (isActive.HasValue)
-            {
-                products = products.Where(p => p.IsActive == isActive.Value);
-            }
-            
-            var result = products.ToList();
-            _logger.LogInformation("Trovati {Count} prodotti corrispondenti", result.Count);
-            
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante la ricerca prodotti");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+        var result = await _mediator.Send(
+            new SearchProductsQuery(searchTerm, category, minPrice, maxPrice, isActive), ct);
+        return Ok(result);
     }
 
-    /// <summary>
-    /// Get featured products
-    /// </summary>
-    /// <param name="count">Number of featured products to return</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>List of featured products</returns>
+    /// <summary>GET api/products/featured</summary>
     [HttpGet("featured")]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<Product>>> GetFeaturedProducts(
-        [FromQuery] int count = 10,
-        CancellationToken ct = default)
+    [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetFeaturedProducts(
+        [FromQuery] int count = 10, CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Recupero {Count} prodotti in evidenza", count);
-            
-            var products = await _productService.GetAllProductsAsync(ct);
-            var featured = products
-                .Where(p => p.IsActive)
-                .OrderByDescending(p => p.Price) // Simple logic: highest priced items
-                .Take(count)
-                .ToList();
-            
-            return Ok(featured);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante il recupero dei prodotti in evidenza");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+        var all = await _mediator.Send(new GetAllProductsQuery(), ct);
+        var featured = all.Where(p => p.IsActive).OrderByDescending(p => p.Price).Take(count);
+        return Ok(featured);
     }
 
-    /// <summary>
-    /// Get bestseller products
-    /// </summary>
-    /// <param name="count">Number of bestseller products to return</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>List of bestseller products</returns>
+    /// <summary>GET api/products/bestsellers</summary>
     [HttpGet("bestsellers")]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<Product>>> GetBestsellers(
-        [FromQuery] int count = 10,
-        CancellationToken ct = default)
+    [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetBestsellers(
+        [FromQuery] int count = 10, CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Recupero {Count} prodotti più venduti", count);
-            
-            var products = await _productService.GetAllProductsAsync(ct);
-            // TODO: Implement actual sales tracking
-            // For now, return random active products
-            var bestsellers = products
-                .Where(p => p.IsActive)
-                .Take(count)
-                .ToList();
-            
-            return Ok(bestsellers);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante il recupero dei bestseller");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+        var all = await _mediator.Send(new GetAllProductsQuery(), ct);
+        var bestsellers = all.Where(p => p.IsActive).Take(count);
+        return Ok(bestsellers);
     }
 
-    /// <summary>
-    /// Get recommended products
-    /// </summary>
-    /// <param name="count">Number of recommended products to return</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>List of recommended products</returns>
+    /// <summary>GET api/products/recommended</summary>
     [HttpGet("recommended")]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<Product>>> GetRecommendedProducts(
-        [FromQuery] int count = 10,
-        CancellationToken ct = default)
+    [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetRecommendedProducts(
+        [FromQuery] int count = 10, CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Recupero {Count} prodotti consigliati", count);
-            
-            var products = await _productService.GetAllProductsAsync(ct);
-            // TODO: Implement recommendation engine
-            // For now, return active products
-            var recommended = products
-                .Where(p => p.IsActive)
-                .Take(count)
-                .ToList();
-            
-            return Ok(recommended);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante il recupero dei prodotti consigliati");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+        var all = await _mediator.Send(new GetAllProductsQuery(), ct);
+        var recommended = all.Where(p => p.IsActive).Take(count);
+        return Ok(recommended);
     }
 
-    /// <summary>
-    /// Get related products for a specific product
-    /// </summary>
-    /// <param name="productId">Product ID to find related products for</param>
-    /// <param name="count">Number of related products to return</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>List of related products</returns>
+    /// <summary>GET api/products/{productId}/related</summary>
     [HttpGet("{productId:guid}/related")]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<Product>>> GetRelatedProducts(
-        Guid productId,
-        [FromQuery] int count = 5,
-        CancellationToken ct = default)
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetRelatedProducts(
+        Guid productId, [FromQuery] int count = 5, CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Recupero prodotti correlati per {ProductId}", productId);
-            
-            var product = await _productService.GetProductByIdAsync(productId, ct);
-            if (product == null)
-            {
-                return NotFound($"Product with ID {productId} not found");
-            }
-            
-            var allProducts = await _productService.GetAllProductsAsync(ct);
-            // TODO: Implement proper related products logic based on category, tags, etc.
-            // For now, return other active products excluding the current one
-            var related = allProducts
-                .Where(p => p.IsActive && p.Id != productId)
-                .Take(count)
-                .ToList();
-            
-            return Ok(related);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante il recupero dei prodotti correlati");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+        var product = await _mediator.Send(new GetProductByIdQuery(productId), ct);
+        if (product is null) return NotFound($"Product with ID {productId} not found");
+
+        var all = await _mediator.Send(new GetAllProductsQuery(), ct);
+        var related = all.Where(p => p.IsActive && p.Id != productId).Take(count);
+        return Ok(related);
     }
 
-    /// <summary>
-    /// Get all categories
-    /// </summary>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>List of categories</returns>
+    /// <summary>GET api/categories</summary>
     [HttpGet("~/api/categories")]
     [ProducesResponseType(typeof(IEnumerable<string>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<string>>> GetCategories(CancellationToken ct = default)
+    public ActionResult<IEnumerable<string>> GetCategories()
     {
-        try
+        var categories = new List<string>
         {
-            _logger.LogInformation("Recupero tutte le categorie");
-            
-            // TODO: Implement proper category table
-            // For now, return hardcoded categories
-            var categories = new List<string>
-            {
-                "Electronics",
-                "Clothing",
-                "Home & Garden",
-                "Sports",
-                "Books",
-                "Toys",
-                "Food & Beverages"
-            };
-            
-            return Ok(categories);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante il recupero delle categorie");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+            "Electronics", "Clothing", "Home & Garden", "Sports", "Books", "Toys", "Food & Beverages"
+        };
+        return Ok(categories);
     }
 
-    /// <summary>
-    /// Get products by category
-    /// </summary>
-    /// <param name="categoryName">Category name</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>List of products in the category</returns>
+    /// <summary>GET api/categories/{categoryName}/products</summary>
     [HttpGet("~/api/categories/{categoryName}/products")]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<Product>>> GetProductsByCategory(
-        string categoryName,
-        CancellationToken ct = default)
+    [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsByCategory(
+        string categoryName, CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Recupero prodotti per categoria: {Category}", categoryName);
-            
-            // TODO: Implement proper category filtering
-            // For now, return all active products
-            var products = await _productService.GetAllProductsAsync(ct);
-            var result = products.Where(p => p.IsActive).ToList();
-            
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante il recupero dei prodotti per categoria");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+        var all = await _mediator.Send(new GetAllProductsQuery(), ct);
+        return Ok(all.Where(p => p.IsActive));
     }
 
-    /// <summary>
-    /// Get all brands
-    /// </summary>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>List of brands</returns>
+    /// <summary>GET api/products/brands</summary>
     [HttpGet("brands")]
     [ProducesResponseType(typeof(IEnumerable<string>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<string>>> GetBrands(CancellationToken ct = default)
+    public ActionResult<IEnumerable<string>> GetBrands()
     {
-        try
-        {
-            _logger.LogInformation("Recupero tutti i brand");
-            
-            // TODO: Implement proper brand table
-            // For now, return hardcoded brands
-            var brands = new List<string>
-            {
-                "BrandA",
-                "BrandB",
-                "BrandC",
-                "BrandD",
-                "BrandE"
-            };
-            
-            return Ok(brands);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante il recupero dei brand");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+        return Ok(new List<string> { "BrandA", "BrandB", "BrandC", "BrandD", "BrandE" });
     }
 
-    /// <summary>
-    /// Get product reviews
-    /// </summary>
-    /// <param name="productId">Product ID</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>List of reviews for the product</returns>
+    /// <summary>GET api/products/{productId}/reviews</summary>
     [HttpGet("{productId:guid}/reviews")]
     [ProducesResponseType(typeof(IEnumerable<ProductReview>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<ProductReview>>> GetProductReviews(
-        Guid productId,
-        CancellationToken ct = default)
+        Guid productId, CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Recupero recensioni per prodotto {ProductId}", productId);
-            
-            var product = await _productService.GetProductByIdAsync(productId, ct);
-            if (product == null)
-            {
-                return NotFound($"Product with ID {productId} not found");
-            }
-            
-            // TODO: Implement proper review storage
-            // For now, return empty list
-            var reviews = new List<ProductReview>();
-            
-            return Ok(reviews);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Errore durante il recupero delle recensioni");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
-        }
+        var product = await _mediator.Send(new GetProductByIdQuery(productId), ct);
+        if (product is null) return NotFound($"Product with ID {productId} not found");
+        return Ok(new List<ProductReview>());
     }
 
-    /// <summary>
-    /// Add a product review
-    /// </summary>
-    /// <param name="productId">Product ID</param>
-    /// <param name="review">Review details</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>Created review</returns>
+    /// <summary>POST api/products/{productId}/reviews</summary>
     [HttpPost("{productId:guid}/reviews")]
     [ProducesResponseType(typeof(ProductReview), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductReview>> AddProductReview(
-        Guid productId,
-        [FromBody] CreateReviewRequest review,
-        CancellationToken ct = default)
+        Guid productId, [FromBody] CreateReviewRequest review, CancellationToken ct = default)
     {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var product = await _mediator.Send(new GetProductByIdQuery(productId), ct);
+        if (product is null) return NotFound($"Product with ID {productId} not found");
+
+        var newReview = new ProductReview
+        {
+            Id = Guid.NewGuid(),
+            ProductId = productId,
+            Rating = review.Rating,
+            Comment = review.Comment,
+            ReviewerName = review.ReviewerName,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        return CreatedAtAction(nameof(GetProductReviews), new { productId }, newReview);
+    }
+
+    // ── COMMANDS (write-side) ────────────────────────────────────
+
+    /// <summary>POST api/products</summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ProductDto>> CreateProduct(
+        [FromBody] CreateProductRequest request, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
         try
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-            
-            _logger.LogInformation("Aggiunta recensione per prodotto {ProductId}", productId);
-            
-            var product = await _productService.GetProductByIdAsync(productId, ct);
-            if (product == null)
-            {
-                return NotFound($"Product with ID {productId} not found");
-            }
-            
-            // TODO: Implement proper review storage
-            var newReview = new ProductReview
-            {
-                Id = Guid.NewGuid(),
-                ProductId = productId,
-                Rating = review.Rating,
-                Comment = review.Comment,
-                ReviewerName = review.ReviewerName,
-                CreatedAt = DateTime.UtcNow
-            };
-            
-            return CreatedAtAction(nameof(GetProductReviews), new { productId }, newReview);
+            var result = await _mediator.Send(
+                new CreateProductCommand(request.Name, request.Price, request.Description), ct);
+            return CreatedAtAction(nameof(GetProduct), new { id = result.Id }, result);
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiunta della recensione");
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                "An error occurred while processing your request");
+            return BadRequest(ex.Errors.Select(e => e.ErrorMessage));
         }
     }
 
-    [Required]
-    [Range(0.01, 999999999.99, ErrorMessage = "Price must be greater than 0")]
-    public decimal Price { get; set; }
+    /// <summary>PUT api/products/{id}</summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ProductDto>> UpdateProduct(
+        Guid id, [FromBody] UpdateProductRequest request, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
-    [StringLength(500)]
-    public string Description { get; set; } = string.Empty;
+        try
+        {
+            var result = await _mediator.Send(
+                new UpdateProductCommand(id, request.Name, request.Price, request.Description, request.IsActive), ct);
+            if (result is null) return NotFound($"Product with ID {id} not found");
+            return Ok(result);
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            return BadRequest(ex.Errors.Select(e => e.ErrorMessage));
+        }
+    }
+
+    /// <summary>DELETE api/products/{id}</summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> DeleteProduct(Guid id, CancellationToken ct)
+    {
+        var deleted = await _mediator.Send(new DeleteProductCommand(id), ct);
+        if (!deleted) return NotFound($"Product with ID {id} not found");
+        return NoContent();
+    }
 }
 
-/// <summary>
-/// Product review model
-/// </summary>
+// ── Request/Response DTOs (Presentation layer) ──────────────────
+
+public record CreateProductRequest(
+    [Required] string Name,
+    [Required] decimal Price,
+    string? Description);
+
+public record UpdateProductRequest(
+    [Required] string Name,
+    [Required] decimal Price,
+    string? Description,
+    bool IsActive);
+
 public class ProductReview
 {
     public Guid Id { get; set; }
@@ -644,9 +267,6 @@ public class ProductReview
     public DateTime CreatedAt { get; set; }
 }
 
-/// <summary>
-/// Request model for creating a product review
-/// </summary>
 public class CreateReviewRequest
 {
     [Required]
@@ -661,16 +281,3 @@ public class CreateReviewRequest
     [StringLength(100, MinimumLength = 1)]
     public string ReviewerName { get; set; } = string.Empty;
 }
-
-public record CreateProductRequest(
-    [Required] string Name,
-    [Required] decimal Price,
-    string? Description
-);
-
-public record UpdateProductRequest(
-    [Required] string Name,
-    [Required] decimal Price,
-    string? Description,
-    bool IsActive
-);
