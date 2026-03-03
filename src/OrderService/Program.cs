@@ -1,29 +1,34 @@
 using Scalar.AspNetCore;
 using Microsoft.EntityFrameworkCore;
-using OrderService.Data;
-using OrderService.Services;
-using OrderService.Messaging;
-using OrderService.Configuration;
+using OrderService.Infrastructure.Data;
+using OrderService.Infrastructure.Repositories;
+using OrderService.Infrastructure.Messaging;
+using OrderService.Infrastructure.Configuration;
+using OrderService.Domain.Interfaces;
+using OrderService.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Aggiungi servizi al contenitore
+// ── Presentation ──
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
-// Configurazione
+// ── Infrastructure: Configurazione ──
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
 
-// Database
+// ── Infrastructure: Database (EF Core + PostgreSQL) ──
 builder.Services.AddDbContext<OrderContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("OrderDb")));
 
-// Servizi
-builder.Services.AddScoped<IOrderService, OrderWorkerService>();
+// ── Infrastructure: Repository (implementa interfaccia del Domain layer) ──
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-// Produttore Kafka
+// ── Infrastructure: Messaging (Kafka) ──
 builder.Services.AddSingleton<IOrderEventProducer, OrderEventProducer>();
+
+// ── Application: Servizio applicativo ──
+builder.Services.AddScoped<IOrderApplicationService, OrderApplicationService>();
 
 // CORS
 builder.Services.AddCors(options =>

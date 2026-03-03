@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using OrderService.Data;
+using OrderService.Infrastructure.Data;
 
 #nullable disable
 
@@ -22,7 +22,7 @@ namespace OrderService.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("OrderService.Models.Order", b =>
+            modelBuilder.Entity("OrderService.Domain.Aggregates.Order", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -47,7 +47,7 @@ namespace OrderService.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("OrderService.Models.OrderItem", b =>
+            modelBuilder.Entity("OrderService.Domain.Aggregates.OrderItem", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -75,16 +75,16 @@ namespace OrderService.Migrations
                     b.ToTable("OrderItems");
                 });
 
-            modelBuilder.Entity("OrderService.Models.OrderItem", b =>
+            modelBuilder.Entity("OrderService.Domain.Aggregates.OrderItem", b =>
                 {
-                    b.HasOne("OrderService.Models.Order", null)
+                    b.HasOne("OrderService.Domain.Aggregates.Order", null)
                         .WithMany("Items")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("OrderService.Models.Order", b =>
+            modelBuilder.Entity("OrderService.Domain.Aggregates.Order", b =>
                 {
                     b.Navigation("Items");
                 });

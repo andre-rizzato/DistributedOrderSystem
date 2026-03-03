@@ -1,58 +1,65 @@
 namespace OrderService.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
-using OrderService.Models;
-using OrderService.Services;
-using OrderService.Messaging;
-using Shared.Messages;
+using OrderService.Application.Services;
+using OrderService.Domain.Aggregates;
+using OrderService.Domain.Exceptions;
 
+// ── DTOs per mantenere il contratto API identico ──
+public record OrderDto(int Id, DateTime CreatedAt, string Status, decimal Total, List<OrderItemResponseDto> Items);
+public record OrderItemResponseDto(int Id, int OrderId, Guid ProductId, int Quantity, decimal UnitPrice);
+
+/// <summary>
+/// Controller thin per le query sugli ordini (read-side).
+/// Delega interamente all'Application Service — nessuna logica di business qui.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase
 {
-    private readonly IOrderService _orderService;
-    private readonly ILogger<OrdersController> _logger;
+    private readonly IOrderApplicationService _appService;
 
-    public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
+    public OrdersController(IOrderApplicationService appService)
     {
-        _orderService = orderService;
-        _logger = logger;
+        _appService = appService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<Order>>> GetAllOrders(CancellationToken ct)
+    public async Task<ActionResult<List<OrderDto>>> GetAllOrders(CancellationToken ct)
     {
-        var orders = await _orderService.GetAllOrdersAsync(ct);
-        return Ok(orders);
+        var orders = await _appService.GetAllOrdersAsync(ct);
+        return Ok(orders.Select(ToDto).ToList());
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<Order>> GetOrder(int id, CancellationToken ct)
+    public async Task<ActionResult<OrderDto>> GetOrder(int id, CancellationToken ct)
     {
-        var order = await _orderService.GetOrderByIdAsync(id, ct);
-        if (order == null)
+        var order = await _appService.GetOrderByIdAsync(id, ct);
+        if (order is null)
             return NotFound($"Order {id} not found");
-        
-        return Ok(order);
+        return Ok(ToDto(order));
     }
+
+    private static OrderDto ToDto(Order o) => new(
+        o.Id, o.CreatedAt, o.Status.Value, o.Total.Amount,
+        o.Items.Select(i => new OrderItemResponseDto(
+            i.Id, i.OrderId, i.ProductId, i.Quantity, i.UnitPrice.Amount)).ToList());
 }
 
+/// <summary>
+/// Controller thin per i comandi sugli ordini (write-side).
+/// L'orchestrazione (persistenza + evento Kafka) è nell'Application Service.
+/// Le regole di business (invarianti, transizioni di stato) sono nel Domain layer.
+/// </summary>
 [ApiController]
 [Route("api/commands")]
 public class OrderCommandsController : ControllerBase
 {
-    private readonly IOrderService _orderService;
-    private readonly IOrderEventProducer _eventProducer;
-    private readonly ILogger<OrderCommandsController> _logger;
+    private readonly IOrderApplicationService _appService;
 
-    public OrderCommandsController(
-        IOrderService orderService, 
-        IOrderEventProducer eventProducer,
-        ILogger<OrderCommandsController> logger)
+    public OrderCommandsController(IOrderApplicationService appService)
     {
-        _orderService = orderService;
-        _eventProducer = eventProducer;
-        _logger = logger;
+        _appService = appService;
     }
 
     public record CreateOrderRequest(List<OrderItemDto> Items);
@@ -64,52 +71,24 @@ public class OrderCommandsController : ControllerBase
         [FromBody] CreateOrderRequest request,
         CancellationToken ct)
     {
-        if (request?.Items == null || request.Items.Count == 0)
+        if (request?.Items is null || request.Items.Count == 0)
             return BadRequest("At least one item is required");
 
-        var order = new Order
-        {
-            Items = request.Items.Select(i => new OrderItem
-            {
-                ProductId = i.ProductId,
-                Quantity = i.Quantity,
-                UnitPrice = i.UnitPrice
-            }).ToList()
-        };
-
-        order.Total = order.Items.Sum(i => i.Quantity * i.UnitPrice);
-
-        var created = await _orderService.CreateOrderAsync(order, ct);
-
-        // Pubblica evento su Kafka per aggiornamento inventario asincrono
         try
         {
-            var orderEvent = new OrderCreatedEvent
-            {
-                OrderId = created.Id.ToString(),
-                CreatedAt = created.CreatedAt,
-                Items = created.Items.Select(i => new OrderItemEvent
-                {
-                    ProductId = i.ProductId.ToString(),
-                    Quantity = i.Quantity
-                }).ToList()
-            };
+            var items = request.Items.Select(i => (i.ProductId, i.Quantity, i.UnitPrice));
+            var created = await _appService.CreateOrderAsync(items, ct);
 
-            await _eventProducer.PublishOrderCreatedAsync(orderEvent, ct);
-            _logger.LogInformation("Pubblicato evento OrderCreated per Ordine {OrderId}", created.Id);
+            return CreatedAtAction(
+                nameof(OrdersController.GetOrder),
+                "Orders",
+                new { id = created.Id },
+                new CreateOrderResponse(created.Id, created.Status.Value, created.Total.Amount));
         }
-        catch (Exception ex)
+        catch (OrderDomainException ex)
         {
-            _logger.LogError(ex, "Impossibile pubblicare evento OrderCreated per Ordine {OrderId}", created.Id);
-            // Non fallire la richiesta se la pubblicazione dell'evento fallisce
+            return BadRequest(ex.Message);
         }
-
-        return CreatedAtAction(
-            nameof(OrdersController.GetOrder),
-            "Orders",
-            new { id = created.Id },
-            new CreateOrderResponse(created.Id, created.Status, created.Total)
-        );
     }
 
     public record UpdateOrderStatusRequest(string Status);
@@ -123,10 +102,16 @@ public class OrderCommandsController : ControllerBase
         if (string.IsNullOrWhiteSpace(request?.Status))
             return BadRequest("Status is required");
 
-        var success = await _orderService.UpdateOrderStatusAsync(id, request.Status, ct);
-        if (!success)
-            return NotFound($"Order {id} not found");
-
-        return NoContent();
+        try
+        {
+            var success = await _appService.UpdateOrderStatusAsync(id, request.Status, ct);
+            if (!success)
+                return NotFound($"Order {id} not found");
+            return NoContent();
+        }
+        catch (OrderDomainException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }
