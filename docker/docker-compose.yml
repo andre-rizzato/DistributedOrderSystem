@@ -34,15 +34,16 @@ services:
     hostname: kafka
     ports:
       - "9092:9092"
+      - "29092:29092"
     networks:
       - dos_network
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -77,6 +78,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - Kafka__BootstrapServers=kafka:9092
+      - ConnectionStrings__OrderDb=Host=postgres;Port=5432;Database=OrderDb_Dev;Username=postgres;Password=YourStrong_Password123;
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,6 +98,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__ProductDb=Host=postgres;Port=5432;Database=ProductDb_Dev;Username=postgres;Password=YourStrong_Password123;
+      - Redis__ConnectionString=redis:6379
+      - Redis__Host=redis
     depends_on:
       postgres:
         condition: service_healthy
@@ -111,6 +117,10 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - Kafka__BootstrapServers=kafka:9092
+      - ConnectionStrings__InventoryDb=Host=postgres;Port=5432;Database=InventoryDb;Username=postgres;Password=YourStrong_Password123;
+      - Redis__ConnectionString=redis:6379
+      - Redis__Host=redis
     depends_on:
       postgres:
         condition: service_healthy
@@ -131,6 +141,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - Kafka__BootstrapServers=kafka:9092
     depends_on:
       postgres:
         condition: service_healthy
@@ -149,6 +160,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=DistributedOrderSystemNotifications;Username=postgres;Password=YourStrong_Password123;
+      - ConnectionStrings__Redis=redis:6379
+      - Redis__ConnectionString=redis:6379
     depends_on:
       kafka:
         condition: service_started
@@ -165,6 +179,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=UserServiceDb;Username=postgres;Password=YourStrong_Password123;
     depends_on:
       postgres:
         condition: service_healthy
@@ -181,6 +196,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - Redis__ConnectionString=redis:6379
     depends_on:
       postgres:
         condition: service_healthy
@@ -197,6 +213,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__ChatbotDb=Host=postgres;Port=5432;Database=ChatbotDb_Dev;Username=postgres;Password=YourStrong_Password123;
+      - ConnectionStrings__Redis=redis:6379
     depends_on:
       postgres:
         condition: service_healthy
@@ -213,6 +231,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - ServiceUrls__ProductService=http://product-service:80
+      - ServiceUrls__InventoryService=http://inventory-service:80
+      - ServiceUrls__OrderService=http://order-service:80
     depends_on:
       - order-service
       - product-service

@@ -1,0 +1,19 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.5.3">
+
+  <ItemGroup>
+    <ProjectReference Include="..\OrderService\OrderService.csproj" />
+    <ProjectReference Include="..\ProductService\ProductService.csproj" />
+    <ProjectReference Include="..\InventoryService\InventoryService.csproj" />
+    <ProjectReference Include="..\GatewayBff\GatewayBff.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
+    <UserSecretsId>51f24cfe-692c-47f2-8279-2111ac415ef9</UserSecretsId>
+  </PropertyGroup>
+
+</Project>

@@ -13,6 +13,7 @@ build/
 .vscode/settings.json
 *.suo
 *.user
+*.lscache
 
 # OS files
 .DS_Store
