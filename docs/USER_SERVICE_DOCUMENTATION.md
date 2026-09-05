@@ -1,65 +1,51 @@
 # UserService - Complete Authentication & User Management
 
+> Updated to match the actual code. The previous version stated SQL Server; the real database is PostgreSQL. Several other claims (email sending, response expiry, CORS, GatewayBff integration) turned out to be broken or aspirational rather than working — see the "⚠️" notes below.
+
 ## Overview
 Comprehensive user management microservice with authentication, social login, profile management, addresses, and payment methods.
 
-**Port:** 5010 (HTTP) / 5011 (HTTPS)  
-**Database:** SQL Server (UserServiceDb)  
-**Swagger:** https://localhost:5011/scalar/v1
+**Port:** 5010 (HTTP) / 5011 (HTTPS) — confirmed in `launchSettings.json`
+**Database:** PostgreSQL (`UserServiceDb`, via `Npgsql.EntityFrameworkCore.PostgreSQL`) — not SQL Server
+**Swagger/Scalar:** https://localhost:5011/scalar/v1
 
 ## Features
 
 ### ✅ Authentication
-- **Email/Password Registration** - Standard user registration with password hashing (BCrypt)
-- **Login** - JWT-based authentication with access tokens (15 min) and refresh tokens (7 days)
-- **Social Login** - Google and Facebook OAuth integration
-- **Email Verification** - Token-based email confirmation via CommunicationService
-- **Password Reset** - Forgot password with email token
-- **Change Password** - Authenticated password change
-- **JWT Tokens** - Access token + Refresh token with IP tracking
-- **Token Revocation** - Logout and revoke all user tokens
-- **Lockout** - Account lockout after 5 failed login attempts (15 min)
+- **Email/Password Registration** - standard registration; passwords hashed by ASP.NET Core Identity (PBKDF2 under the hood, not literally "BCrypt" despite the package name pattern elsewhere in the solution — Identity's default hasher is used here, no custom BCrypt call in this service)
+- **Login** - JWT-based, access token + refresh token
+- **Social Login** - Google and Facebook OAuth *configured*, but ⚠️ `AuthController.SocialLogin` has a literal `// TODO: Validare il token con Google/Facebook API — Per ora, accetta qualsiasi token` — it currently trusts whatever string the client sends as the provider token, matching it against a stored `GoogleId`/`FacebookId` or creating a new user. This is real, working code, but it is not verifying the token against Google/Facebook at all.
+- **Email Verification** - token-based, via `UserManager.GenerateEmailConfirmationTokenAsync`/`ConfirmEmailAsync` — the verification link itself is correctly built to point back at this service's own `GET /api/auth/verify-email` route.
+- **Password Reset** - ⚠️ `ForgotPassword` builds the reset link as `{scheme}://{host}/reset-password?...` — a **frontend** route, not an API route, and no frontend in this repository implements `/reset-password`. Unlike the verification link, this one has nowhere to land as configured today.
+- **Change Password** - authenticated, revokes all refresh tokens on success (real, works)
+- **JWT Tokens** - access token (config-driven expiry, see below) + refresh token (7 days, hardcoded)
+- **Token Revocation / Rotation** - ⚠️➡️✅ genuinely implemented: `POST /api/auth/refresh` revokes the presented refresh token and issues a new one (`TokenService.RevokeRefreshTokenAsync` + `GenerateRefreshToken`), not just modeled in the schema.
+- **Lockout** - real: `SignInManager.CheckPasswordSignInAsync(..., lockoutOnFailure: true)` combined with `Program.cs`'s `Lockout.MaxFailedAccessAttempts = 5` / `DefaultLockoutTimeSpan = 15 min`.
 
-### 👤 User Profile
-- **Personal Information** - First name, last name, date of birth, phone, profile picture
-- **Preferences** - Language, currency, notification settings (email, SMS, push)
-- **Prime Membership** - Amazon Prime-like membership with expiry tracking
-- **Loyalty Points** - Points system for rewards
-- **Account Management** - Soft delete (deactivate account)
-
-### 📍 Address Management
-- **Multiple Addresses** - Shipping, billing, or both
-- **Default Address** - Mark one address as default per type
-- **Full Address Fields** - Name, address lines, city, state, postal code, country, phone
-- **CRUD Operations** - Create, read, update, delete addresses
-
-### 💳 Payment Methods
-- **Encrypted Card Storage** - Credit/debit card info encrypted with AES-256
-- **Last 4 Digits** - Only last 4 digits stored in plain text
-- **Card Brands** - Visa, Mastercard, PayPal, bank transfer
-- **Expiry Tracking** - Automatic expiration detection
-- **Default Payment** - Mark one method as default
-- **Secure Encryption** - AES encryption for sensitive data (use Azure Key Vault in production)
+### 👤 User Profile / 📍 Addresses / 💳 Payment Methods
+Structurally as previously documented — see [API Endpoints](#api-endpoints) below, verified route-by-route against the controllers.
 
 ## Architecture
 
 ```
-UserService (Port 5011)
-    ├── Authentication Layer (JWT)
+UserService (Port 5010 HTTP / 5011 HTTPS)
+    ├── ASP.NET Core Identity (IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>)
+    ├── JWT Bearer + Google/Facebook OAuth handlers (Program.cs)
     ├── Controllers
-    │   ├── AuthController (Login, Register, Social Login, Password Reset)
-    │   ├── UsersController (Profile Management)
-    │   ├── AddressesController (Address CRUD)
-    │   └── PaymentMethodsController (Payment Methods CRUD)
+    │   ├── AuthController        (/api/auth/*)
+    │   ├── UsersController       (/api/users/*)          [Authorize]
+    │   ├── AddressesController   (/api/users/{userId}/addresses)   [Authorize]
+    │   └── PaymentMethodsController (/api/users/{userId}/payment-methods) [Authorize]
     ├── Services
-    │   ├── TokenService (JWT Generation & Refresh Tokens)
-    │   ├── CommunicationService (Email via CommunicationService)
-    │   └── PaymentEncryptionService (AES Encryption)
-    ├── Data Layer (EF Core + SQL Server)
-    └── Identity (ASP.NET Core Identity)
+    │   ├── TokenService              (JWT + refresh token generation/rotation — real)
+    │   ├── CommunicationService      (typed HttpClient — real code, but see ⚠️ Email Integration below)
+    │   └── PaymentEncryptionService  (AES encryption — real, see ⚠️ Security Features below)
+    └── Data: UserDbContext (EF Core + PostgreSQL)
 ```
 
 ## API Endpoints
+
+Verified directly against each controller's route attributes — all match what was previously documented; no drift found here.
 
 ### 🔐 Authentication (`/api/auth`)
 
@@ -67,100 +53,70 @@ UserService (Port 5011)
 |--------|----------|-------------|------|
 | POST | `/register` | Register new user | ❌ |
 | POST | `/login` | Login with email/password | ❌ |
-| POST | `/social-login` | Login with Google/Facebook | ❌ |
-| POST | `/refresh` | Refresh access token | ❌ |
+| POST | `/social-login` | Login with Google/Facebook (⚠️ no real token verification, see above) | ❌ |
+| POST | `/refresh` | Refresh access token (real rotation) | ❌ |
 | POST | `/logout` | Revoke refresh token | ✅ |
 | GET | `/verify-email?token={token}&email={email}` | Verify email address | ❌ |
-| POST | `/forgot-password` | Request password reset | ❌ |
+| POST | `/forgot-password` | Request password reset (⚠️ link points nowhere, see above) | ❌ |
 | POST | `/reset-password` | Reset password with token | ❌ |
 | POST | `/change-password` | Change password (authenticated) | ✅ |
+| GET | `/profile/{userId}` | ⚠️ Dummy stub — exists only so `Register`'s `CreatedAtAction` has a route to point at; returns an empty `200 OK` and does nothing. Not the real profile endpoint — that's `GET /api/users/{userId}` below. Hidden from Swagger (`[ApiExplorerSettings(IgnoreApi = true)]`). | ❌ |
 
-### 👤 Users (`/api/users`)
+### 👤 Users (`/api/users`) — all require auth
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/me` | Get current user profile | ✅ |
-| GET | `/{userId}` | Get user by ID | ✅ |
-| PUT | `/me` | Update profile | ✅ |
-| PUT | `/me/preferences` | Update preferences | ✅ |
-| DELETE | `/me` | Delete account (soft) | ✅ |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/me` | Current user profile |
+| GET | `/{userId}` | User profile by ID (no ownership check — any authenticated user can look up any other user's profile by ID) |
+| PUT | `/me` | Update profile |
+| PUT | `/me/preferences` | Update preferences |
+| DELETE | `/me` | Soft-delete (`IsActive = false`) |
 
-### 📍 Addresses (`/api/users/{userId}/addresses`)
+### 📍 Addresses (`/api/users/{userId}/addresses`) — all require auth + ownership
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/` | Get all addresses | ✅ |
-| GET | `/{addressId}` | Get address by ID | ✅ |
-| POST | `/` | Create new address | ✅ |
-| PUT | `/{addressId}` | Update address | ✅ |
-| DELETE | `/{addressId}` | Delete address | ✅ |
-| POST | `/{addressId}/set-default` | Set as default | ✅ |
+Every action calls `CanAccessUser(userId)` first, which compares the route's `userId` against the JWT's `NameIdentifier` claim and `Forbid()`s on mismatch — this is real and correctly applied to every action in both `AddressesController` and `PaymentMethodsController`. (Note the asymmetry with `UsersController.GetUserById`, which has no such check.)
 
-### 💳 Payment Methods (`/api/users/{userId}/payment-methods`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Get all addresses |
+| GET | `/{addressId}` | Get address by ID |
+| POST | `/` | Create new address |
+| PUT | `/{addressId}` | Update address |
+| DELETE | `/{addressId}` | Delete address |
+| POST | `/{addressId}/set-default` | Set as default (clears the flag on other addresses of the same `Type` first) |
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/` | Get all payment methods | ✅ |
-| GET | `/{paymentMethodId}` | Get payment method | ✅ |
-| POST | `/` | Add payment method | ✅ |
-| DELETE | `/{paymentMethodId}` | Delete payment method | ✅ |
-| POST | `/{paymentMethodId}/set-default` | Set as default | ✅ |
+### 💳 Payment Methods (`/api/users/{userId}/payment-methods`) — all require auth + ownership
 
-## Database Schema
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Get all payment methods |
+| GET | `/{paymentMethodId}` | Get payment method |
+| POST | `/` | Add payment method (basic length check: 13-19 digits after stripping spaces/dashes) |
+| DELETE | `/{paymentMethodId}` | Delete payment method |
+| POST | `/{paymentMethodId}/set-default` | Set as default |
 
-### Tables
+## Database Schema (PostgreSQL, real table names from `UserDbContext.OnModelCreating`)
 
-**Users** (ASP.NET Identity)
-- Id (Guid, PK, Sequential)
-- Email (Unique)
-- PasswordHash
-- FirstName, LastName
-- DateOfBirth, ProfilePictureUrl
-- PreferredLanguage, PreferredCurrency
-- EmailNotificationsEnabled, SmsNotificationsEnabled, PushNotificationsEnabled
-- IsPrimeMember, PrimeMembershipExpiry, LoyaltyPoints
-- GoogleId, FacebookId (Social login)
-- CreatedAt, LastLoginAt, IsActive
+Identity tables are explicitly renamed away from the ASP.NET Identity defaults: `Roles`, `UserRoles`, `UserClaims`, `UserLogins`, `UserTokens`, `RoleClaims`. All custom entity primary keys default to `gen_random_uuid()` (Postgres function), not SQL Server's `NEWSEQUENTIALID()`.
 
-**Addresses**
-- Id (Guid, PK, Sequential)
-- UserId (FK → Users)
-- FullName, AddressLine1, AddressLine2
-- City, StateProvince, PostalCode, CountryCode
-- PhoneNumber
-- Type (Shipping=1, Billing=2, Both=3)
-- IsDefault
-- CreatedAt, UpdatedAt
+**Users** (`ApplicationUser : IdentityUser<Guid>`)
+- Standard Identity columns (Id, Email, PasswordHash, ...) plus: FirstName, LastName, DateOfBirth, ProfilePictureUrl, PreferredLanguage (default `it-IT`), PreferredCurrency (default `EUR`), EmailNotificationsEnabled/SmsNotificationsEnabled/PushNotificationsEnabled, IsPrimeMember, PrimeMembershipExpiry, LoyaltyPoints, GoogleId, FacebookId, CreatedAt, LastLoginAt, IsActive
+- Unique index on Email; non-unique indexes on GoogleId and FacebookId
 
-**PaymentMethods**
-- Id (Guid, PK, Sequential)
-- UserId (FK → Users)
-- Type (CreditCard=1, DebitCard=2, PayPal=3, BankTransfer=4)
-- CardHolderName
-- Last4Digits (plain text)
-- CardBrand (Visa, Mastercard, etc.)
-- ExpiryMonth, ExpiryYear
-- EncryptedToken (AES encrypted card number)
-- IsDefault
-- CreatedAt, UpdatedAt
+**Addresses** — FullName, AddressLine1/2, City, StateProvince, PostalCode, CountryCode (default `IT`), PhoneNumber, Type (`Shipping=1`/`Billing=2`/`Both=3`), IsDefault, CreatedAt, UpdatedAt. Cascade-deletes with the user.
 
-**RefreshTokens**
-- Id (Guid, PK, Sequential)
-- UserId (FK → Users)
-- Token (Base64, Unique)
-- ExpiresAt (7 days)
-- CreatedAt, CreatedByIp
-- IsRevoked, RevokedAt, RevokedByIp
-- ReplacedByToken
+**PaymentMethods** — Type (`CreditCard=1`/`DebitCard=2`/`PayPal=3`/`BankTransfer=4`), CardHolderName, Last4Digits (plain text), CardBrand, ExpiryMonth/Year, EncryptedToken, IsDefault, CreatedAt, UpdatedAt. `IsExpired` is a computed property (`new DateTime(ExpiryYear, ExpiryMonth, 1) < DateTime.UtcNow`), not a stored column. Cascade-deletes with the user.
+
+**RefreshTokens** — Token (unique), ExpiresAt (7 days from creation), CreatedAt, CreatedByIp, IsRevoked, RevokedAt, RevokedByIp, `ReplacedByToken` (⚠️ column exists but `TokenService` never sets it — the rotation chain isn't actually tracked, only revocation timestamps are). `IsActive`/`IsExpired` are computed properties.
 
 ## Configuration
 
-### appsettings.json
+### appsettings.json (real values)
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=UserServiceDb;..."
+    "DefaultConnection": "Host=localhost;Port=5432;Database=UserServiceDb;Username=postgres;Password=YourStrong_Password123;"
   },
   "Jwt": {
     "Secret": "YourSuperSecretKeyThatIsAtLeast32CharactersLong!123",
@@ -169,287 +125,117 @@ UserService (Port 5011)
     "ExpiresInMinutes": "15"
   },
   "Encryption": {
-    "Key": "32CharacterEncryptionKey12345",  // Use Azure Key Vault in production!
+    "Key": "32CharacterEncryptionKey12345",
     "IV": "16CharacterIV123"
   },
   "Authentication": {
-    "Google": {
-      "ClientId": "your-google-client-id.apps.googleusercontent.com",
-      "ClientSecret": "your-google-client-secret"
-    },
-    "Facebook": {
-      "AppId": "your-facebook-app-id",
-      "AppSecret": "your-facebook-app-secret"
-    }
+    "Google": { "ClientId": "...", "ClientSecret": "..." },
+    "Facebook": { "AppId": "...", "AppSecret": "..." }
   },
   "Services": {
-    "CommunicationService": {
-      "BaseUrl": "https://localhost:5011"
-    }
+    "CommunicationService": { "BaseUrl": "https://localhost:5011" }
   }
 }
 ```
 
-### Social Login Setup
+⚠️ **`Services:CommunicationService:BaseUrl` defaults to `https://localhost:5011` — this service's own port.** `CommunicationService.cs` POSTs to `{BaseUrl}/api/emails/send` for every verification/welcome/reset/password-changed email. Two independent problems here:
+1. The URL is self-referential (UserService calling itself), not pointing at NotificationService (the service that actually sends email/SMS/push in this solution, on port 5246).
+2. Even if the URL were corrected to NotificationService's real port, **`/api/emails/send` doesn't exist there either** — `NotificationController`'s real routes are `POST /api/notification/send-template`, `/send-direct`, `/send-bulk`, `/schedule`, not `/api/emails/send`.
 
-#### Google OAuth
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create project → APIs & Services → Credentials
-3. Create OAuth 2.0 Client ID (Web application)
-4. Add redirect URI: `https://localhost:5011/signin-google`
-5. Copy ClientId and ClientSecret to appsettings.json
+Because every call in `CommunicationService.cs` wraps its `HttpClient` call in try/catch and only logs on failure, **no email is ever actually sent today, and nothing surfaces this to the caller** — registration, password reset, etc. all "succeed" from the API's point of view while the email step silently fails every time.
 
-#### Facebook Login
-1. Go to [Facebook Developers](https://developers.facebook.com/)
-2. Create App → Add Facebook Login
-3. Settings → Basic: Copy App ID and App Secret
-4. Add redirect URI: `https://localhost:5011/signin-facebook`
+### JWT expiry: config vs. what's actually reported
+`TokenService.GenerateAccessToken` correctly reads `Jwt:ExpiresInMinutes` from config for the token's real expiry claim. But `AuthController` builds every `AuthResponse` (`Register`, `Login`, `SocialLogin`, `RefreshToken`) with `DateTime.UtcNow.AddMinutes(15)` **hardcoded inline**, not read from config. Today both values happen to agree (config is `"15"`), but changing `Jwt:ExpiresInMinutes` would desync the token's real expiry from what the API tells the client it is.
 
-## Security Features
+## Security Features (verified against code)
 
 ### Password Security
-- **BCrypt Hashing** - Passwords hashed with BCrypt (ASP.NET Core Identity)
-- **Requirements** - Min 8 chars, uppercase, lowercase, digit
-- **Lockout** - 5 failed attempts = 15-minute lockout
+- ASP.NET Core Identity's default hasher (not a custom BCrypt call in this service)
+- Requirements enforced via `IdentityOptions.Password.*` in `Program.cs`: digit, lowercase, uppercase required; non-alphanumeric not required; min length 8
+- Lockout: 5 failed attempts → 15-minute lockout (real, see Authentication section)
 
 ### Token Security
-- **JWT Access Token** - Short-lived (15 minutes), stateless
-- **Refresh Token** - Long-lived (7 days), stored in DB with IP tracking
-- **Token Rotation** - Old refresh token revoked when new one issued
-- **IP Tracking** - Track token creation and revocation by IP
+- Access token: HMAC-SHA256, config-driven expiry (see caveat above about the response field)
+- Refresh token: 64 random bytes, base64-encoded, 7-day expiry, rotated on every `/refresh` call
+- ⚠️ CORS in `Program.cs` allows only `http://localhost:3000`, `https://localhost:7001`, `https://localhost:7000` — **none of these match any service actually running in this solution** (Angular SPA is `:4200`, GatewayBff is `:5189`/`:7119`, CustomerWebsite is `:5100`). As configured, a browser call from any current frontend would be blocked by CORS if it needed credentialed cross-origin access to this service.
 
 ### Payment Security
-- **AES-256 Encryption** - Card numbers encrypted at rest
-- **No CVV Storage** - CVV never saved (PCI DSS requirement)
-- **Last 4 Only** - Only last 4 digits in plain text
-- **Production** - ⚠️ Use Azure Key Vault or AWS KMS for encryption keys!
+- AES encryption is real (`PaymentEncryptionService`, `System.Security.Cryptography.Aes`), CVV is never modeled/stored, only last 4 digits are stored in plain text
+- ⚠️ The AES `Key` and `IV` are both static, read once from config and reused for **every** encryption call — with CBC mode (the default `Aes.Create()` mode), reusing the same IV across records means identical card numbers always encrypt to identical ciphertext. A real per-record random IV (stored alongside the ciphertext) would be the standard fix; this is a genuine cryptographic weakness in the current code, not just a "use a vault in production" caveat.
 
-### API Security
-- **JWT Bearer Authentication** - All protected endpoints require valid JWT
-- **Authorization** - Users can only access their own data
-- **CORS** - Configured for frontend origins
-- **HTTPS** - Enforce HTTPS in production
+## Roles
 
-## Email Integration
+`Admin`, `Customer`, `Vendor` are seeded at startup in `Program.cs` (`RoleManager.CreateAsync` for each, if not already present). New registrations are assigned `Customer` by default in `AuthController.Register`/`SocialLogin`.
 
-UserService calls **CommunicationService** for all emails:
+## Integration with Other Services
 
-### Email Templates
-- **EmailVerification** - "Verify your email" with verification link
-- **Welcome** - "Welcome to the platform" after registration
-- **PasswordReset** - "Reset your password" with reset link
-- **PasswordChanged** - "Your password was changed" notification
+### GatewayBff — ⚠️ not integrated today
+GatewayBff has **no HttpClient registered for UserService** and **no JWT authentication configured** in its `Program.cs` — `CommandsController`/`QueriesController` and the cart/wishlist controllers all run without any `[Authorize]` attribute or auth middleware. The JWT-validation code sample below is illustrative of how it *could* be wired, not a description of what exists:
 
-### Example Call
 ```csharp
-await _communicationService.SendEmailVerificationAsync(
-    email: "user@example.com",
-    verificationUrl: "https://yourdomain.com/verify?token=xxx"
-);
+// Illustrative only — GatewayBff/Program.cs has no such block today
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => { /* ValidIssuer = "UserService", ValidAudience = "DistributedOrderSystem" */ });
+```
+
+### ChatbotService — separate, not delegating to UserService
+`ChatbotService.Services.AuthenticationService` implements its own `IAuthenticationService` locally; despite the similar name, it does not call UserService for authentication. The two auth systems are independent today.
+
+### CustomerWebsite
+No code in `CustomerWebsite` currently calls UserService (no `Services:UserService:BaseUrl` config key, no controller referencing it) — the "session storage" integration sketch below is a suggested pattern, not existing code.
+
+```csharp
+// Illustrative only — not found anywhere in CustomerWebsite's current controllers
+var response = await _httpClient.PostAsJsonAsync("https://localhost:5011/api/auth/login", new { model.Email, model.Password });
 ```
 
 ## Setup & Testing
 
-### 1. Database Migration
+### 1. Database
 ```powershell
 cd src/UserService
 dotnet ef migrations add InitialCreate
 dotnet ef database update
 ```
+(Confirm a Postgres instance is reachable at the connection string above — via `docker compose -f docker/docker-compose.yml up -d dos_postgres` — before running this.)
 
-### 2. Run Service
+### 2. Run
 ```powershell
 dotnet run --project src/UserService
 ```
-
-Service starts at:
 - HTTP: http://localhost:5010
 - HTTPS: https://localhost:5011
-- Swagger: https://localhost:5011/scalar/v1
+- Scalar: https://localhost:5011/scalar/v1
 
-### 3. Test Registration
+### 3. Register / Login
 ```powershell
 curl -X POST https://localhost:5011/api/auth/register `
   -H "Content-Type: application/json" `
-  -d '{
-    "email": "test@example.com",
-    "password": "Test123!",
-    "firstName": "John",
-    "lastName": "Doe"
-  }'
+  -d '{"email":"test@example.com","password":"Test123!","firstName":"John","lastName":"Doe"}'
 ```
-
-Response:
-```json
-{
-  "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "email": "test@example.com",
-  "firstName": "John",
-  "lastName": "Doe",
-  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-  "refreshToken": "sWvZ3qP8+mR4dF2hK...",
-  "expiresAt": "2026-01-20T15:30:00Z"
-}
-```
-
-### 4. Test Login
-```powershell
-curl -X POST https://localhost:5011/api/auth/login `
-  -H "Content-Type: application/json" `
-  -d '{
-    "email": "test@example.com",
-    "password": "Test123!"
-  }'
-```
-
-### 5. Test Protected Endpoint
-```powershell
-$token = "eyJhbGciOiJIUzI1NiIs..."
-curl -X GET https://localhost:5011/api/users/me `
-  -H "Authorization: Bearer $token"
-```
-
-## Integration with Other Services
-
-### GatewayBff Integration
-
-Add user authentication to BFF:
-
-```csharp
-// GatewayBff/Program.cs
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.Authority = "https://localhost:5011";
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = "UserService",
-            ValidateAudience = true,
-            ValidAudience = "DistributedOrderSystem"
-        };
-    });
-```
-
-### CustomerWebsite Integration
-
-```csharp
-// Store tokens in HttpContext.Session or cookies
-public async Task<IActionResult> Login(LoginViewModel model)
-{
-    var response = await _httpClient.PostAsJsonAsync(
-        "https://localhost:5011/api/auth/login", 
-        new { model.Email, model.Password }
-    );
-    
-    var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-    
-    // Store tokens securely
-    HttpContext.Session.SetString("AccessToken", authResponse.AccessToken);
-    HttpContext.Session.SetString("RefreshToken", authResponse.RefreshToken);
-    HttpContext.Session.SetString("UserId", authResponse.UserId.ToString());
-    
-    return RedirectToAction("Index", "Home");
-}
-```
-
-### Protected API Calls
-
-```csharp
-// Add JWT token to requests
-var accessToken = HttpContext.Session.GetString("AccessToken");
-_httpClient.DefaultRequestHeaders.Authorization = 
-    new AuthenticationHeaderValue("Bearer", accessToken);
-
-var response = await _httpClient.GetAsync("https://localhost:7000/api/cart/session123");
-```
+Expect a `201 Created` with an `AuthResponse` — but do **not** expect a verification email to actually arrive (see the Email Integration caveat above).
 
 ## Production Checklist
 
-### Security
-- [ ] Change JWT Secret to strong random key (64+ chars)
-- [ ] Use Azure Key Vault for encryption keys
-- [ ] Enable `RequireConfirmedEmail = true` in Identity
-- [ ] Implement real social token validation (Google/Facebook APIs)
-- [ ] Add rate limiting (ASP.NET Core Rate Limiting)
-- [ ] Enable HTTPS only (disable HTTP endpoint)
-- [ ] Add Content Security Policy headers
-- [ ] Implement CAPTCHA for registration/login
+Still valid as a checklist of what's missing before this service is production-ready; nothing here has been implemented:
+- [ ] Real Google/Facebook token verification (currently a TODO that accepts any token)
+- [ ] Fix `CommunicationService`'s target URL and the missing `/api/emails/send` route so email actually sends
+- [ ] Per-record random IV for payment encryption (not a static key+IV pair)
+- [ ] Read `AuthResponse.ExpiresAt` from `Jwt:ExpiresInMinutes` instead of a hardcoded `15`
+- [ ] Fix the CORS origin list to match real frontend ports
+- [ ] Change JWT secret to a strong random key; use a vault for it and the encryption key/IV
+- [ ] Rate limiting, CAPTCHA on register/login
+- [ ] Wire JWT validation into GatewayBff if the intent is for it to gate the other services
 
-### Database
-- [ ] Use Azure SQL or AWS RDS (not localhost)
-- [ ] Enable automatic backups
-- [ ] Set up connection pooling
-- [ ] Add database encryption at rest
-
-### Monitoring
-- [ ] Add Application Insights / Datadog
-- [ ] Log all authentication events
-- [ ] Monitor failed login attempts
-- [ ] Alert on suspicious activity (multiple IPs, brute force)
-
-### Performance
-- [ ] Cache user profiles in Redis
-- [ ] Add CDN for profile pictures
-- [ ] Implement token cleanup background job
-- [ ] Add database indexes (already configured)
-
-## Roles & Permissions
-
-Default roles created on startup:
-- **Admin** - Full system access
-- **Customer** - Regular user (default for new registrations)
-- **Vendor** - Seller/merchant access
-
-To assign roles programmatically:
-```csharp
-await _userManager.AddToRoleAsync(user, "Admin");
-```
-
-## Troubleshooting
-
-### "Email already registered"
-- Email must be unique across all users
-- Check if user already exists with soft delete (`IsActive = false`)
-
-### "Token not valid" on refresh
-- Refresh token expired (7 days)
-- Token was revoked (logout/change password)
-- User requires re-login
-
-### Social login not working
-- Verify OAuth credentials in appsettings.json
-- Check redirect URIs match exactly
-- Ensure social provider is enabled
-- TODO: Implement real token validation (currently accepts any token)
-
-### Encryption error
-- Ensure `Encryption:Key` is exactly 32 characters
-- Ensure `Encryption:IV` is exactly 16 characters
-- Use Azure Key Vault in production
-
-## Future Enhancements
-
-1. **Two-Factor Authentication (2FA)** - SMS/Email/Authenticator app
-2. **Password History** - Prevent reusing last N passwords
-3. **Session Management** - View and revoke active sessions
-4. **Activity Log** - Track all user actions
-5. **Account Linking** - Link multiple social accounts to one user
-6. **Magic Link Login** - Passwordless email login
-7. **Biometric Support** - Face ID, Touch ID integration
-8. **Real Social Token Validation** - Verify Google/Facebook tokens with their APIs
-
-## Ports Reference
+## Ports Reference (corrected)
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| UserService | 5010/5011 | Authentication & user management |
-| CommunicationService | 5011 (TBD) | Email sending service |
-| GatewayBff | 7000 | API Gateway with JWT validation |
-| CustomerWebsite | 7001 | Frontend with session management |
+| UserService | 5010 (HTTP) / 5011 (HTTPS) | Authentication & user management |
+| GatewayBff | 5189 (HTTP) / 7119 (HTTPS) | API Gateway — **no JWT validation wired in today** |
+| CustomerWebsite | 5100 | Independent Razor MVC storefront — **does not call UserService today** |
+| NotificationService | 5246 | Where email/SMS/push actually happens — **not currently reached by UserService** despite `CommunicationService.cs` intending to call it |
 
 ---
 
-**Documentation:** [UserService](https://localhost:5011/scalar/v1)  
-**Status:** ✅ Ready for development testing  
-**Production:** ⚠️ Configure social login, encryption keys, and email service before deploying
+**Status:** Authentication, profile, address, and payment-method CRUD are real and functional against a running PostgreSQL instance. Email delivery, social-login token verification, GatewayBff integration, and CORS for the current frontends are not — see the checklist above before relying on this service beyond local, unauthenticated-frontend testing.

@@ -1,30 +1,36 @@
-# PaymentService e NotificationService - Guide Implementazione
+# PaymentService and NotificationService - Implementation Guide
 
-## Indice
+> ⚠️ **Verified against the real code.** This document contains two very different stories:
+> - **PaymentService**: everything that follows is **pure design, never implemented**. `src/PaymentService/Program.cs` is still the default `dotnet new webapi` template (just the `/weatherforecast` endpoint) — there are no `Controllers/`, `Models/`, `Services/`, or `Data/` folders. `appsettings.Development.json` has Kafka settings scaffolded (`OrderCreatedTopic`, `PaymentProcessedTopic`, consumer group `payment-service`) but no consumer reads them. Treat the entire PaymentService section as a spec for future development, not as real state.
+> - **NotificationService**: the service **is implemented**, but substantially differently from what's described below. See the "⚠️ Reality check" note at the start of the NotificationService section for the details of the divergences, and refer to `docs/NOTIFICATION_SERVICE_DOCUMENTATION.md` for the real state of the service.
+
+## Table of Contents
 1. [PaymentService](#paymentservice)
 2. [NotificationService](#notificationservice)
-3. [Integrazione con Sistema Esistente](#integrazione-con-sistema-esistente)
+3. [Integration with the Existing System](#integration-with-the-existing-system)
 4. [Testing Strategy](#testing-strategy)
 
 ---
 
 # PaymentService
 
-## Panoramica
+> 📄 **Status: 100% not implemented.** No schema, model, provider, controller, or Kafka event described in this section exists in the code. `PaymentService/Program.cs` only exposes the default template. Everything that follows should be read as "what to build," not "what exists."
 
-### Responsabilità
-- Gestione transazioni pagamento
-- Integrazione payment providers (Stripe, PayPal, ecc.)
-- Tracciamento stato pagamenti
-- Gestione rimborsi
-- Webhook processing per eventi esterni
+## Overview
 
-### Pattern Architetturali
-- **Strategy Pattern**: Supporto multipli payment providers
-- **State Machine**: Gestione stati transazione
-- **Idempotency**: Prevenzione pagamenti duplicati
-- **Webhook Handler**: Processing eventi asincroni
-- **Event Sourcing Light**: Audit trail completo
+### Responsibilities
+- Payment transaction management
+- Payment provider integration (Stripe, PayPal, etc.)
+- Payment status tracking
+- Refund handling
+- Webhook processing for external events
+
+### Architectural Patterns
+- **Strategy Pattern**: support for multiple payment providers
+- **State Machine**: transaction status management
+- **Idempotency**: duplicate payment prevention
+- **Webhook Handler**: asynchronous event processing
+- **Event Sourcing Light**: full audit trail
 
 ---
 
@@ -33,50 +39,50 @@
 ### Database Schema
 
 ```sql
--- Tabella principale transazioni
+-- Main transactions table
 CREATE TABLE PaymentTransactions (
     Id INT PRIMARY KEY IDENTITY,
-    OrderId INT NOT NULL,                    -- Link a OrderService
+    OrderId INT NOT NULL,                    -- Link to OrderService
     Amount DECIMAL(18,2) NOT NULL,
     Currency NVARCHAR(3) NOT NULL DEFAULT 'EUR',
     Status NVARCHAR(50) NOT NULL,            -- Pending, Completed, Failed, Refunded
     PaymentMethod NVARCHAR(50) NOT NULL,     -- CreditCard, PayPal, BankTransfer
     Provider NVARCHAR(50) NOT NULL,          -- Stripe, PayPal, Braintree
-    ProviderTransactionId NVARCHAR(200),     -- ID transazione provider esterno
-    IdempotencyKey NVARCHAR(100) UNIQUE,     -- Previene duplicati
+    ProviderTransactionId NVARCHAR(200),     -- External provider transaction ID
+    IdempotencyKey NVARCHAR(100) UNIQUE,     -- Prevents duplicates
     CreatedAtUtc DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     UpdatedAtUtc DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     CompletedAtUtc DATETIME2,
     FailureReason NVARCHAR(500)
 );
 
--- Indici per performance
+-- Indexes for performance
 CREATE INDEX IX_OrderId ON PaymentTransactions(OrderId);
 CREATE INDEX IX_Status ON PaymentTransactions(Status);
 CREATE INDEX IX_CreatedAt ON PaymentTransactions(CreatedAtUtc DESC);
 CREATE UNIQUE INDEX IX_IdempotencyKey ON PaymentTransactions(IdempotencyKey);
 
--- Eventi pagamento (audit trail)
+-- Payment events (audit trail)
 CREATE TABLE PaymentEvents (
     Id INT PRIMARY KEY IDENTITY,
     PaymentTransactionId INT NOT NULL,
     EventType NVARCHAR(50) NOT NULL,         -- Created, Authorized, Captured, Failed, Refunded
-    EventData NVARCHAR(MAX),                 -- JSON con dettagli
+    EventData NVARCHAR(MAX),                 -- JSON with details
     OccurredAtUtc DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     FOREIGN KEY (PaymentTransactionId) REFERENCES PaymentTransactions(Id)
 );
 
 CREATE INDEX IX_PaymentTransactionId ON PaymentEvents(PaymentTransactionId);
 
--- Informazioni pagamento cliente (tokenizzate)
+-- Customer payment information (tokenized)
 CREATE TABLE PaymentMethods (
     Id INT PRIMARY KEY IDENTITY,
-    CustomerId INT NOT NULL,                 -- Link a Customer/User
+    CustomerId INT NOT NULL,                 -- Link to Customer/User
     Type NVARCHAR(50) NOT NULL,              -- CreditCard, PayPal
     Provider NVARCHAR(50) NOT NULL,
-    ProviderCustomerId NVARCHAR(200),        -- ID cliente nel provider
-    ProviderPaymentMethodId NVARCHAR(200),   -- Token metodo pagamento
-    Last4Digits NVARCHAR(4),                 -- Ultime 4 cifre carta
+    ProviderCustomerId NVARCHAR(200),        -- Customer ID at the provider
+    ProviderPaymentMethodId NVARCHAR(200),   -- Payment method token
+    Last4Digits NVARCHAR(4),                 -- Last 4 card digits
     ExpiryMonth INT,
     ExpiryYear INT,
     IsDefault BIT NOT NULL DEFAULT 0,
@@ -112,13 +118,13 @@ public class PaymentTransaction
 
 public enum PaymentStatus
 {
-    Pending,        // In attesa elaborazione
-    Authorized,     // Autorizzato ma non ancora catturato
-    Captured,       // Fondi catturati (pagamento completato)
-    Failed,         // Pagamento fallito
-    Refunded,       // Rimborsato
-    PartiallyRefunded, // Rimborsato parzialmente
-    Cancelled       // Cancellato
+    Pending,        // Awaiting processing
+    Authorized,     // Authorized but not yet captured
+    Captured,       // Funds captured (payment completed)
+    Failed,         // Payment failed
+    Refunded,       // Refunded
+    PartiallyRefunded, // Partially refunded
+    Cancelled       // Cancelled
 }
 
 // PaymentEvent.cs (Event Sourcing Light)
@@ -193,7 +199,7 @@ public class StripePaymentProvider : IPaymentProvider
         {
             var options = new PaymentIntentCreateOptions
             {
-                Amount = (long)(request.Amount * 100), // Centesimi
+                Amount = (long)(request.Amount * 100), // Cents
                 Currency = request.Currency.ToLower(),
                 PaymentMethod = request.PaymentMethodId,
                 Confirm = true,
@@ -282,10 +288,10 @@ public class StripePaymentProvider : IPaymentProvider
     }
 }
 
-// PayPalPaymentProvider.cs (Simile implementazione)
+// PayPalPaymentProvider.cs (similar implementation)
 public class PayPalPaymentProvider : IPaymentProvider
 {
-    // Implementazione specifica PayPal
+    // PayPal-specific implementation
 }
 ```
 
@@ -336,7 +342,7 @@ public class PaymentService : IPaymentService
             return existing;
         }
         
-        // 2. Crea transazione con stato Pending
+        // 2. Create transaction with Pending status
         var transaction = new PaymentTransaction
         {
             OrderId = command.OrderId,
@@ -353,18 +359,18 @@ public class PaymentService : IPaymentService
         _db.PaymentTransactions.Add(transaction);
         await _db.SaveChangesAsync(ct);
         
-        // 3. Aggiungi evento "Created"
+        // 3. Add "Created" event
         await AddPaymentEventAsync(transaction.Id, "Created", 
             new { command.Amount, command.Currency }, ct);
         
-        // 4. Seleziona provider
+        // 4. Select provider
         var provider = _providers.FirstOrDefault(p => p.ProviderName == command.Provider);
         if (provider == null)
         {
             throw new InvalidOperationException($"Provider {command.Provider} not found");
         }
         
-        // 5. Esegui pagamento
+        // 5. Execute payment
         var result = await provider.CreatePaymentAsync(new PaymentRequest
         {
             OrderId = command.OrderId,
@@ -374,7 +380,7 @@ public class PaymentService : IPaymentService
             IdempotencyKey = command.IdempotencyKey
         }, ct);
         
-        // 6. Aggiorna transazione con risultato
+        // 6. Update transaction with result
         transaction.Status = result.Status;
         transaction.ProviderTransactionId = result.ProviderTransactionId;
         transaction.UpdatedAtUtc = DateTime.UtcNow;
@@ -384,7 +390,7 @@ public class PaymentService : IPaymentService
             transaction.CompletedAtUtc = DateTime.UtcNow;
             await AddPaymentEventAsync(transaction.Id, "Captured", result, ct);
             
-            // 7. Pubblica evento Kafka
+            // 7. Publish Kafka event
             await _eventPublisher.PublishPaymentCompletedAsync(new PaymentCompletedEvent
             {
                 PaymentTransactionId = transaction.Id,
@@ -398,7 +404,7 @@ public class PaymentService : IPaymentService
             transaction.FailureReason = result.Message;
             await AddPaymentEventAsync(transaction.Id, "Failed", result, ct);
             
-            // Pubblica evento fallimento
+            // Publish failure event
             await _eventPublisher.PublishPaymentFailedAsync(new PaymentFailedEvent
             {
                 PaymentTransactionId = transaction.Id,
@@ -441,7 +447,7 @@ public class PaymentsController : ControllerBase
 {
     private readonly IPaymentService _paymentService;
     
-    // Crea/Processa pagamento
+    // Create/process payment
     [HttpPost]
     public async Task<IActionResult> ProcessPayment([FromBody] ProcessPaymentDto dto)
     {
@@ -467,7 +473,7 @@ public class PaymentsController : ControllerBase
         });
     }
     
-    // Query stato pagamento
+    // Query payment status
     [HttpGet("{paymentTransactionId}")]
     public async Task<IActionResult> GetPayment(int paymentTransactionId)
     {
@@ -481,7 +487,7 @@ public class PaymentsController : ControllerBase
         return Ok(transaction);
     }
     
-    // Query pagamenti per ordine
+    // Query payments by order
     [HttpGet("order/{orderId}")]
     public async Task<IActionResult> GetPaymentsByOrder(int orderId)
     {
@@ -492,7 +498,7 @@ public class PaymentsController : ControllerBase
         return Ok(transactions);
     }
     
-    // Rimborso
+    // Refund
     [HttpPost("{paymentTransactionId}/refund")]
     public async Task<IActionResult> RefundPayment(
         int paymentTransactionId, 
@@ -533,7 +539,7 @@ public class WebhooksController : ControllerBase
             if (stripeEvent.Type == "payment_intent.succeeded")
             {
                 var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
-                // Aggiorna stato transazione
+                // Update transaction status
                 await UpdatePaymentStatusFromWebhook(
                     paymentIntent.Id, 
                     PaymentStatus.Captured);
@@ -627,20 +633,31 @@ public class PaymentFailedEvent
 
 # NotificationService
 
-## Panoramica
+> ⚠️ **Reality check — the service is implemented, but differently from this design.** Comparing this document against `src/NotificationService/` (`Program.cs`, `Data/NotificationContext.cs`, `Models/NotificationModels.cs`, `Services/Implementations/NotificationTemplateService.cs`, `Controllers/NotificationController.cs`), the main divergences are:
+>
+> 1. **No Kafka consumer exists at all** — `NotificationService.csproj` doesn't even reference `Confluent.Kafka`. The entire "Kafka Consumers" section below (`OrderCreatedNotificationConsumer`, `PaymentCompletedNotificationConsumer`) and the "Kafka consumer for system events" line remain unrealized design. The real service uses **Hangfire** (background jobs, `/hangfire` dashboard, PostgreSQL storage) and **SignalR** (`NotificationHub` at `/hubs/notifications` for real-time in-app notifications) — not Kafka — as its asynchronous processing mechanism.
+> 2. **Different data schema**: the real model (`NotificationContext`) has tables `Notifications`, `NotificationTemplates`, `NotificationPreferences`, `NotificationLogs` — not `PaymentTransactions`/`NotificationHistory` as in the SQL schema below. The real `Notification` includes fields like `Priority` (`Low/Normal/High/Critical`), `ReferenceId`/`ReferenceType`, `ScheduledAt`, `ExternalId` that don't appear in this design.
+> 3. **Different placeholder syntax**: the real templates (seeded in `NotificationContext.SeedTemplates`) use `{variable}` (single brace, substitution via regex in `NotificationTemplateService.ExtractVariables`/`ReplaceVariables`), not `{{variable}}` as in the `SimpleTemplateRenderer`/`RazorTemplateRenderer` examples below.
+> 4. **Different template names**: the real ones are `order_confirmation`, `order_shipped`, `payment_reminder`, `welcome_user`, `system_maintenance` (with `NotificationType.Email/SMS/Push/InApp`) — not `order-created`/`payment-completed`/`low-stock-alert` as proposed here.
+> 5. **Different real route**: the main endpoint is `POST /api/notification/send-template` (`NotificationController`, base route `api/[controller]` → singular "notification"), not `POST /api/notifications/email` as below.
+> 6. **Real channels**: mock implementations (`MockSmsService`/`MockEmailService`/`MockPushService`) in Development, `TwilioSmsService`/`MailKitEmailService`/`FirebasePushService` elsewhere — so MailKit instead of direct SMTP/SendGrid as proposed here.
+>
+> For the real, verified state of the service, see **`docs/NOTIFICATION_SERVICE_DOCUMENTATION.md`**. The content below remains useful as historical context on some design choices (why template-based, why multi-channel), but it does not describe the code as it exists today.
 
-### Responsabilità
-- Invio email (conferme ordini, pagamenti, spedizioni)
-- Invio SMS (notifiche critiche)
-- Push notifications (mobile app future)
+## Overview
+
+### Responsibilities (as originally designed — see note above for real state)
+- Sending emails (order confirmations, payments, shipping)
+- Sending SMS (critical notifications)
+- Push notifications (future mobile app)
 - Template management
-- Kafka consumer per eventi sistema
+- ~~Kafka consumer for system events~~ — not implemented; the real service uses Hangfire/SignalR, not Kafka
 
-### Pattern Architetturali
-- **Template Method Pattern**: Rendering template email
-- **Observer Pattern**: Risposta a eventi Kafka
-- **Queue Pattern**: Retry automatico invii falliti
-- **Factory Pattern**: Creazione notifiche diverse
+### Architectural Patterns (as originally designed)
+- **Template Method Pattern**: email template rendering
+- ~~**Observer Pattern**: responding to Kafka events~~ — not implemented (no Kafka consumer in the real service)
+- **Queue Pattern**: automatic retry of failed sends
+- **Factory Pattern**: creation of different notification types
 
 ---
 
@@ -649,23 +666,23 @@ public class PaymentFailedEvent
 ### Database Schema
 
 ```sql
--- Template notifiche
+-- Notification templates
 CREATE TABLE NotificationTemplates (
     Id INT PRIMARY KEY IDENTITY,
     Name NVARCHAR(100) NOT NULL UNIQUE,      -- order-created, payment-completed
     Type NVARCHAR(50) NOT NULL,              -- Email, SMS, Push
-    Subject NVARCHAR(200),                   -- Per email
-    BodyTemplate NVARCHAR(MAX) NOT NULL,     -- Template con placeholder {{variabile}}
+    Subject NVARCHAR(200),                   -- For email
+    BodyTemplate NVARCHAR(MAX) NOT NULL,     -- Template with {{variable}} placeholders
     IsActive BIT NOT NULL DEFAULT 1,
     CreatedAtUtc DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     UpdatedAtUtc DATETIME2 NOT NULL DEFAULT GETUTCDATE()
 );
 
--- Storia notifiche inviate
+-- History of sent notifications
 CREATE TABLE NotificationHistory (
     Id INT PRIMARY KEY IDENTITY,
     Type NVARCHAR(50) NOT NULL,              -- Email, SMS, Push
-    Recipient NVARCHAR(200) NOT NULL,        -- Email address o phone number
+    Recipient NVARCHAR(200) NOT NULL,        -- Email address or phone number
     Subject NVARCHAR(200),
     Body NVARCHAR(MAX),
     Status NVARCHAR(50) NOT NULL,            -- Pending, Sent, Failed
@@ -762,7 +779,7 @@ public class NotificationService : INotificationService
         Dictionary<string, string> variables, 
         CancellationToken ct = default)
     {
-        // 1. Carica template
+        // 1. Load template
         var template = await _db.NotificationTemplates
             .FirstOrDefaultAsync(t => t.Name == templateName && t.IsActive, ct);
         
@@ -771,11 +788,11 @@ public class NotificationService : INotificationService
             throw new InvalidOperationException($"Template {templateName} not found");
         }
         
-        // 2. Render template con variabili
+        // 2. Render template with variables
         var subject = _templateRenderer.Render(template.Subject ?? "", variables);
         var body = _templateRenderer.Render(template.BodyTemplate, variables);
         
-        // 3. Crea record history
+        // 3. Create history record
         var history = new NotificationHistory
         {
             Type = NotificationType.Email,
@@ -790,7 +807,7 @@ public class NotificationService : INotificationService
         _db.NotificationHistory.Add(history);
         await _db.SaveChangesAsync(ct);
         
-        // 4. Invia email
+        // 4. Send email
         try
         {
             await _emailSender.SendEmailAsync(recipient, subject, body, ct);
@@ -937,7 +954,7 @@ public class OrderCreatedNotificationConsumer : BackgroundService
             var notificationService = scope.ServiceProvider
                 .GetRequiredService<INotificationService>();
             
-            // Invia email conferma ordine
+            // Send order confirmation email
             await notificationService.SendTemplatedEmailAsync(
                 "order-created",
                 orderEvent.CustomerEmail,
@@ -956,7 +973,7 @@ public class OrderCreatedNotificationConsumer : BackgroundService
 // PaymentCompletedConsumer.cs
 public class PaymentCompletedNotificationConsumer : BackgroundService
 {
-    // Simile implementazione per evento pagamento completato
+    // Similar implementation for the payment-completed event
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _consumer.Subscribe("payment-completed");
@@ -966,7 +983,7 @@ public class PaymentCompletedNotificationConsumer : BackgroundService
             var message = _consumer.Consume(stoppingToken);
             var paymentEvent = JsonSerializer.Deserialize<PaymentCompletedEvent>(message.Value);
             
-            // Invia email pagamento confermato
+            // Send payment confirmed email
             await notificationService.SendTemplatedEmailAsync(
                 "payment-completed",
                 paymentEvent.CustomerEmail,
@@ -992,7 +1009,7 @@ public class NotificationsController : ControllerBase
 {
     private readonly INotificationService _notificationService;
     
-    // Invio email manuale
+    // Manual email send
     [HttpPost("email")]
     public async Task<IActionResult> SendEmail([FromBody] SendEmailDto dto)
     {
@@ -1006,7 +1023,7 @@ public class NotificationsController : ControllerBase
         return Ok(new { message = "Email sent" });
     }
     
-    // Invio email da template
+    // Send email from template
     [HttpPost("email/template")]
     public async Task<IActionResult> SendTemplatedEmail([FromBody] SendTemplatedEmailDto dto)
     {
@@ -1018,7 +1035,7 @@ public class NotificationsController : ControllerBase
         return Ok(new { message = "Email sent" });
     }
     
-    // Query storia notifiche
+    // Query notification history
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory(
         [FromQuery] string? recipient = null,
@@ -1047,7 +1064,7 @@ public class NotificationsController : ControllerBase
 ### Email Templates (Seed)
 
 ```csharp
-// Seed nel Program.cs o migration
+// Seed in Program.cs or a migration
 public static void SeedNotificationTemplates(NotificationContext db)
 {
     if (!db.NotificationTemplates.Any())
@@ -1058,13 +1075,13 @@ public static void SeedNotificationTemplates(NotificationContext db)
             {
                 Name = "order-created",
                 Type = NotificationType.Email,
-                Subject = "Conferma Ordine #{{OrderId}}",
+                Subject = "Order Confirmation #{{OrderId}}",
                 BodyTemplate = @"
-                    <h2>Grazie per il tuo ordine!</h2>
-                    <p>Il tuo ordine #{{OrderId}} è stato ricevuto con successo.</p>
-                    <p><strong>Totale:</strong> {{TotalAmount}}</p>
-                    <p><strong>Data:</strong> {{CreatedAt}}</p>
-                    <p>Riceverai un'altra email quando il pagamento sarà confermato.</p>
+                    <h2>Thank you for your order!</h2>
+                    <p>Your order #{{OrderId}} has been received successfully.</p>
+                    <p><strong>Total:</strong> {{TotalAmount}}</p>
+                    <p><strong>Date:</strong> {{CreatedAt}}</p>
+                    <p>You'll receive another email once the payment is confirmed.</p>
                 ",
                 IsActive = true,
                 CreatedAtUtc = DateTime.UtcNow,
@@ -1076,13 +1093,13 @@ public static void SeedNotificationTemplates(NotificationContext db)
             {
                 Name = "payment-completed",
                 Type = NotificationType.Email,
-                Subject = "Pagamento Confermato - Ordine #{{OrderId}}",
+                Subject = "Payment Confirmed - Order #{{OrderId}}",
                 BodyTemplate = @"
-                    <h2>Pagamento Confermato!</h2>
-                    <p>Il pagamento per l'ordine #{{OrderId}} è stato completato con successo.</p>
-                    <p><strong>Importo:</strong> {{Amount}}</p>
-                    <p><strong>Metodo:</strong> {{PaymentMethod}}</p>
-                    <p>Il tuo ordine verrà processato a breve.</p>
+                    <h2>Payment Confirmed!</h2>
+                    <p>Payment for order #{{OrderId}} has been completed successfully.</p>
+                    <p><strong>Amount:</strong> {{Amount}}</p>
+                    <p><strong>Method:</strong> {{PaymentMethod}}</p>
+                    <p>Your order will be processed shortly.</p>
                 ",
                 IsActive = true,
                 CreatedAtUtc = DateTime.UtcNow,
@@ -1094,11 +1111,11 @@ public static void SeedNotificationTemplates(NotificationContext db)
             {
                 Name = "low-stock-alert",
                 Type = NotificationType.Email,
-                Subject = "ALERT: Stock Basso - Prodotto {{ProductName}}",
+                Subject = "ALERT: Low Stock - Product {{ProductName}}",
                 BodyTemplate = @"
-                    <h2>Allerta Stock Basso</h2>
-                    <p>Il prodotto <strong>{{ProductName}}</strong> ha solo {{AvailableQuantity}} unità rimaste.</p>
-                    <p>Si consiglia di rifornire il magazzino.</p>
+                    <h2>Low Stock Alert</h2>
+                    <p>Product <strong>{{ProductName}}</strong> has only {{AvailableQuantity}} units left.</p>
+                    <p>Restocking is recommended.</p>
                 ",
                 IsActive = true,
                 CreatedAtUtc = DateTime.UtcNow,
@@ -1146,59 +1163,59 @@ public static void SeedNotificationTemplates(NotificationContext db)
 
 ---
 
-# Integrazione con Sistema Esistente
+# Integration with the Existing System
 
-## Flussi Completi
+## Complete Flows
 
-### Flusso 1: Ordine → Pagamento → Notifiche
+### Flow 1: Order → Payment → Notifications
 
 ```
-1. User crea ordine
+1. User creates an order
    Frontend → GatewayBff → OrderService
    
-2. OrderService salva ordine
+2. OrderService saves the order
    DB: Orders, OrderItems
    
-3. OrderService pubblica OrderCreatedEvent
+3. OrderService publishes OrderCreatedEvent
    Kafka Topic: order-created
    
-4. InventoryService consuma evento
-   → Riduce stock
+4. InventoryService consumes the event
+   → Reduces stock
    
-5. NotificationService consuma evento
-   → Invia email "Ordine Creato"
+5. NotificationService consumes the event
+   → Sends "Order Created" email
    
-6. Frontend reindirizza a pagamento
+6. Frontend redirects to payment
    PaymentService/checkout
    
-7. User completa pagamento
+7. User completes payment
    Frontend → GatewayBff → PaymentService
    
-8. PaymentService processa con Stripe/PayPal
-   → Salva PaymentTransaction
-   → Pubblica PaymentCompletedEvent
+8. PaymentService processes via Stripe/PayPal
+   → Saves PaymentTransaction
+   → Publishes PaymentCompletedEvent
    
-9. OrderService consuma PaymentCompletedEvent
-   → Aggiorna Order.Status = "Paid"
+9. OrderService consumes PaymentCompletedEvent
+   → Updates Order.Status = "Paid"
    
-10. NotificationService consuma PaymentCompletedEvent
-    → Invia email "Pagamento Confermato"
+10. NotificationService consumes PaymentCompletedEvent
+    → Sends "Payment Confirmed" email
 ```
 
-### Flusso 2: Stock Basso → Notifica Admin
+### Flow 2: Low Stock → Admin Notification
 
 ```
-1. InventoryService aggiorna stock
+1. InventoryService updates stock
    AvailableQuantity = 3
    
-2. InventoryService controlla threshold
+2. InventoryService checks threshold
    if (quantity < lowStockThreshold)
    
-3. Pubblica LowStockEvent
+3. Publishes LowStockEvent
    Kafka Topic: low-stock-alert
    
-4. NotificationService consuma evento
-   → Invia email admin/warehouse
+4. NotificationService consumes the event
+   → Sends email to admin/warehouse
    → Template: low-stock-alert
 ```
 
@@ -1226,10 +1243,10 @@ inventory-updated
   Consumers: ProductService (cache invalidation)
 ```
 
-## Endpoints BFF da Aggiungere
+## BFF Endpoints to Add
 
 ```csharp
-// GatewayBff Commands per Payment
+// GatewayBff Commands for Payment
 [HttpPost("api/commands/payment")]
 public async Task<IActionResult> ProcessPayment([FromBody] ProcessPaymentDto dto)
 {
@@ -1365,14 +1382,14 @@ public class OrderToPaymentE2ETests
     [Fact]
     public async Task CompleteOrderFlow_CreatesOrderAndProcessesPayment()
     {
-        // 1. Crea ordine
+        // 1. Create order
         var orderResponse = await _client.PostAsJsonAsync("/api/commands/orders", new
         {
             items = new[] { new { productId = 1, quantity = 2 } }
         });
         var order = await orderResponse.Content.ReadFromJsonAsync<OrderDto>();
         
-        // 2. Processa pagamento
+        // 2. Process payment
         var paymentResponse = await _client.PostAsJsonAsync("/api/commands/payment", new
         {
             orderId = order.Id,
@@ -1380,7 +1397,7 @@ public class OrderToPaymentE2ETests
             provider = "Stripe"
         });
         
-        // 3. Verifica email inviata
+        // 3. Verify email sent
         await Task.Delay(2000); // Wait for Kafka processing
         var notifications = await _client.GetFromJsonAsync<List<NotificationDto>>(
             $"/api/queries/notifications/{order.Id}");
@@ -1392,22 +1409,20 @@ public class OrderToPaymentE2ETests
 
 ---
 
-## Conclusione
+## Conclusion
 
-PaymentService e NotificationService completano l'architettura con:
+**PaymentService** — 📄 everything above is unimplemented design:
+- ⬜ Multi-provider support (Stripe, PayPal) — to be built
+- ⬜ Idempotency for safety — to be built
+- ⬜ Webhook handling — to be built
+- ⬜ Event sourcing light (audit trail) — to be built
+- ⬜ Kafka integration for communication — settings scaffolded in `appsettings`, no producer/consumer
 
-**PaymentService**:
-- ✅ Multi-provider support (Stripe, PayPal)
-- ✅ Idempotency per sicurezza
-- ✅ Webhook handling
-- ✅ Event sourcing light (audit trail)
-- ✅ Kafka integration per comunicazione
+**NotificationService** — ✅ implemented, but with a design different from the above:
+- ✅ Template-based notifications — real, but with `{variable}` syntax and different template names (see "Reality check" note)
+- ✅ Multi-channel (Email, SMS, Push, In-App via SignalR)
+- ⬜ Kafka consumers for system events — **not present**; the real service uses Hangfire + SignalR, not Kafka
+- ➖ Retry logic — present as a field (`RetryCount`) on the `Notification` model, but check `docs/NOTIFICATION_SERVICE_DOCUMENTATION.md` for how much of the automatic retry logic is actually wired up
+- ✅ Notification history — real `Notifications`/`NotificationLogs` table, different schema from what's proposed here
 
-**NotificationService**:
-- ✅ Template-based notifications
-- ✅ Multi-channel (Email, SMS, Push)
-- ✅ Kafka consumers per eventi sistema
-- ✅ Retry logic automatico
-- ✅ Storia completa notifiche
-
-Entrambi seguono gli stessi pattern architetturali del sistema esistente e si integrano perfettamente via Kafka events.
+This document remains valid as a **spec for PaymentService** and as **historical design context** for NotificationService — not as a description of the code's current state. For NotificationService's real state, use `docs/NOTIFICATION_SERVICE_DOCUMENTATION.md`.

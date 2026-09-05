@@ -1,17 +1,20 @@
 # Distributed Order System - Startup Guide
 
+> Updated to match the current stack: PostgreSQL (not SQL Server), .NET 9 (not .NET 8), and Scalar for interactive API docs (not Swagger UI) on the three services this guide covers. This guide only starts GatewayBff + ProductService + InventoryService + the Angular frontend — see the note at the end for the other five backend services and the new AppHost orchestrator, which this script doesn't touch.
+
 ## Prerequisites
 - Docker and Docker Compose installed
-- .NET 8 SDK installed
+- **.NET 9 SDK** installed (the new `AppHost` project, if you use it instead of this guide, needs .NET 10 SDK as well)
 - Node.js and npm installed
-- All services use the GatewayBff as mediator
+- All services in this guide go through GatewayBff as the entry point for the Angular frontend
 
 ## Quick Start
 
-### Automated (Recommended)
+### Automated
 ```bash
 ./start-services.sh
 ```
+⚠️ This script's own echoed output still says "SQL Server" and links to `/swagger` — both are stale (see corrections below). The script itself still works for starting the three services + Docker infra + Angular; only its printed messages are outdated.
 
 ### Manual Steps
 
@@ -30,7 +33,7 @@ cd docker
 docker-compose up -d
 ```
 
-Wait ~30 seconds for SQL Server to initialize.
+Wait ~30 seconds for PostgreSQL to initialize (not SQL Server — this repo migrated to PostgreSQL; see `docker/docker-compose.yml`, service `postgres`, container `dos_postgres`).
 
 #### 3. Start Backend Services
 
@@ -52,6 +55,8 @@ cd src/InventoryService
 dotnet run
 ```
 
+These three services don't cover the whole backend — see [Other Services](#other-services-not-covered-by-this-guide) below.
+
 #### 4. Start Frontend
 
 **Terminal 4 - Angular:**
@@ -66,23 +71,30 @@ npm start
 | Service | URL | Description |
 |---------|-----|-------------|
 | **Frontend** | http://localhost:4200 | Angular UI |
-| **GatewayBff** | http://localhost:5189 | API Gateway (Mediator) |
+| **GatewayBff** | http://localhost:5189 | API Gateway (MediatR-based BFF) |
 | ProductService | http://localhost:5198 | Product microservice |
 | InventoryService | http://localhost:5051 | Inventory microservice |
-| SQL Server | localhost:1433 | Database |
+| PostgreSQL | localhost:5432 | Database (container `dos_postgres`) |
 | Redis | localhost:6379 | Cache |
+| Kafka | localhost:29092 (host) / `kafka:9092` (containers) | Message broker — two listeners, see `docs/KAFKA_INTEGRATION.md` |
 
 ## API Endpoints (via GatewayBff)
 
 ### Queries (Read)
 - `GET /api/queries/catalog` - Get all products with inventory
 - `GET /api/queries/catalog/{id}` - Get product by ID with inventory
+- `GET /api/queries/orders` - List orders
+- `GET /api/queries/orders/{id}` - Get order by ID
 
 ### Commands (Write)
 - `POST /api/commands/products` - Create product
 - `PUT /api/commands/products/{id}` - Update product
 - `DELETE /api/commands/products/{id}` - Delete product
 - `POST /api/commands/orders` - Create order
+- `POST /api/commands/inventory/adjust` - Adjust inventory by a delta
+- `POST /api/commands/inventory/set` - Set inventory to an absolute quantity
+
+Cart (`/api/cart/...`) and wishlist (`/api/wishlist/...`) also exist on GatewayBff but proxy to CustomerService (port 5009) with some caveats — see `docs/BFF_ARCHITECTURE.md`.
 
 ## Troubleshooting
 
@@ -125,12 +137,11 @@ npm install -g @angular/cli
 
 ### Database Connection Issues
 ```bash
-# Verify SQL Server is running
-docker ps | grep sqlserver
+# Verify PostgreSQL is running (container is dos_postgres, not dos_sqlserver)
+docker ps | grep dos_postgres
 
 # Test connection
-docker exec -it dos_sqlserver /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P YourStrong_Password123 -C -Q "SELECT 1"
+docker exec -it dos_postgres psql -U postgres -c "SELECT 1"
 ```
 
 ## Stopping Services
@@ -157,16 +168,17 @@ Press `Ctrl+C` in the terminal running npm start
          │ All HTTP Requests
          ↓
 ┌────────────────────┐
-│    GatewayBff      │ ← MEDIATOR/BFF Pattern
+│    GatewayBff      │ ← MediatR-based BFF
 │   (Port 5189)      │    - Aggregates data
 │                    │    - Routes commands
 └────────┬───────────┘    - Single entry point
          │
          ├─────→ ProductService (Port 5198)
-         │       └─→ SQL Server + Redis Cache
+         │       └─→ PostgreSQL + Redis Cache
          │
          └─────→ InventoryService (Port 5051)
-                 └─→ SQL Server + Redis Cache
+                 └─→ PostgreSQL + Redis Cache
+                     (also consumes OrderCreatedEvent from Kafka)
 ```
 
 ## Testing the System
@@ -175,14 +187,14 @@ Press `Ctrl+C` in the terminal running npm start
 2. Create a new product
 3. View the product list (shows inventory quantity)
 4. Edit/Delete products
-5. All operations go through GatewayBff!
+5. Create an order → GatewayBff calls OrderService, which publishes to Kafka; InventoryService picks up the event asynchronously and decrements stock (allow a second or two for this to show up)
 
 ## Development Tips
 
-- Use Swagger UI for API testing:
-  - GatewayBff: http://localhost:5189/swagger
-  - ProductService: http://localhost:5198/swagger
-  - InventoryService: http://localhost:5051/swagger
+- Use **Scalar** for interactive API docs (this solution uses `Scalar.AspNetCore`, not Swagger UI, on these services):
+  - GatewayBff: http://localhost:5189/scalar/v1
+  - ProductService: http://localhost:5198/scalar/v1
+  - InventoryService: http://localhost:5051/scalar/v1
 
 - Frontend uses CQRS pattern via BFF:
   - Queries → `/api/queries/*`
@@ -190,3 +202,17 @@ Press `Ctrl+C` in the terminal running npm start
 
 - Check browser console for frontend logs
 - Check terminal output for backend logs
+
+## Other Services Not Covered by This Guide
+
+This guide only starts GatewayBff, ProductService, InventoryService, and the Angular frontend. The solution also has:
+
+- **PaymentService** (port 5034) — unimplemented stub, nothing to start meaningfully yet.
+- **NotificationService** (port 5246) — `dotnet run --project src/NotificationService`; needs PostgreSQL + Redis running.
+- **UserService** (port 5010) — `dotnet run --project src/UserService`; needs PostgreSQL running.
+- **CustomerService** (port 5009) — `dotnet run --project src/CustomerService`; needs Redis running. Required if you want cart/wishlist to work through GatewayBff.
+- **ChatbotService** (port 5055) — `dotnet run --project src/ChatbotService`; needs PostgreSQL + Redis running.
+- **CustomerWebsite** (port 5100) — the second, independent storefront under `src/frontend/customer-facing e-commerce/CustomerWebsite`; see `docs/BFF_ARCHITECTURE.md` for its (currently misconfigured) service URLs before relying on it.
+- **AppHost** (new, .NET Aspire) — an alternative to manually running GatewayBff/ProductService/InventoryService/OrderService in separate terminals: `dotnet run --project src/AppHost` (needs .NET 10 SDK), after starting infra via Docker Compose. Doesn't cover the other five services listed above either.
+
+For the full picture of every service, see `../COMPREHENSIVE_SOLUTION_ARCHITECTURE_EN.md` at the repository root.

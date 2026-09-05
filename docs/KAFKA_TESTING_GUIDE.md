@@ -1,8 +1,10 @@
 # Quick Testing Guide - Kafka Integration
 
+> Updated to match the real code. Product/order ids are `Guid`, not `int`; infrastructure is PostgreSQL, not SQL Server; and — the biggest practical fix — most of the "watch for this log line" instructions below quoted English text that doesn't exist in the running services. `InventoryService`'s consumer and `OrderService`'s producer log almost everything in Italian. See `KAFKA_INTEGRATION.md`'s Observability section for the verbatim strings; this guide's log excerpts have been corrected to match.
+
 ## Prerequisites
 ```bash
-# Start Docker infrastructure (SQL Server, Redis, Kafka in KRaft mode)
+# Start Docker infrastructure (PostgreSQL, Redis, Kafka in KRaft mode, Kafka UI)
 cd docker
 docker-compose up -d
 
@@ -10,7 +12,12 @@ docker-compose up -d
 docker ps | grep kafka
 docker logs dos_kafka | tail -20
 
-# Note: Kafka now runs in KRaft mode (no Zookeeper needed)
+# Kafka runs in KRaft mode (no Zookeeper) with TWO listeners:
+#   9092  → PLAINTEXT, container-to-container only (e.g. kafka:9092)
+#   29092 → PLAINTEXT_HOST, for anything running on the host (dotnet run, AppHost)
+# The commands in this guide that use `docker exec -it dos_kafka ...` run *inside*
+# the container, so they correctly use `localhost:9092` — don't confuse that with
+# the `localhost:29092` a host-side dotnet process needs.
 ```
 
 ## Start All Services
@@ -20,16 +27,16 @@ docker logs dos_kafka | tail -20
 cd src/OrderService
 dotnet run
 ```
-**Watch for**: "Kafka producer initialized for topic order-created"
+**Watch for**: `Producer Kafka inizializzato per topic order-created su localhost:29092` (Italian — this is the real message)
 
 ### Terminal 2: InventoryService (Port 5051)
 ```bash
 cd src/InventoryService
 dotnet run
 ```
-**Watch for**: 
-- "Kafka consumer initialized for topic order-created"
-- "Subscribed to Kafka topic: order-created"
+**Watch for**:
+- `Kafka consumer initialized for topic order-created with group inventory-service at localhost:29092` (this one really is in English)
+- `Avvio consumer Kafka per topic: order-created` (Italian — logged once the consume loop starts, ~2s after startup)
 
 ### Terminal 3: GatewayBff (Port 5189)
 ```bash
@@ -51,9 +58,8 @@ npm start
 
 ## Test Sequence
 
-### 1. Create Products (via Frontend or API)
+### 1. Create a Product (via GatewayBff)
 ```bash
-# Via API
 curl -X POST http://localhost:5189/api/commands/products \
   -H "Content-Type: application/json" \
   -d '{
@@ -62,80 +68,82 @@ curl -X POST http://localhost:5189/api/commands/products \
     "price": 29.99
   }'
 ```
+Response includes the product's `id` (a `Guid`) — copy it, you'll need it for every step below. This guide uses `3fa85f64-5717-4562-b3fc-2c963f66afa6` as a placeholder; substitute your real id.
 
 ### 2. Initialize Inventory
 ```bash
 curl -X POST http://localhost:5051/api/inventory/seed \
   -H "Content-Type: application/json" \
   -d '[
-    {"productId": 1, "quantity": 100},
-    {"productId": 2, "quantity": 50},
-    {"productId": 3, "quantity": 75}
+    {"productId": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "quantity": 100}
   ]'
 ```
+⚠️ `productId` is a `Guid` string, not an integer — `InventoryController.Get`/`Seed`/`Adjust` all bind `Guid`, and the route itself is constrained (`{productId:guid}`).
 
 ### 3. Check Initial Inventory
 ```bash
-# Check product 1 inventory
-curl http://localhost:5051/api/inventory/1
+curl http://localhost:5051/api/inventory/3fa85f64-5717-4562-b3fc-2c963f66afa6
 
 # Expected response:
-# {"productId":1,"availableQuantity":100,"reservedQuantity":0}
+# {"id":1,"productId":"3fa85f64-5717-4562-b3fc-2c963f66afa6","availableQuantity":100,"reservedQuantity":0,"lastUpdatedUtc":"..."}
 ```
 
-### 4. Create Order (via Frontend)
+### 4. Create Order (via Frontend or API)
 1. Open browser: http://localhost:4200
-2. Navigate to "Create Order"
-3. Add products to cart (e.g., Product 1, Quantity: 5)
-4. Click "Crea Ordine"
+2. Navigate to "Create Order", add the product, quantity 5, submit.
 
-**OR via API**:
+**OR via API** (GatewayBff looks up the product's real price itself before forwarding to OrderService, so `unitPrice` in this request is optional/ignored):
 ```bash
 curl -X POST http://localhost:5189/api/commands/orders \
   -H "Content-Type: application/json" \
   -d '{
     "items": [
-      {"productId": 1, "quantity": 5}
+      {"productId": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "quantity": 5}
     ]
   }'
 ```
+GatewayBff's `CreateOrderCommandHandler` validates the product is active, checks `InventoryService` for sufficient stock *before* forwarding to `OrderService` — if inventory is insufficient at this stage, you get an error back from GatewayBff itself (`InvalidOperationException` → the request fails) rather than an order that later fails asynchronously. The Kafka-driven stock reduction described below only fires for orders that pass this upfront check.
 
 ### 5. Verify Kafka Event Published
 
-**OrderService logs should show**:
+**OrderService logs should show** (real message, Italian):
 ```
-Published OrderCreated event for Order 1 to partition 0 at offset 0
+Pubblicato evento OrderCreated per Ordine 1 partizione 0 offset 0
 ```
 
 ### 6. Verify Inventory Updated
 
-**InventoryService logs should show**:
+**InventoryService logs should show** (real messages — mixed Italian, one English line):
 ```
-Received message from partition 0 at offset 0
-Processing OrderCreatedEvent for Order 1 with 1 items
-Reduced inventory for Product 1 by 5 units (Order 1)
-Successfully processed and committed message at offset 0
+Ricevuto messaggio dalla partizione 0 all'offset 0
+Elaborazione OrderCreatedEvent per Ordine 1 con 1 articoli
+Ridotto inventario per Prodotto 3fa85f64-5717-4562-b3fc-2c963f66afa6 di 5 unità (Ordine 1)
+Completati aggiornamenti inventario per Ordine 1
+Messaggio elaborato e confermato con successo all'offset 0
 ```
 
 **Check inventory**:
 ```bash
-curl http://localhost:5051/api/inventory/1
+curl http://localhost:5051/api/inventory/3fa85f64-5717-4562-b3fc-2c963f66afa6
 
-# Expected response:
-# {"productId":1,"availableQuantity":95,"reservedQuantity":0}
-# (100 - 5 = 95)
+# Expected: availableQuantity: 95 (100 - 5)
 ```
 
 ### 7. View Order
 ```bash
-# Get all orders
+# All orders (via GatewayBff aggregation)
 curl http://localhost:5189/api/queries/orders
 
-# Get specific order
+# Specific order
 curl http://localhost:5189/api/queries/orders/1
+
+# Or directly against OrderService (no aggregation, same data)
+curl http://localhost:5003/api/orders/1
 ```
 
 ## Kafka Debugging Commands
+
+Run from the host, or use **kafka-ui at http://localhost:8080** for the same information (topics, partitions, consumer group lag) without the CLI. `kafka-ui` is already part of `docker-compose.yml` (container `dos_kafka_ui`), pointed at `kafka:9092` internally.
 
 ### View Kafka Topics
 ```bash
@@ -153,6 +161,7 @@ docker exec -it dos_kafka kafka-console-consumer \
   --property print.key=true \
   --property print.timestamp=true
 ```
+Message values are the JSON-serialized `OrderCreatedEvent` — `orderId` and each item's `productId` will appear as JSON **strings**, e.g. `{"orderId":"1","createdAt":"...","items":[{"productId":"3fa85f64-...","quantity":5}]}`.
 
 ### Check Consumer Group Status
 ```bash
@@ -161,82 +170,37 @@ docker exec -it dos_kafka kafka-consumer-groups \
   --describe \
   --group inventory-service
 ```
-**Look for**: LAG column (should be 0 if consumer is caught up)
-
-### View Consumer Group Offsets
-```bash
-docker exec -it dos_kafka kafka-consumer-groups \
-  --bootstrap-server localhost:9092 \
-  --group inventory-service \
-  --describe \
-  --offsets
-```
-
-## Expected Log Output
-
-### OrderService (when order created)
-```
-info: OrderService.Controllers.OrderCommandsController[0]
-      Order 1 created with 1 items
-info: OrderService.Messaging.OrderEventProducer[0]
-      Published OrderCreated event for Order 1 to partition 0 at offset 0
-```
-
-### InventoryService (when consuming event)
-```
-info: InventoryService.Messaging.OrderCreatedConsumer[0]
-      Received message from partition 0 at offset 0
-info: InventoryService.Messaging.OrderCreatedConsumer[0]
-      Processing OrderCreatedEvent for Order 1 with 1 items
-info: InventoryService.Messaging.OrderCreatedConsumer[0]
-      Reduced inventory for Product 1 by 5 units (Order 1)
-info: InventoryService.Messaging.OrderCreatedConsumer[0]
-      Completed inventory updates for Order 1
-info: InventoryService.Messaging.OrderCreatedConsumer[0]
-      Successfully processed and committed message at offset 0
-```
+**Look for**: LAG column (should be 0 if the consumer is caught up).
 
 ## Troubleshooting
 
 ### Problem: Consumer not receiving messages
 ```bash
-# Check if consumer is subscribed
-docker logs dos_inventoryservice | grep "Subscribed"
+# Check the actual container name (this is Docker Compose, not "dos_inventoryservice")
+docker ps --filter name=dos_inventory_service
 
-# Check consumer group
-docker exec -it dos_kafka kafka-consumer-groups \
-  --bootstrap-server localhost:9092 \
-  --list
+docker logs dos_inventory_service | grep "Avvio consumer"
 
-# Check if topic exists
-docker exec -it dos_kafka kafka-topics \
-  --bootstrap-server localhost:9092 \
-  --list
+docker exec -it dos_kafka kafka-consumer-groups --bootstrap-server localhost:9092 --list
+docker exec -it dos_kafka kafka-topics --bootstrap-server localhost:9092 --list
 ```
 
 ### Problem: Inventory not updating
 ```bash
-# Check InventoryService logs
-docker logs dos_inventoryservice | grep "OrderCreatedEvent"
+docker logs dos_inventory_service | grep "OrderCreatedEvent"
 
-# Check if products exist
-curl http://localhost:5051/api/inventory/1
+curl http://localhost:5051/api/inventory/3fa85f64-5717-4562-b3fc-2c963f66afa6
 
-# Verify database
-docker exec -it dos_sqlserver /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P YourStrong_Password123 -C \
-  -Q "SELECT * FROM InventoryDb.dbo.InventoryItems"
+# Verify in Postgres directly (not SQL Server / sqlcmd)
+docker exec -it dos_postgres psql -U postgres -d InventoryDb -c 'SELECT * FROM "Inventory";'
 ```
+Note the table name is `Inventory` (singular), not `InventoryItems` — the EF Core `DbSet` is named `InventoryItems` but `entity.ToTable("Inventory")` maps it to a differently-named physical table.
 
 ### Problem: Kafka not starting
 ```bash
-# Check if Kafka container is running
 docker ps | grep kafka
-
-# View Kafka logs for errors
 docker logs dos_kafka
 
-# Restart Kafka (KRaft mode)
 cd docker
 docker-compose restart kafka
 
@@ -248,43 +212,31 @@ docker-compose up -d kafka
 ## Test Scenarios
 
 ### Scenario 1: Single Order, Single Item
-1. Inventory: Product 1 = 100
-2. Create order: Product 1, Qty 5
+1. Inventory: Product = 100
+2. Create order: Qty 5
 3. Expected: Inventory = 95
 
-### Scenario 2: Single Order, Multiple Items
-1. Inventory: Product 1 = 100, Product 2 = 50
-2. Create order: Product 1 Qty 5, Product 2 Qty 10
-3. Expected: Product 1 = 95, Product 2 = 40
+### Scenario 2: Multiple Orders
+1. Inventory: Product = 100
+2. Create order 1: Qty 5; create order 2: Qty 3
+3. Expected: Inventory = 92
 
-### Scenario 3: Multiple Orders
-1. Inventory: Product 1 = 100
-2. Create order 1: Product 1, Qty 5
-3. Create order 2: Product 1, Qty 3
-4. Expected: Inventory = 92 (100 - 5 - 3)
+### Scenario 3: Insufficient Inventory
+This scenario behaves differently depending on **where** the shortfall is caught:
+- **Via GatewayBff** (`POST /api/commands/orders`): `CreateOrderCommandHandler` checks `InventoryService` for sufficient stock before creating the order at all. If insufficient, GatewayBff returns an error and **no order is created**, no Kafka event is published.
+- **Via OrderService directly** (`POST /api/orders` bypassing GatewayBff, or an order that passed GatewayBff's check but the stock changed before the Kafka message was consumed): the order **is** created and the event **is** published; `InventoryService`'s consumer then finds `AdjustInventoryQuantityAsync` returns `false` (stock would go to `<= 0`), logs a warning, and **still commits the Kafka offset** — there is no retry for this condition. Inventory is left unchanged.
 
-### Scenario 4: Insufficient Inventory (should still create order)
-1. Inventory: Product 1 = 2
-2. Create order: Product 1, Qty 10
-3. Expected: Order created, but inventory warning in logs
-4. Inventory remains at 2 (no negative values)
-
-### Scenario 5: Kafka Failure Recovery
+### Scenario 4: Kafka Failure Recovery
 1. Stop Kafka: `docker stop dos_kafka`
-2. Create order (should succeed, event publishing fails)
+2. Create an order directly against OrderService (`POST /api/orders`, bypassing GatewayBff's own inventory check) — it should succeed; the Kafka publish fails and is only logged (`OrderApplicationService.CreateOrderAsync` swallows the exception).
 3. Start Kafka: `docker start dos_kafka`
-4. Create another order (should publish event)
-5. Check inventory updates
+4. Create another order — this one publishes normally.
+5. Check inventory reflects only the second order's reduction (the first order's Kafka event was never sent, so its stock reduction never happened).
 
 ## Clean Up
 
 ### Stop Services
-```bash
-# Press Ctrl+C in each terminal running dotnet services
-
-# Stop frontend
-# Press Ctrl+C in terminal running npm start
-```
+Press `Ctrl+C` in each terminal running `dotnet` or `npm start`.
 
 ### Stop Docker
 ```bash
@@ -292,54 +244,27 @@ cd docker
 docker-compose down
 ```
 
-### Reset Data (if needed)
+### Reset Data
 ```bash
-# Remove volumes (deletes all data)
+# Only `postgres_data` is a named volume in this compose file — Redis and Kafka
+# have no persistent volume defined, so they reset on every `docker-compose down`
+# regardless. Add -v to also wipe Postgres:
 docker-compose down -v
-
-# Restart fresh
 docker-compose up -d
-```
-
-## Performance Monitoring
-
-### View Kafka Metrics
-```bash
-# Topic statistics
-docker exec -it dos_kafka kafka-run-class kafka.tools.GetOffsetShell \
-  --broker-list localhost:9092 \
-  --topic order-created
-
-# Consumer lag
-docker exec -it dos_kafka kafka-consumer-groups \
-  --bootstrap-server localhost:9092 \
-  --describe \
-  --group inventory-service
-```
-
-### Monitor Service Performance
-```bash
-# Watch OrderService logs
-tail -f src/OrderService/bin/Debug/net9.0/logs/orderservice.log
-
-# Watch InventoryService logs
-tail -f src/InventoryService/bin/Debug/net9.0/logs/inventoryservice.log
 ```
 
 ## Success Criteria
 
-✅ OrderService logs show "Published OrderCreated event"  
-✅ InventoryService logs show "Processing OrderCreatedEvent"  
-✅ InventoryService logs show "Reduced inventory for Product"  
-✅ Inventory API returns updated quantities  
-✅ Consumer group lag is 0  
-✅ No errors in any service logs  
-✅ Frontend shows updated inventory after order creation  
+✅ OrderService logs show `Pubblicato evento OrderCreated per Ordine ...` (not an English "Published" line)
+✅ InventoryService logs show `Elaborazione OrderCreatedEvent per Ordine ...` and `Ridotto inventario per Prodotto ...`
+✅ Inventory API returns updated quantities
+✅ Consumer group lag is 0 (`kafka-consumer-groups --describe --group inventory-service`, or kafka-ui)
+✅ No `❌ ERROR` lines in either service's logs
+✅ Frontend shows updated inventory after order creation
 
 ## Notes
 
-- First order might take longer (topic creation)
-- Consumer processes messages in order within partition
-- If consumer restarts, it resumes from last committed offset
-- Event publishing is non-blocking (order creation succeeds even if Kafka is down)
-- Inventory updates are idempotent (can safely retry)
+- Product/order/consumer-group ids throughout this guide use `Guid`s for products, `int` for order ids — don't mix these up when adapting curl commands.
+- Kafka event publishing is non-blocking: order creation succeeds even if Kafka is down (verified in `OrderApplicationService.CreateOrderAsync`).
+- Insufficient-stock is **not** retried by the consumer — it's a committed, logged warning, not a redelivery trigger. Only a technical exception (DB down, etc.) triggers redelivery.
+- If you're grepping logs for English text and finding nothing, that's very likely the Italian-logging issue described at the top of this document, not a broken consumer.

@@ -1,277 +1,141 @@
 # OrderService Implementation Summary
 
+> Rewritten to match the current code. The previous version of this document described a flat `Models/Order.cs` + `Data/OrderContext.cs` + `Services/IOrderService`/`OrderWorkerService` layout on SQL Server with `int` product ids. **OrderService has since been refactored into a full DDD structure** (`Domain/Aggregates`, `Domain/ValueObjects`, `Domain/Events`, `Domain/SeedWork`, `Application/Services`, `Infrastructure/{Data,Repositories,Messaging,Configuration}`) on PostgreSQL with `Guid` product ids. This is the single biggest change — everything below reflects the DDD version. See `../COMPREHENSIVE_SOLUTION_ARCHITECTURE_EN.md` and `ARCHITECTURE_OVERVIEW.md` for the cross-service picture; this file stays focused on OrderService's own implementation.
+
 ## Overview
-Successfully implemented complete OrderService following the established BFF pattern used by ProductService and InventoryService.
+OrderService is the solution's DDD reference implementation: business rules (status transitions, money invariants, order creation) live in the Domain layer, not in controllers or a generic "WorkerService".
 
 ## Backend Implementation
 
-### 1. OrderService (Port 5003)
+### 1. OrderService (Port 5003, PostgreSQL `OrderDb_Dev`)
 
-#### Models (`src/OrderService/Models/`)
-- **Order.cs**: Main order entity
-  - Properties: Id, CreatedAt, Status, Total, Items collection
-  - Status: "Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"
-  
-- **OrderItem.cs**: Order line item entity
-  - Properties: Id, OrderId, ProductId, Quantity, UnitPrice
-  - Cascade delete relationship with Order
+#### Domain (`src/OrderService/Domain/`)
+- **`Aggregates/Order.cs`**: aggregate root. No public constructor — `Order.Create(items)` is the only way to build one, and it throws `OrderDomainException` if `items` is empty. Properties (`CreatedAt`, `Status`, `Total`, `Items`) all have `private set`; `Items` is exposed as `IReadOnlyList<OrderItem>` backed by a private `List<OrderItem>`.
+- **`Aggregates/OrderItem.cs`**: child entity. Constructor is `internal` (only `Order` can create one) and validates `ProductId != Guid.Empty`, `Quantity > 0`, and a non-null `UnitPrice` — invalid input throws immediately rather than producing a half-valid row.
+- **`ValueObjects/Money.cs`**: wraps a `decimal Amount`; the constructor throws `OrderDomainException` if `amount < 0`. `Add`/`Multiply` return new instances (immutable).
+- **`ValueObjects/OrderStatus.cs`**: enforces a fixed transition table — `Pending → {Confirmed, Cancelled}`, `Confirmed → {Shipped, Cancelled}`, `Shipped → Delivered`; `Delivered`/`Cancelled` are terminal. `TransitionTo(newStatus)` throws on any transition not in that table.
+- **`Events/`**: `OrderCreatedDomainEvent`, `OrderStatusChangedDomainEvent` — collected on the aggregate via `AddDomainEvent`, not yet dispatched to any in-process handler (the Kafka integration event published on order creation is a separate concept, built manually in the Application layer — see below).
+- **`Interfaces/IOrderRepository.cs`**: the only thing Infrastructure implements for persistence access.
+- **`SeedWork/`**: `AggregateRoot`, `Entity`, `ValueObject`, `IDomainEvent` — the shared DDD primitives.
 
-#### Data Layer (`src/OrderService/Data/`)
-- **OrderContext.cs**: EF Core DbContext
-  - DbSet<Order> Orders
-  - DbSet<OrderItem> OrderItems
-  - Configured with SQL Server
-  - Connection string: `Server=localhost,1433;Database=OrderDb_Dev`
+#### Application (`src/OrderService/Application/Services/`)
+- **`OrderApplicationService`** (`IOrderApplicationService`): orchestrates the domain and its side effects. `CreateOrderAsync` calls `Order.Create(items)`, persists via the repository, builds an `OrderCreatedEvent` (from the `Shared` project) from the persisted order, and calls `IOrderEventProducer.PublishOrderCreatedAsync`. **If that publish throws, the exception is caught and logged — the already-persisted order is still returned to the caller.** `UpdateOrderStatusAsync` loads the order, calls `order.ChangeStatus(newStatus)` (which raises `OrderDomainException` through `OrderStatus.TransitionTo` on an invalid transition), then persists.
 
-#### Services (`src/OrderService/Services/`)
-- **IOrderService**: Service interface
-  - GetOrderByIdAsync(id)
-  - GetAllOrdersAsync()
-  - CreateOrderAsync(order)
-  - UpdateOrderStatusAsync(orderId, status)
+#### Infrastructure (`src/OrderService/Infrastructure/`)
+- **`Data/OrderContext.cs`**: EF Core mapping for the DDD aggregate, notably:
+  - `Order.Status` (a value object) is mapped via `HasConversion(v => v.Value, v => OrderStatus.From(v))` to a `varchar(50)` column.
+  - `Order.Total` and `OrderItem.UnitPrice` (both `Money`) are mapped via `HasConversion(v => v.Amount, v => new Money(v))` with `HasPrecision(18, 2)`.
+  - `entity.Ignore(e => e.DomainEvents)` — the collected domain events are never persisted.
+  - `Order.Items` navigation is configured with `SetPropertyAccessMode(PropertyAccessMode.Field)` so EF Core populates the private `_items` backing field directly, bypassing the constructor-enforced invariants on load (expected for DDD aggregates — EF needs a way in that application code doesn't).
+  - `OnDelete(DeleteBehavior.Cascade)` on the `Order → OrderItem` relationship.
+- **`Repositories/OrderRepository.cs`**: implements `IOrderRepository` against `OrderContext`.
+- **`Messaging/OrderEventProducer.cs`**: real Kafka producer. `ProducerConfig`: `Acks = Acks.All`, `EnableIdempotence = true`, `MaxInFlight = 5`, `MessageSendMaxRetries = 3`, `LingerMs = 10`. Publishes to `Kafka:OrderCreatedTopic` (`order-created`) with key `order-{orderId}`. A `ProduceException` is logged and rethrown to the Application layer, which is what `OrderApplicationService` catches.
+- **`Messaging/MockOrderEventProducer.cs`**: implements the same interface, just logs "[MOCK] would publish" instead of calling Kafka. ⚠️ **This class exists but is never registered** — `Program.cs` always wires the real `OrderEventProducer`, in every environment, so there is currently no way to run OrderService without a reachable Kafka broker without editing `Program.cs` yourself.
+- **`Configuration/KafkaSettings.cs`**: `BootstrapServers` (default `localhost:9092` in code, overridden to `localhost:29092` in `appsettings.Development.json` — Kafka's host-facing listener; containers use `kafka:9092` via the `Kafka__BootstrapServers` env var in `docker-compose.yml`), `OrderCreatedTopic` (`order-created`).
 
-- **OrderWorkerService**: Implementation
-  - Includes navigation properties loading (Items)
-  - Automatic CreatedAt and Status initialization
-  - Logging for order lifecycle events
+#### Controllers (`src/OrderService/Controllers/OrdersController.cs` — both controllers below live in this one file)
+- **`OrdersController`** (read side, `/api/orders`):
+  - `GET /api/orders` → all orders
+  - `GET /api/orders/{id:int}` → single order, `404` if not found
+  - Both thin: map the DDD `Order` to a local `OrderDto`/`OrderItemResponseDto` record, no business logic.
+- **`OrderCommandsController`** (write side, `/api/commands`):
+  - `POST /api/commands/orders` — body `{ items: [{ productId: Guid, quantity, unitPrice }] }`; `400` if `Items` is empty or on `OrderDomainException` (e.g., an item with `quantity <= 0`); `201 Created` pointing at `GetOrder` on success.
+  - `PUT /api/commands/orders/{id:int}/status` — body `{ status: string }`; `404` if the order doesn't exist, `400` on an invalid transition (`OrderDomainException` from `OrderStatus.TransitionTo`), `204 No Content` on success.
 
-#### Controllers (`src/OrderService/Controllers/`)
-- **OrdersController**: Query endpoints
-  - GET `/api/orders` - Get all orders
-  - GET `/api/orders/{id}` - Get order by ID
-
-- **OrderCommandsController**: Command endpoints
-  - POST `/api/commands/orders` - Create new order
-    - Request: `CreateOrderRequest` with Items array
-    - Response: `CreateOrderResponse` with OrderId, Status, Total
-  - PUT `/api/commands/orders/{id}/status` - Update order status
+⚠️ Note the routing: OrderService itself exposes `/api/commands/orders`, distinct from **GatewayBff's own** `/api/commands/orders` (in `GatewayBff/Controllers/CommandsController.cs`). The two are not the same endpoint — the BFF's command controller calls this one over HTTP via the named `"OrderService"` client.
 
 #### Configuration
-- **appsettings.Development.json**: Database and logging configuration
-- **OrderService.csproj**: Added EF Core packages
-  - Microsoft.EntityFrameworkCore 9.0.0
-  - Microsoft.EntityFrameworkCore.SqlServer 9.0.0
-  - Microsoft.EntityFrameworkCore.Tools 9.0.0
-  - Swashbuckle.AspNetCore 6.8.1
+- **`appsettings.Development.json`**: `ConnectionStrings:OrderDb` = `Host=localhost;Port=5432;Database=OrderDb_Dev;Username=postgres;Password=YourStrong_Password123;` (PostgreSQL, not SQL Server); `Kafka:BootstrapServers` = `localhost:29092`.
+- **`OrderService.csproj`**: `Npgsql.EntityFrameworkCore.PostgreSQL` (not `Microsoft.EntityFrameworkCore.SqlServer`), `Confluent.Kafka`, `Microsoft.EntityFrameworkCore.Tools`, `Scalar.AspNetCore`, `Swashbuckle.AspNetCore`.
+- **`Program.cs`**: registers `OrderContext` (Npgsql), `IOrderRepository → OrderRepository`, `IOrderEventProducer → OrderEventProducer` (singleton — see the Mock note above), `IOrderApplicationService → OrderApplicationService`, permissive CORS, `context.Database.EnsureCreated()` at startup (no EF Core migrations for this service).
 
-- **Program.cs**: Service registration
-  - DbContext with SQL Server
-  - OrderWorkerService as scoped service
-  - CORS enabled for BFF communication
-  - Database auto-creation on startup
+### 2. GatewayBff (order-related pieces — unchanged in shape since the original implementation)
 
-### 2. GatewayBff Updates
-
-#### Commands (`src/GatewayBff/Commands/`)
-- **CreateOrderCommand.cs**: Enhanced
-  - Now fetches product prices from ProductService
-  - Validates inventory availability
-  - Includes UnitPrice in OrderItemDto
-  - Creates order with complete pricing information
+#### Commands (`src/GatewayBff/Commands/CreateOrderCommand.cs`)
+- Fetches product prices from ProductService, checks inventory via InventoryService, forwards a `CreateOrderRequest` to OrderService's `/api/commands/orders`.
 
 #### Queries (`src/GatewayBff/Queries/`)
-- **GetAllOrdersQuery.cs**: NEW
-  - Fetches all orders from OrderService
-  - Returns List<OrderDto>
+- `GetAllOrdersQuery` / `GetOrderByIdQuery` — call OrderService's `/api/orders` and `/api/orders/{id}` via the named `"OrderService"` HTTP client (configured from `ServiceUrls:OrderService` in `appsettings.Development.json`, `http://localhost:5003`).
 
-- **GetOrderByIdQuery.cs**: NEW
-  - Fetches specific order by ID
-  - Returns OrderDto or null if not found
-
-#### Contracts (`src/GatewayBff/Contracts/`)
-- **OrderDtos.cs**: Extended
-  - Updated OrderItemDto: Added UnitPrice property
-  - NEW OrderDto: Complete order representation
-  - NEW OrderItemDetailDto: Full order item details
-
-#### Controllers (`src/GatewayBff/Controllers/`)
-- **QueriesController.cs**: Added endpoints
-  - GET `/api/queries/orders` - Get all orders
-  - GET `/api/queries/orders/{id}` - Get order by ID
+#### Controllers (`src/GatewayBff/Controllers/QueriesController.cs`)
+- `GET /api/queries/orders`, `GET /api/queries/orders/{id:int}`.
 
 ## Frontend Implementation
 
-### Models (`frontend/src/app/models/`)
-- **order.ts**: TypeScript interfaces
-  - OrderItem: ProductId, Quantity, UnitPrice
-  - CreateOrderRequest: Items array
-  - CreateOrderResponse: OrderId, Status, Total
-  - OrderItemDetail: Full item with Id
-  - Order: Complete order with items and metadata
+This part of the original document still matches the Angular SPA's structure and hasn't needed correction:
 
-### Services (`frontend/src/app/services/`)
-- **order.ts**: Angular service
-  - getAllOrders(): Observable<Order[]>
-  - getOrderById(id): Observable<Order>
-  - createOrder(request): Observable<CreateOrderResponse>
-  - Base URL: http://localhost:5189/api (BFF)
+### Models (`frontend/src/app/models/order.ts`)
+`OrderItem` (ProductId, Quantity, UnitPrice), `CreateOrderRequest`, `CreateOrderResponse`, `OrderItemDetail`, `Order`.
+
+### Services (`frontend/src/app/services/order.ts`)
+`getAllOrders()`, `getOrderById(id)`, `createOrder(request)` — base URL `http://localhost:5189/api` (GatewayBff).
 
 ### Components
+- **Orders list** (`components/orders/`): status badges, order items summary, Italian locale formatting.
+- **Create Order** (`components/create-order/`): product grid + cart, quantity controls, real-time totals, low-stock warnings.
 
-#### Orders List (`frontend/src/app/components/orders/`)
-- **orders.ts**: Main orders list component
-  - Displays all orders with status badges
-  - Shows order items with quantities and prices
-  - Color-coded status indicators
-  - Italian locale formatting for dates and currency
-  - Link to create new order
-
-- **orders.html**: Template
-  - Responsive order cards
-  - Status badges with color coding
-  - Order items summary
-  - Empty state with call-to-action
-  - Loading and error states
-
-- **orders.scss**: Styling
-  - Card-based layout
-  - Status badge colors (pending, confirmed, shipped, delivered, cancelled)
-  - Currency and date formatting
-  - Responsive design
-
-#### Create Order (`frontend/src/app/components/create-order/`)
-- **create-order.ts**: Order creation component
-  - Product selection from catalog
-  - Shopping cart functionality
-  - Quantity management with inventory checks
-  - Real-time total calculation
-  - Validation before submission
-
-- **create-order.html**: Template
-  - Two-column layout: Products grid + Cart
-  - Product cards with stock indicators
-  - Cart with quantity controls
-  - Order summary with totals
-  - Sticky cart sidebar
-
-- **create-order.scss**: Styling
-  - Grid-based product display
-  - Shopping cart interface
-  - Quantity input controls
-  - Low stock warnings
-  - Responsive layout
-
-### Routing (`frontend/src/app/`)
-- **app.routes.ts**: Added routes
-  - `/orders` → OrdersComponent
-  - `/create-order` → CreateOrderComponent
-
-- **app.html**: Updated navigation
-  - Added "Orders" link to main menu
+### Routing
+`/orders` → `OrdersComponent`, `/create-order` → `CreateOrderComponent`.
 
 ## Architecture Flow
 
 ### Create Order Flow
-1. **Frontend**: User adds products to cart in CreateOrderComponent
-2. **Frontend**: Submits CreateOrderRequest to BFF `/api/commands/orders`
-3. **BFF**: CreateOrderCommandHandler
-   - Validates products exist and are active via ProductService
-   - Fetches current product prices from ProductService
-   - Checks inventory availability via InventoryService
-   - Creates OrderItemDto array with ProductId, Quantity, UnitPrice
-4. **BFF**: Forwards CreateOrderRequest to OrderService
-5. **OrderService**: OrderCommandsController
-   - Creates Order entity with items
-   - Calculates total from items
-   - Saves to OrderDb database
-6. **Response**: Returns CreateOrderResponse with OrderId, Status, Total
-7. **Frontend**: Navigates to orders list
+1. Frontend submits `CreateOrderRequest` to GatewayBff `/api/commands/orders`.
+2. `CreateOrderCommandHandler` fetches prices from ProductService, checks inventory via InventoryService, forwards to OrderService.
+3. OrderService's `OrderCommandsController.CreateOrder` calls `IOrderApplicationService.CreateOrderAsync`, which calls `Order.Create(items)` (Domain), persists via `IOrderRepository`, and publishes `OrderCreatedEvent` to Kafka — catching and logging any publish failure without failing the request.
+4. Response: `CreateOrderResponse(OrderId, Status, Total)`.
+5. Asynchronously, InventoryService's `OrderCreatedConsumer` consumes the event and decrements stock (see `INVENTORY_SERVICE_DOCUMENTATION.md` for the exact commit/retry semantics — insufficient stock at that point does **not** roll back or block the order; the order this flow already returned stays as-is).
 
 ### View Orders Flow
-1. **Frontend**: User navigates to /orders
-2. **Frontend**: OrdersComponent calls OrderService.getAllOrders()
-3. **BFF**: GetAllOrdersQueryHandler queries OrderService
-4. **OrderService**: Returns orders with items from database
-5. **BFF**: Maps to OrderDto[]
-6. **Frontend**: Displays orders with formatted dates, currency, status badges
+Frontend → GatewayBff `GetAllOrdersQueryHandler`/`GetOrderByIdQueryHandler` → OrderService `OrdersController` → `OrderDto[]`.
 
-## Database Schema
+## Data Model (as persisted — not a hand-written SQL schema, this is what EF Core's conventions + the mappings in `OrderContext` produce)
 
-### OrderDb_Dev Database
+### Orders
+| Column | Type | Notes |
+|---|---|---|
+| `Id` | `int` (identity) | PK |
+| `CreatedAt` | `timestamp` | |
+| `Status` | `varchar(50)` | via `OrderStatus` conversion |
+| `Total` | `decimal(18,2)` | via `Money` conversion |
 
-#### Orders Table
+### OrderItems
+| Column | Type | Notes |
+|---|---|---|
+| `Id` | `int` (identity) | PK |
+| `OrderId` | `int` | FK → `Orders.Id`, cascade delete |
+| `ProductId` | `uuid` (Guid) | **not `int`** — matches ProductService/InventoryService's product id type |
+| `Quantity` | `int` | |
+| `UnitPrice` | `decimal(18,2)` | via `Money` conversion |
+
+Note: the Kafka `OrderCreatedEvent` (in `Shared/Messages/OrderCreatedEvent.cs`) carries `OrderId` and `ProductId` as **strings**, regardless of their native `int`/`Guid` types above — the event contract normalizes both rather than mirroring each field's real type.
+
+## Key Features (verified against current code)
+
+1. **DDD Domain layer**: aggregate root, value objects, enforced invariants and state transitions — not present in the pre-refactor version this document used to describe.
+2. **BFF Pattern**: GatewayBff aggregates prices/inventory before forwarding to OrderService.
+3. **CQRS-shaped routing**: OrderService itself splits `OrdersController` (query) from `OrderCommandsController` (command) in one file; GatewayBff does the same at its own layer.
+4. **Non-blocking Kafka publish**: an order is never lost because Kafka is unreachable — but see the Mock producer caveat above; today there's no way to run without Kafka reachable at all in Development.
+5. **Price integrity**: prices are fetched from ProductService by GatewayBff at order-creation time, not trusted from the client.
+6. **Status management**: enforced via `OrderStatus.TransitionTo`, not a free-form string field.
+7. **Responsive Angular UI**: unchanged from the original implementation.
+
+## Known Gaps
+
+1. **`MockOrderEventProducer` is unused** — `Program.cs` always registers the real Kafka producer regardless of environment, unlike NotificationService's mock/real split by `IsDevelopment()`.
+2. **No automated tests** — none exist for this service (or any service) in the solution.
+3. **`context.Database.EnsureCreated()` instead of migrations** — schema changes require dropping/recreating the database in Development; there's no migration history to review.
+4. **Domain events (`OrderCreatedDomainEvent`, `OrderStatusChangedDomainEvent`) are collected but not dispatched** to any in-process handler — the actual Kafka publish is a separate, manually-constructed `OrderCreatedEvent` built directly in `OrderApplicationService`, not driven by the collected domain event.
+
+## File Summary (current DDD layout — supersedes the flat-file list this document used to have)
+
 ```
-Id (int, PK)
-CreatedAt (datetime2)
-Status (nvarchar(50))
-Total (decimal(18,2))
+OrderService/
+  Domain/{SeedWork, Aggregates, ValueObjects, Events, Exceptions, Interfaces}/
+  Application/Services/OrderApplicationService.cs
+  Infrastructure/{Data, Repositories, Messaging, Configuration}/
+  Controllers/OrdersController.cs   (contains OrdersController + OrderCommandsController)
+  Program.cs
 ```
 
-#### OrderItems Table
-```
-Id (int, PK)
-OrderId (int, FK → Orders.Id, CASCADE DELETE)
-ProductId (int)
-Quantity (int)
-UnitPrice (decimal(18,2))
-```
-
-## Key Features
-
-1. **BFF Pattern**: All frontend requests go through GatewayBff
-2. **CQRS**: Separate command and query endpoints
-3. **MediatR**: Command/Query handlers in BFF
-4. **Price Integrity**: Prices fetched from ProductService at order creation
-5. **Inventory Validation**: Checks availability before creating orders
-6. **Status Management**: Order status tracking (Pending → Delivered/Cancelled)
-7. **Responsive UI**: Mobile-friendly order management interface
-8. **Real-time Cart**: Dynamic cart with quantity updates
-9. **Italian Locale**: Date and currency formatting for Italian users
-10. **Empty States**: User-friendly messages when no data exists
-
-## Next Steps (Optional Enhancements)
-
-1. **Inventory Reservation**: Reserve inventory when order is created
-2. **Payment Integration**: Link with PaymentService
-3. **Notification**: Send order confirmation via NotificationService
-4. **Order Status Updates**: Frontend UI to change order status
-5. **Order Details View**: Dedicated page for single order details
-6. **Order History**: Filter by date range, status, customer
-7. **Product Names**: Join with ProductService to show product names
-8. **Order Cancellation**: Implement cancel order functionality
-9. **Search/Filter**: Search orders by ID, date, status
-10. **Pagination**: For large order lists
-
-## Testing Checklist
-
-- ✅ OrderService builds successfully
-- ✅ GatewayBff builds with new query handlers
-- ✅ Frontend compiles without errors
-- ⏳ Start all services (Docker, OrderService, GatewayBff, Frontend)
-- ⏳ Test create order flow
-- ⏳ Test view orders list
-- ⏳ Verify order data in SQL Server
-- ⏳ Test inventory validation
-- ⏳ Test empty states
-- ⏳ Test error handling
-
-## File Summary
-
-### Backend Files Created/Modified
-- ✅ OrderService/Models/Order.cs (NEW)
-- ✅ OrderService/Data/OrderContext.cs (NEW)
-- ✅ OrderService/Services/IOrderService.cs (NEW)
-- ✅ OrderService/Services/OrderWorkerService.cs (NEW)
-- ✅ OrderService/Controllers/OrdersController.cs (NEW)
-- ✅ OrderService/Program.cs (UPDATED)
-- ✅ OrderService/OrderService.csproj (UPDATED)
-- ✅ OrderService/appsettings.Development.json (UPDATED)
-- ✅ GatewayBff/Commands/CreateOrderCommand.cs (UPDATED)
-- ✅ GatewayBff/Queries/GetAllOrdersQuery.cs (NEW)
-- ✅ GatewayBff/Queries/GetOrderByIdQuery.cs (NEW)
-- ✅ GatewayBff/Contracts/OrderDtos.cs (UPDATED)
-- ✅ GatewayBff/Controllers/QueriesController.cs (UPDATED)
-
-### Frontend Files Created/Modified
-- ✅ app/models/order.ts (NEW)
-- ✅ app/services/order.ts (NEW)
-- ✅ app/components/orders/orders.ts (NEW)
-- ✅ app/components/orders/orders.html (NEW)
-- ✅ app/components/orders/orders.scss (NEW)
-- ✅ app/components/create-order/create-order.ts (NEW)
-- ✅ app/components/create-order/create-order.html (NEW)
-- ✅ app/components/create-order/create-order.scss (NEW)
-- ✅ app/app.routes.ts (UPDATED)
-- ✅ app/app.html (UPDATED)
-
-Total: 22 files (13 new, 9 updated)
+The GatewayBff and Angular frontend files listed in earlier revisions of this document (`CreateOrderCommand.cs`, `GetAllOrdersQuery.cs`, `GetOrderByIdQuery.cs`, `OrderDtos.cs`, the `orders`/`create-order` Angular components) are unchanged in shape and still accurate.

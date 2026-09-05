@@ -1,851 +1,492 @@
-# InventoryService - Documentazione Completa
+# InventoryService - Complete Documentation
 
-## Panoramica
-InventoryService è un microservizio responsabile della gestione dell'inventario prodotti nel sistema distribuito. Traccia le quantità disponibili, gestisce le modifiche asincrone tramite Kafka e implementa Redis per caching ad alte prestazioni.
+> Updated to reflect the real code. Previous versions of this document assumed `ProductId` was an `int` and SQL Server as the database — in the current code `ProductId` is a `Guid` (consistent with ProductService/OrderService) and the database is **PostgreSQL**. Some real behavioral discrepancies were also found (see the "⚠️" notes in the sections below) that were not present in previous versions.
 
-## Architettura
+## Overview
+InventoryService is a microservice responsible for managing product inventory in the distributed system. It tracks available quantities, handles asynchronous updates via Kafka, and implements Redis for high-performance caching.
 
-### Pattern Architetturali Utilizzati
-1. **Repository Pattern**: Non implementato (accesso diretto a DbContext per semplicità)
-2. **Service Layer Pattern**: Logica di business in InventoryWorkerService
-3. **Event-Driven Architecture**: Consumer Kafka per aggiornamenti asincroni
-4. **Cache-Aside Pattern**: Redis per ottimizzare letture frequenti
-5. **CQRS Light**: Separazione letture (cache) e scritture (database)
+## Architecture
 
-### Struttura del Progetto
+### Architectural Patterns Used
+1. **Repository Pattern**: Not implemented (direct DbContext access for simplicity) — confirmed in the code: `InventoryWorkerService` injects `InventoryContext` directly
+2. **Service Layer Pattern**: Business logic in `InventoryWorkerService` (the class is called `InventoryWorkerService`, singular, even though it lives in the file `InventoryWorkerServices.cs`)
+3. **Event-Driven Architecture**: Kafka consumer for asynchronous updates
+4. **Cache-Aside Pattern**: Redis to optimize frequent reads
+5. **CQRS Light**: Separation of reads (cache) and writes (database)
+
+### Project Structure
 ```
 InventoryService/
-├── Cache/                          # Implementazione cache Redis
+├── Cache/                          # Redis cache implementation
 │   ├── Interfaces/
-│   │   └── IInventoryCache.cs     # Interfaccia cache
-│   └── RedisInventoryCache.cs     # Implementazione Redis
-├── Configuration/                  # Configurazioni
-│   ├── RedisSettings.cs           # Settings Redis
-│   └── KafkaSettings.cs           # Settings Kafka
+│   │   └── IInventoryCache.cs     # Cache interface
+│   └── RedisInventoryCache.cs     # Redis implementation
+├── Configuration/                  # Configuration
+│   ├── RedisSettings.cs           # Redis settings
+│   └── KafkaSettings.cs           # Kafka settings
 ├── Controllers/                    # API Controllers
-│   └── InventoryController.cs     # Endpoints REST
+│   └── InventoryController.cs     # REST endpoints
 ├── Data/                          # Database Context
-│   └── InventoryContext.cs        # EF Core DbContext
+│   └── InventoryContext.cs        # EF Core DbContext (Npgsql)
 ├── Messaging/                      # Kafka Integration
-│   └── OrderCreatedConsumer.cs    # Consumer Kafka
-├── Models/                         # Entità del dominio
-│   └── InventoryItem.cs           # Modello Inventory
-├── Services/                       # Logica di business
+│   ├── OrderCreatedConsumer.cs    # Real Kafka consumer
+│   └── MockOrderCreatedConsumer.cs
+├── Models/                         # Domain entities
+│   └── InventoryItem.cs           # Inventory model
+├── Services/                       # Business logic
 │   ├── Interfaces/
-│   │   └── IInventoryWorkerService.cs
+│   │   └── IInventoryWorkerServices.cs
 │   └── InventoryWorkerServices.cs
-├── Program.cs                      # Configurazione e startup
-└── appsettings.json               # Configurazioni applicazione
+├── Program.cs                      # Configuration and startup
+└── appsettings.json               # Application configuration
 ```
 
-## Componenti Principali
+## Main Components
 
 ### 1. Models - InventoryItem Entity
 
-#### InventoryItem.cs
+#### InventoryItem.cs (real code)
 ```csharp
 public class InventoryItem
 {
-    public int Id { get; set; }                    // Chiave primaria auto-incrementale
-    public int ProductId { get; set; }             // Foreign Key → ProductService
-    public int AvailableQuantity { get; set; }     // Quantità disponibile per la vendita
-    public int ReservedQuantity { get; set; }      // Quantità riservata (ordini in attesa)
-    public DateTime LastUpdatedUtc { get; set; }   // Timestamp ultimo aggiornamento
+    public int Id { get; set; }                     // Primary Key (identity, int)
+    public Guid ProductId { get; set; } = Guid.Empty; // Foreign Key → ProductService (Guid, not int)
+    public int AvailableQuantity { get; set; }       // Quantity available for sale
+    public int ReservedQuantity { get; set; }        // Reserved quantity (never updated today — see Limitations)
+    public DateTime LastUpdatedUtc { get; set; } = DateTime.UtcNow;
 }
 ```
 
-**Campi Spiegati**:
-- **Id**: Identificatore univoco dell'item inventario
-- **ProductId**: Collega al prodotto in ProductService (NO foreign key fisica)
-- **AvailableQuantity**: Stock effettivamente vendibile
-- **ReservedQuantity**: Riservato ma non ancora consegnato (futuro uso)
-- **LastUpdatedUtc**: Traccia quando l'inventario è stato modificato
+**Fields Explained**:
+- **Id**: auto-incrementing `int` primary key — internal to this service only
+- **ProductId**: `Guid`, the same type used by ProductService and by `OrderItem.ProductId` in OrderService (no physical cross-service foreign key)
+- **AvailableQuantity**: stock actually sellable
+- **ReservedQuantity**: present in the model but **never written by any method** other than the initialization to `0` in `SetInventoryQuantityAsync` — there is no reservation logic yet (see [Limitations](#limitations--improvements))
+- **LastUpdatedUtc**: updated on every `AdjustInventoryQuantityAsync`/`SetInventoryQuantityAsync`
 
-**Logica Quantità**:
-```
-AvailableQuantity >= 0  (non può essere negativo)
-ReservedQuantity >= 0   (non può essere negativo)
-TotalStock = AvailableQuantity + ReservedQuantity
-```
+**EF Core Mapping** (`InventoryContext.OnModelCreating`):
+- Table: `Inventory` (not `InventoryItems` — the `DbSet` is called `InventoryItems` but `entity.ToTable("Inventory")` renames the physical table)
+- Primary key on `Id`
+- **Unique** index on `ProductId` (only one record per product)
 
 ### 2. Data Layer - Database Context
 
-#### InventoryContext.cs
+#### InventoryContext.cs (real code)
 ```csharp
 public class InventoryContext : DbContext
 {
-    public DbSet<InventoryItem> InventoryItems { get; set; }
-    
+    public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<InventoryItem>(entity =>
         {
+            entity.ToTable("Inventory");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.ProductId).IsRequired();
+            entity.HasIndex(e => e.ProductId).IsUnique();
             entity.Property(e => e.AvailableQuantity).IsRequired();
             entity.Property(e => e.ReservedQuantity).IsRequired();
             entity.Property(e => e.LastUpdatedUtc).IsRequired();
-            
-            // Index per query veloci su ProductId
-            entity.HasIndex(e => e.ProductId).IsUnique();
         });
     }
 }
 ```
 
-**Database**: SQL Server  
-**Connection String**: `Server=localhost,1433;Database=InventoryDb;User Id=sa;Password=YourStrong_Password123;TrustServerCertificate=True;`
-
-**Indici**:
-- Primary Key su `Id`
-- Unique Index su `ProductId` (un solo item per prodotto)
+**Database**: PostgreSQL 16 (`Npgsql.EntityFrameworkCore.PostgreSQL`), not SQL Server
+**Connection String** (`appsettings.Development.json`): `Host=localhost;Port=5432;Database=InventoryDb;Username=postgres;Password=YourStrong_Password123;` — when containerized via Docker Compose, the host becomes `postgres` instead of `localhost`.
+`context.Database.EnsureCreated()` runs at startup in `Program.cs` — no EF Core migrations for this service.
 
 ### 3. Service Layer
 
-#### IInventoryWorkerService.cs
+#### IInventoryWorkerServices.cs
 ```csharp
 public interface IInventoryWorkerService
 {
-    Task<InventoryItem?> GetInventoryByProductIdAsync(int productId, CancellationToken ct = default);
-    Task<bool> AdjustInventoryQuantityAsync(int productId, int delta, CancellationToken ct = default);
-    Task<InventoryItem?> SetInventoryQuantityAsync(int productId, int quantity, CancellationToken ct = default);
+    Task<InventoryItem?> GetInventoryByProductIdAsync(Guid productId, CancellationToken ct = default);
+    Task<bool> AdjustInventoryQuantityAsync(Guid productId, int delta, CancellationToken ct = default);
+    Task<InventoryItem?> SetInventoryQuantityAsync(Guid productId, int quantity, CancellationToken ct = default);
 }
 ```
 
 #### InventoryWorkerServices.cs
-**Responsabilità**: 
-- Gestione logica di business inventario
-- Coordinamento tra database e cache
-- Validazioni business rules
-- Logging operazioni
-
-**Metodi Implementati**:
+**Responsibilities**:
+- Inventory business logic management
+- Coordination between database and cache
+- Business rule validation
+- Operation logging
 
 ##### 1. GetInventoryByProductIdAsync(productId)
-**Scopo**: Recupera inventario per un prodotto specifico
+**Purpose**: Retrieve inventory for a specific product
 
-**Flusso Cache-Aside**:
+**Cache-Aside Flow** (real code):
 ```
-1. Controlla cache Redis (chiave: dev:inventory:item:{productId})
-2. Se trovato → CACHE HIT
+1. Check Redis cache (key: see note below on RedisInventoryCache.Key)
+2. If found → CACHE HIT
    - Log: "Inventory for product {productId} served from cache"
-   - Return cached item (veloce ~5ms)
-3. Se non trovato → CACHE MISS
-   - Query database con AsNoTracking() (read-only)
-   - Se trovato → Salva in cache per prossime richieste
-   - Return item da DB (~50ms)
-4. Se non esiste → Return null
+   - Return cached item
+3. If not found → CACHE MISS
+   - Query database with AsNoTracking() (read-only)
+   - If found → Save to cache for next requests
+   - Return item from DB
+4. If it doesn't exist → Return null
 ```
 
-**Ottimizzazioni**:
-- `AsNoTracking()`: EF Core non traccia entità (più veloce per read-only)
-- Cache warming: Popola cache dopo DB read
-- TTL: 10 minuti (configurabile)
+**Optimizations**:
+- `AsNoTracking()`: EF Core doesn't track entities (faster for read-only)
+- Cache warming: populates cache after a DB read
 
 ##### 2. AdjustInventoryQuantityAsync(productId, delta)
-**Scopo**: Modifica inventario con un delta (+/- quantità)
+**Purpose**: Modify inventory by a delta (+/- quantity)
 
-**Parametri**:
-- `productId`: ID del prodotto
-- `delta`: Quantità da aggiungere (positivo) o sottrarre (negativo)
-  - Esempio: `delta = +50` → Aggiungi 50 unità
-  - Esempio: `delta = -5` → Rimuovi 5 unità (ordine creato)
+**Parameters**:
+- `productId`: product `Guid`
+- `delta`: quantity to add (positive) or subtract (negative)
 
-**Validazioni Business**:
+**Business Validation — real code**:
 ```csharp
-// 1. Prodotto deve esistere
-if (item == null) return false;
-
-// 2. Quantità finale deve essere >= 0
-var newQuantity = item.AvailableQuantity + delta;
-if (newQuantity < 0) {
-    // Inventario insufficiente!
-    Log warning
-    Return false
+var item = await _db.InventoryItems.FirstOrDefaultAsync(i => i.ProductId == productId, ct);
+if (item == null)
+{
+    _logger.LogWarning("Inventory item for product {ProductId} not found.", productId);
+    return false;
 }
 
-// 3. Aggiorna database e cache
+var newQuantity = item.AvailableQuantity + delta;
+if (newQuantity <= 0)   // ⚠️ not "< 0": the check is "<= 0"
+{
+    _logger.LogWarning("Insufficient inventory for product {ProductId}. ...");
+    return false;
+}
+
 item.AvailableQuantity = newQuantity;
 item.LastUpdatedUtc = DateTime.UtcNow;
-SaveChanges();
-UpdateCache();
-Return true;
+await _db.SaveChangesAsync(ct);
+await _cache.SetInventoryItemAsync(item, ct);
+return true;
 ```
 
-**Casi d'Uso**:
-- **Rifornimento stock**: `AdjustInventory(productId: 1, delta: +100)`
-- **Vendita/Ordine**: `AdjustInventory(productId: 1, delta: -5)`
-- **Correzione inventario**: `AdjustInventory(productId: 1, delta: -2)`
-- **Reso**: `AdjustInventory(productId: 1, delta: +1)`
+⚠️ **Real behavior to be aware of**: the condition is `newQuantity <= 0`, not `< 0`. This means **an adjustment that would bring stock to exactly 0 is rejected** as "insufficient inventory" — it's not possible to sell the last available unit through this method. Whether this is intentional or an off-by-one isn't documented in the code; treat it as known behavior, not a bug to be "silently fixed" in this document.
 
-**Chiamato Da**:
-- BFF `/api/commands/inventory/adjust` (manuale)
-- Kafka Consumer `OrderCreatedConsumer` (automatico dopo ordine)
+**Use Cases**:
+- **Stock replenishment**: `AdjustInventory(productId, delta: +100)`
+- **Sale/Order**: `AdjustInventory(productId, delta: -5)`
+- **Inventory correction**: `AdjustInventory(productId, delta: -2)`
+- **Return**: `AdjustInventory(productId, delta: +1)`
+
+**Called By**:
+- GatewayBff `POST /api/commands/inventory/adjust` (manual, via named HTTP client `InventoryService`)
+- Kafka Consumer `OrderCreatedConsumer` (automatic after an order)
 
 ##### 3. SetInventoryQuantityAsync(productId, quantity)
-**Scopo**: Imposta quantità assoluta (non relativa)
+**Purpose**: Set an absolute quantity (not relative). If the item doesn't exist, creates it with `ReservedQuantity = 0`; if it exists, updates `AvailableQuantity` and `LastUpdatedUtc`. No minimum/maximum limit applied here (unlike `AdjustInventoryQuantityAsync`).
 
-**Logica**:
-```csharp
-// 1. Cerca item esistente
-var item = await _db.InventoryItems.FirstOrDefaultAsync(i => i.ProductId == productId);
-
-// 2. Se NON esiste → CREA nuovo item
-if (item == null) {
-    item = new InventoryItem {
-        ProductId = productId,
-        AvailableQuantity = quantity,
-        ReservedQuantity = 0,
-        LastUpdatedUtc = DateTime.UtcNow
-    };
-    Add(item);
-}
-// 3. Se esiste → AGGIORNA quantità
-else {
-    item.AvailableQuantity = quantity;
-    item.LastUpdatedUtc = DateTime.UtcNow;
-}
-
-// 4. Salva e aggiorna cache
-SaveChanges();
-UpdateCache();
-Return item;
-```
-
-**Casi d'Uso**:
-- **Inizializzazione inventario**: Primo setup quantità
-- **Reset completo**: Imposta quantità esatta dopo conteggio fisico
-- **Seed database**: Popolare database di test
-
-**Chiamato Da**:
-- BFF `/api/commands/inventory/set` (manuale)
-- POST `/api/inventory/seed` (bulk initialization)
+**Called By**:
+- GatewayBff `POST /api/commands/inventory/set` (manual)
+- `POST /api/inventory/seed` (bulk initialization)
 
 ### 4. Cache Layer - Redis
 
-#### RedisSettings.cs
+#### RedisSettings.cs (real code — note carefully what is actually bound)
 ```csharp
 public class RedisSettings
 {
-    public string ConnectionString { get; set; }  // "localhost:6379"
-    public string Prefix { get; set; }           // "dev:inventory:"
-    public string InventoryPrefix { get; set; }   // "dev:inventory:item:"
-    public int Database { get; set; }            // 1
-    public int TtlMinutes { get; set; }          // 10
+    public string ConnectionString { get; set; } = "localhost:6379";
+    public string InventoryPrefix  { get; set; } = "Inventory:";
 }
 ```
+
+⚠️ `appsettings.Development.json` also defines `Prefix`, `Host`, `Port`, `Database`, and `TtlMinutes` under `"Redis"`, but **the `RedisSettings` class has no matching properties** for any of them — they are not bound and have no effect whatsoever:
+- The **TTL is hardcoded to 5 minutes** in `RedisInventoryCache.SetInventoryItemAsync` (`TimeSpan.FromMinutes(5)`), not the 10 minutes stated in `appsettings`, and not configurable without changing the code.
+- The **Redis database is always the default (db 0)** — `Program.cs` calls `connectionMultiplexer.GetDatabase()` with no index, so `"Database": 1` in config is never applied.
 
 #### IInventoryCache.cs
 ```csharp
 public interface IInventoryCache
 {
-    Task<InventoryItem?> GetInventoryItemByProductIdAsync(int productId, CancellationToken ct);
+    Task<InventoryItem?> GetInventoryItemByProductIdAsync(Guid productId, CancellationToken ct);
     Task SetInventoryItemAsync(InventoryItem item, CancellationToken ct);
-    Task RemoveInventoryItemAsync(int productId, CancellationToken ct);
+    Task RemoveInventoryItemAsync(Guid productId, CancellationToken ct);
 }
 ```
+`RemoveInventoryItemAsync` exists in the interface and is implemented, but it is **never called** by `InventoryWorkerService` — the only form of invalidation today is natural TTL expiry after 5 minutes, not an explicit invalidation on write.
 
-#### RedisInventoryCache.cs
-**Tecnologia**: StackExchange.Redis
+#### RedisInventoryCache.cs — real key
+```csharp
+private string Key(Guid productId) => $"{_settings.InventoryPrefix}:{productId}";
+```
+⚠️ With the default value (`"Inventory:"`, already ending in `:`) or the one configured in `appsettings.Development.json` (`"dev:inventory:item:"`, which also already ends in `:`), this produces a key with a **double colon**, e.g. `dev:inventory:item::3fa85f64-5717-4562-b3fc-2c963f66afa6`. This isn't a blocking error (Redis accepts the key as-is, and it's used consistently on both write and read), but it's a detail worth knowing if you inspect Redis manually (`KEYS dev:inventory:item:*` still works thanks to the prefix, but the exact key has the double `:`).
 
-**Chiavi Redis**:
-- Pattern: `dev:inventory:item:{productId}`
-- Esempio: `dev:inventory:item:1` → Inventario prodotto ID 1
-
-**Operazioni**:
-
-1. **GetInventoryItemByProductIdAsync(productId)**
-   ```redis
-   GET dev:inventory:item:1
-   → Deserializza JSON → InventoryItem
-   ```
-
-2. **SetInventoryItemAsync(item)**
-   ```redis
-   SET dev:inventory:item:{item.ProductId} "{json}" EX 600
-   (600 secondi = 10 minuti TTL)
-   ```
-
-3. **RemoveInventoryItemAsync(productId)**
-   ```redis
-   DEL dev:inventory:item:{productId}
-   ```
-
-**Benefici Cache**:
-- 📈 **Performance**: 100x più veloce del database
-- 🔥 **Hot Data**: Prodotti popolari sempre in cache
-- ⚡ **Response Time**: 5ms vs 50ms (DB)
-- 💾 **DB Load**: Riduce carico del 80-90%
+**Operations**:
+1. `GetInventoryItemByProductIdAsync(productId)` → `GET <key>` → deserializes JSON
+2. `SetInventoryItemAsync(item)` → `SET <key> "{json}" EX 300` (300s = 5 minutes, hardcoded)
+3. `RemoveInventoryItemAsync(productId)` → `DEL <key>` (implemented, never invoked by the service layer)
 
 ### 5. Controller - REST API
 
-#### InventoryController.cs
-**Route Base**: `/api/inventory`
+#### InventoryController.cs (real routes)
+**Base Route**: `/api/inventory`
 
-**Endpoints Disponibili**:
-
-##### 1. GET /api/inventory/{productId}
-**Scopo**: Recupera inventario per un prodotto
-
+##### 1. `GET /api/inventory/{productId:guid}`
 ```http
-GET /api/inventory/1 HTTP/1.1
+GET /api/inventory/3fa85f64-5717-4562-b3fc-2c963f66afa6 HTTP/1.1
 Host: localhost:5051
 ```
-
 **Response 200 OK**:
 ```json
 {
   "id": 1,
-  "productId": 1,
+  "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "availableQuantity": 95,
   "reservedQuantity": 0,
-  "lastUpdatedUtc": "2025-11-27T10:30:00Z"
+  "lastUpdatedUtc": "2026-09-04T10:30:00Z"
 }
 ```
+**Status Codes**: `200 OK` (found), `404 Not Found` (no inventory for the product).
 
-**Status Codes**:
-- `200 OK`: Inventario trovato
-- `404 Not Found`: Prodotto non ha inventario
-- `500 Internal Server Error`: Errore server
-
-**Uso**:
-- Frontend per mostrare stock disponibile
-- OrderService per validare quantità prima ordine
-- GatewayBff per aggregare dati catalogo
-
-##### 2. POST /api/inventory/seed
-**Scopo**: Inizializzazione bulk inventario (sviluppo/test)
-
+##### 2. `POST /api/inventory/seed`
 ```http
 POST /api/inventory/seed HTTP/1.1
-Host: localhost:5051
 Content-Type: application/json
 
 [
-  {"productId": 1, "quantity": 100},
-  {"productId": 2, "quantity": 50},
-  {"productId": 3, "quantity": 200}
+  {"productId": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "quantity": 100},
+  {"productId": "9c858901-8a57-4791-aeb7-1e5989a8f0c4", "quantity": 50}
 ]
 ```
+Iterates the items and calls `SetInventoryQuantityAsync` for each one. No structured response body (just `200 OK`).
 
-**Response 200 OK**:
-```json
-{ "message": "Inventory seeded successfully" }
-```
-
-**Logica**:
-```csharp
-foreach (var item in items) {
-    await SetInventoryQuantityAsync(item.ProductId, item.Quantity);
-}
-```
-
-**Uso**: Solo sviluppo/test, non production
-
-##### 3. POST /api/inventory/adjust
-**Scopo**: Modifica manuale inventario
-
+##### 3. `POST /api/inventory/adjust`
 ```http
 POST /api/inventory/adjust HTTP/1.1
-Host: localhost:5051
 Content-Type: application/json
 
-{
-  "productId": 1,
-  "delta": -5
-}
+{ "productId": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "delta": -5 }
 ```
-
-**Response 200 OK**:
-```json
-{ "success": true }
-```
-
-**Response 400 Bad Request** (inventario insufficiente):
-```json
-{ "error": "Not enough inventory or product not found" }
-```
-
-**Uso**:
-- Correzioni manuali inventario
-- Aggiustamenti per danni/perdite
-- Rifornimenti manuali
+**Response 200 OK** on success; **`400 Bad Request`** with body `"Not enough inventory or product not found"` if `AdjustInventoryQuantityAsync` returns `false` (item not found, or the result would be `<= 0` — see the note above).
 
 ### 6. Messaging - Kafka Consumer
 
-#### KafkaSettings.cs
+#### KafkaSettings.cs (code defaults)
 ```csharp
 public class KafkaSettings
 {
-    public string BootstrapServers { get; set; }  // "localhost:9092"
-    public string OrderCreatedTopic { get; set; } // "order-created"
-    public string ConsumerGroupId { get; set; }   // "inventory-service"
+    public string BootstrapServers { get; set; } = "localhost:9092";
+    public string OrderCreatedTopic { get; set; } = "order-created";
+    public string ConsumerGroupId { get; set; } = "inventory-service";
 }
 ```
+`appsettings.Development.json` overrides `BootstrapServers` to **`localhost:29092`** — Kafka exposes two listeners (`9092` container-to-container, `29092` host toward the dockerized broker); this service, if launched with `dotnet run` on the host against a Kafka running in Docker, must use `29092`. If containerized via Docker Compose, the environment variable `Kafka__BootstrapServers=kafka:9092` overrides it again toward the internal listener.
 
 #### OrderCreatedConsumer.cs
-**Tipo**: BackgroundService (esegue continuamente in background)
+**Type**: `BackgroundService`, manual offset commit (`EnableAutoCommit = false`, `EnableAutoOffsetStore = false`).
 
-**Responsabilità**:
-- Ascolta eventi `OrderCreatedEvent` da Kafka
-- Aggiorna automaticamente inventario quando ordini creati
-- Garantisce elaborazione affidabile con commit manuali
-
-**Configurazione Consumer**:
-```csharp
-var config = new ConsumerConfig
-{
-    BootstrapServers = "localhost:9092",
-    GroupId = "inventory-service",
-    AutoOffsetReset = AutoOffsetReset.Earliest,
-    EnableAutoCommit = false,        // Commit manuale per affidabilità
-    EnableAutoOffsetStore = false    // Controllo offset manuale
-};
+**Real message processing flow**:
+```
+1. Consumer receives a message from Kafka, logs partition/offset
+2. Deserializes OrderCreatedEvent (JSON)
+3. For each item in the order:
+   a. Calls AdjustInventoryQuantityAsync(Guid.Parse(item.ProductId), -item.Quantity)
+   b. If it returns true  → logs info "Reduced inventory..." [Italian: "Ridotto inventario..."]
+   c. If it returns false → logs warning "Unable to reduce inventory..." [Italian: "Impossibile ridurre inventario..."] — BUT the loop CONTINUES
+   d. If it throws an exception → logs error, then `throw;` (explicit rethrow)
+4. If the foreach completes WITHOUT exceptions (even if some items were "false" at step 3c):
+   - Commit offset + Store offset → the message is considered processed
+5. If an exception was thrown at step 3d:
+   - NO commit happens → the message (the entire batch consumed up to that point) will be reprocessed
+   - 5-second delay before the next consumption attempt
 ```
 
-**Flusso Elaborazione Messaggio**:
-```
-1. Consumer riceve messaggio da Kafka
-   ↓
-2. Log: "Received message from partition {P} at offset {O}"
-   ↓
-3. Deserializza OrderCreatedEvent (JSON → oggetto)
-   ↓
-4. Log: "Processing OrderCreatedEvent for Order {OrderId}"
-   ↓
-5. Per ogni item nell'ordine:
-   a. Chiama AdjustInventoryQuantityAsync(productId, -quantity)
-   b. Se successo → Log: "Reduced inventory..."
-   c. Se fallisce → Log warning (inventario insufficiente)
-   ↓
-6. Se TUTTO OK:
-   - Commit offset (messaggio elaborato)
-   - Store offset
-   - Log: "Successfully processed and committed"
-   ↓
-7. Se ERRORE:
-   - NON commit offset
-   - Messaggio sarà ri-elaborato
-   - Delay 5 secondi prima retry
-```
+⚠️ **Important point not present in previous versions of this document**: insufficient stock (`AdjustInventoryQuantityAsync` returning `false`) **does not prevent the offset commit**. Only a technical exception (e.g. the database being unreachable) blocks the commit and causes reprocessing. This means an order for which inventory turned out to be insufficient at the time of consumption **is still marked as "processed"** — there's no automatic retry for the "insufficient stock" business condition, only for technical failures.
 
-**Gestione Errori**:
-```csharp
-try {
-    ProcessMessage();
-    consumer.Commit();  // Successo
-}
-catch (Exception ex) {
-    // NON commit
-    // Messaggio verrà ri-tentato
-    Log error
-    await Task.Delay(5000);
-}
-```
+**Guarantees**:
+- ✅ **At-Least-Once Delivery** for technical failures (exceptions)
+- ⚠️ **No retry** for business failures (insufficient stock) — the message is committed anyway
+- ✅ **Ordering**: messages in the same partition processed in order
+- ⚠️ **Idempotency**: there is no explicit idempotency check in the consumer — a reprocessing after a technical exception would reapply the same delta if the previous commit hadn't actually happened (expected behavior for an at-least-once consumer, but worth keeping in mind)
 
-**Garantie**:
-- ✅ **At-Least-Once Delivery**: Ogni messaggio elaborato almeno una volta
-- ✅ **Ordering**: Messaggi nella stessa partizione elaborati in ordine
-- ✅ **Retry Logic**: Errori temporanei ri-tentati automaticamente
-- ✅ **Idempotenza**: Stessa operazione può essere ri-eseguita senza problemi
-
-**Integrazione con OrderService**:
-```
-OrderService                    Kafka                    InventoryService
-    |                            |                             |
-    | 1. Crea ordine            |                             |
-    |--------------------------->|                             |
-    | 2. Salva DB               |                             |
-    | 3. Pubblica evento        |                             |
-    |--------------------------->|                             |
-    |                            | 4. Queue messaggio          |
-    |                            |---------------------------->|
-    |                            |      5. Consume evento      |
-    |                            |      6. Aggiorna inventory  |
-    |                            |      7. Commit offset       |
-```
-
-**Vantaggi Architettura Asincrona**:
-- 🚀 **Performance**: OrderService non aspetta InventoryService
-- 🔌 **Decoupling**: Servizi indipendenti, failure isolation
-- 📈 **Scalabilità**: Più consumer per elaborazione parallela
-- 🔄 **Resilienza**: Kafka buffer durante downtime consumer
-
-### 7. Configuration - Program.cs
-
-**Servizi Registrati**:
+### 7. Configuration - Program.cs (real code)
 
 ```csharp
-// Database
+// Database — PostgreSQL, not SQL Server
 builder.Services.AddDbContext<InventoryContext>(options =>
-    options.UseSqlServer(connectionString));
+{
+    var cs = builder.Configuration.GetConnectionString("InventoryDb")
+             ?? "Host=localhost;Port=5432;Database=InventoryDb;Username=postgres;Password=YourStrong_Password123;";
+    options.UseNpgsql(cs);
+});
 
 // Redis
-builder.Services.AddSingleton<IConnectionMultiplexer>(...);
-builder.Services.AddSingleton<IDatabase>(...);
+builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(/* ConnectionString */));
+builder.Services.AddSingleton<IDatabase>(provider =>
+    provider.GetRequiredService<IConnectionMultiplexer>().GetDatabase()); // always db 0
 
-// Cache
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+
 builder.Services.AddSingleton<IInventoryCache, RedisInventoryCache>();
-
-// Business Logic
 builder.Services.AddScoped<IInventoryWorkerService, InventoryWorkerService>();
-
-// Kafka Consumer (Background Service)
 builder.Services.AddHostedService<OrderCreatedConsumer>();
 ```
 
-**Lifetime Servizi**:
-- **Singleton**: Redis, Cache (condivisi, thread-safe)
-- **Scoped**: InventoryWorkerService, DbContext (per richiesta)
-- **HostedService**: OrderCreatedConsumer (background continuo)
+**Service Lifetimes**:
+- **Singleton**: `IConnectionMultiplexer`, `IDatabase`, `IInventoryCache`
+- **Scoped**: `IInventoryWorkerService`, `InventoryContext`
+- **HostedService**: `OrderCreatedConsumer` (continuous background)
 
-**Startup Sequence**:
-```
-1. Configure services
-2. Build app
-3. Ensure database created (EnsureCreated)
-4. Start Kafka consumer (background)
-5. Start HTTP server
-6. Listen for requests
-```
+**Real Startup Sequence**: build services → `app.Build()` → `context.Database.EnsureCreated()` in a dedicated scope → (Development only) Scalar/OpenAPI → `app.MapControllers()` → `app.Run()`. `UseHttpsRedirection()` is **disabled** in Development to allow direct HTTP calls between services.
 
-## Configurazione
+## Configuration
 
-### appsettings.Development.json
+### appsettings.Development.json (real content)
 ```json
 {
   "ConnectionStrings": {
-    "InventoryDb": "Server=localhost,1433;Database=InventoryDb;..."
+    "InventoryDb": "Host=localhost;Port=5432;Database=InventoryDb;Username=postgres;Password=YourStrong_Password123;"
   },
   "Redis": {
     "ConnectionString": "localhost:6379",
     "Prefix": "dev:inventory:",
     "InventoryPrefix": "dev:inventory:item:",
+    "Host": "localhost",
+    "Port": 6379,
     "Database": 1,
     "TtlMinutes": 10
   },
   "Kafka": {
-    "BootstrapServers": "localhost:9092",
+    "BootstrapServers": "localhost:29092",
     "OrderCreatedTopic": "order-created",
     "ConsumerGroupId": "inventory-service"
-  },
-  "Logging": {
-    "LogLevel": {
-      "InventoryService.Messaging": "Debug",
-      "Confluent.Kafka": "Information"
-    }
   }
 }
 ```
+As explained above, only `Redis:ConnectionString` and `Redis:InventoryPrefix` have any real effect; `Prefix`, `Host`, `Port`, `Database`, `TtlMinutes` are present in the file but read by no configuration class.
 
-## Flussi di Business Completi
+## Business Flows
 
-### Scenario 1: Creazione Ordine → Aggiornamento Inventario
-
+### Scenario 1: Order Creation → Inventory Update (success path)
 ```
-T=0s  | User crea ordine (5x Product#1)
+T=0s  | User creates an order (5x product {productId})
       | Frontend → GatewayBff → OrderService
-      |
-T=0.1s| OrderService: Salva ordine nel DB
-      | OrderId=1, Items=[{ProductId:1, Qty:5}]
-      |
-T=0.2s| OrderService: Pubblica OrderCreatedEvent su Kafka
-      | Topic: order-created
-      | Message: {"orderId":1,"items":[{"productId":1,"quantity":5}]}
-      |
-T=0.3s| InventoryService Consumer: Riceve messaggio
-      | Log: "Received message from partition 0 at offset 42"
-      |
-T=0.4s| InventoryService: Elabora evento
-      | Log: "Processing OrderCreatedEvent for Order 1"
-      |
-T=0.5s| InventoryService: AdjustInventoryQuantityAsync(1, -5)
-      | AvailableQuantity: 100 → 95
-      | LastUpdatedUtc: 2025-11-27T10:30:00Z
-      |
-T=0.6s| Database: UPDATE InventoryItems SET AvailableQuantity=95
-      | Redis: SET dev:inventory:item:1 = {..., "availableQuantity":95}
-      |
-T=0.7s| InventoryService: Commit Kafka offset
-      | Log: "Successfully processed and committed message at offset 42"
-      |
-DONE  | Inventario aggiornato! Frontend mostra stock=95
+T=0.1s| OrderService: saves order, publishes OrderCreatedEvent to Kafka (topic order-created)
+T=0.3s| InventoryService Consumer: receives message, logs partition/offset
+T=0.5s| AdjustInventoryQuantityAsync(productId, -5) → true (sufficient stock)
+      | AvailableQuantity: 100 → 95, LastUpdatedUtc updated
+T=0.6s| Database (Postgres) updated; Redis SET <key> ... EX 300
+T=0.7s| Kafka offset commit
+DONE  | Stock updated; next GET /api/inventory/{productId} reflects it
 ```
 
-### Scenario 2: Query Inventario con Cache
-
+### Scenario 2: Inventory Query with Cache
 ```
-T=0s  | User visualizza prodotto su frontend
-      | Frontend → GatewayBff → InventoryService
-      |
-T=0.1s| GET /api/inventory/1
-      | InventoryWorkerService.GetInventoryByProductIdAsync(1)
-      |
-T=0.2s| Check Redis: GET dev:inventory:item:1
-      | Result: MISS (cache vuota)
-      | Log: Cache miss
-      |
-T=0.3s| Query Database: SELECT * FROM InventoryItems WHERE ProductId=1
-      | Result: {Id:1, ProductId:1, AvailableQuantity:95, ...}
-      |
-T=0.4s| Populate Cache: SET dev:inventory:item:1 "{...}" EX 600
-      |
-T=0.5s| Return to client: HTTP 200 OK
-      | Body: {"productId":1,"availableQuantity":95,...}
-      |
+T=0s   | GET /api/inventory/{productId} — cache MISS
+T=0.1s | Query PostgreSQL (AsNoTracking) → populates Redis cache (hardcoded 5-minute TTL)
+T=0.2s | Return 200 OK
 ---
-T=1s  | User aggiorna pagina (richiesta successiva)
-      | GET /api/inventory/1
-      |
-T=1.1s| Check Redis: GET dev:inventory:item:1
-      | Result: HIT! (trovato in cache)
-      | Log: "Inventory for product 1 served from cache"
-      |
-T=1.2s| Return to client: HTTP 200 OK (da cache, velocissimo!)
-      | No database query needed
+T=60s  | GET /api/inventory/{productId} — cache HIT, no DB query
 ```
 
-## Performance & Scalabilità
+## Performance & Scalability
 
-### Metriche Performance
-- **Cache Hit Ratio**: 85-95%
-- **Response Time**:
-  - Cache hit: 3-5ms
-  - Cache miss: 40-60ms
-  - Kafka processing: 50-100ms
-- **Throughput**: ~500 richieste/secondo per istanza
+The estimates below (hit ratio, response times) are indicative — no real metrics are collected/exposed today by this service (no `/metrics` endpoint, no Prometheus integration).
 
-### Strategie Scalabilità
+### Scalability Strategies
 
 #### Horizontal Scaling
 ```
-Load Balancer
-    ↓
-[Instance 1] [Instance 2] [Instance 3]
-    ↓             ↓             ↓
-  Shared Redis Cache
-    ↓             ↓             ↓
-  Shared SQL Database
-    ↓             ↓             ↓
-  Kafka (Consumer Group: inventory-service)
+Load Balancer → [Instance 1] [Instance 2] [Instance 3]
+                     ↓             ↓             ↓
+              Shared Redis, shared PostgreSQL
+                     ↓
+        Kafka (Consumer Group: inventory-service, automatic rebalancing)
 ```
 
-**Kafka Consumer Group**:
-- Ogni istanza è un consumer nello stesso gruppo
-- Kafka distribuisce partizioni tra consumer
-- Partition 0 → Instance 1
-- Partition 1 → Instance 2
-- Automatic rebalancing se instance crash
+#### Potential Bottlenecks
+1. **DB writes** during order spikes (only partially mitigated by the cache, which is for reads)
+2. **Redis memory** if too many distinct products are cached at once
+3. **Kafka consumer lag** if order throughput exceeds processing capacity
 
-#### Vertical Scaling
-- Database: Aumentare RAM per query cache
-- Redis: Aumentare memoria per più item in cache
-- Application: Aumentare CPU per più thread
+## Monitoring & Observability
 
-### Bottlenecks Potenziali
-1. **Database Write**: Aggiornamenti inventario (mitigato da cache)
-2. **Redis Memory**: Troppi item in cache (usa LRU eviction)
-3. **Kafka Lag**: Consumer troppo lento (più istanze)
-
-## Monitoraggio & Osservabilità
-
-### Log Chiave da Monitorare
-
-#### InventoryService Logs
+### Key Logs to Monitor (real messages in the code)
 ```
-✅ SUCCESS:
+✅ INFO:
 - "Inventory for product {ProductId} served from cache"
-- "Reduced inventory for Product {ProductId} by {Quantity} units"
-- "Successfully processed and committed message at offset {Offset}"
+- "Reduced inventory for Product {ProductId} by {Quantity} units (Order {OrderId})" [Italian: "Ridotto inventario per Prodotto {ProductId} di {Quantity} unità (Ordine {OrderId})"]
+- "Message processed and successfully committed at offset {Offset}" [Italian: "Messaggio elaborato e confermato con successo all'offset {Offset}"]
 
 ⚠️ WARNING:
-- "Inventory item for product {ProductId} not found"
-- "Insufficient inventory for product {ProductId}"
-- "Failed to reduce inventory - insufficient inventory"
+- "Inventory item for product {ProductId} not found."
+- "Insufficient inventory for product {ProductId}. Requested adjustment: {Delta}, Available: {AvailableQuantity}"
+- "Unable to reduce inventory for Product {ProductId} ... - insufficient inventory or product not found" [Italian: "Impossibile ridurre inventario per Prodotto {ProductId} ... - inventario insufficiente o prodotto non trovato"]
 
 ❌ ERROR:
-- "Error processing message"
-- "Error updating inventory for Product {ProductId}"
+- "Error during message consumption: {Error}" [Italian: "Errore durante il consumo del messaggio: {Error}"]
+- "Error updating inventory for Product {ProductId} (Order {OrderId})" [Italian: "Errore durante l'aggiornamento dell'inventario per Prodotto {ProductId} (Ordine {OrderId})"]
 ```
 
-### Metriche Consigliate
-1. **Kafka Metrics**:
-   - Consumer lag (dovrebbe essere ~0)
-   - Messages processed/second
-   - Processing errors
-   - Commit rate
-
-2. **Inventory Metrics**:
-   - Stock depletion rate
-   - Low stock alerts (< threshold)
-   - Inventory adjustments/hour
-   - Out-of-stock events
-
-3. **Cache Metrics**:
-   - Hit ratio (target > 85%)
-   - Eviction rate
-   - Memory usage
-   - Response time
-
-4. **Database Metrics**:
-   - Query duration
-   - Connection pool usage
-   - Lock waits
-   - Deadlocks
-
-### Health Checks
-```csharp
-// Future: Implement /health endpoint
-- Database connectivity: PING SQL Server
-- Redis connectivity: PING Redis
-- Kafka connectivity: Check consumer status
-```
+There is no `/health` endpoint yet in this service (unlike, for example, NotificationService, which exposes one).
 
 ## Testing
 
-### Test Inventario Manualmente
+### Manual Testing (with real Guids — replace with ids of products actually created in ProductService)
 
-#### 1. Seed Inventario Iniziale
 ```bash
+# 1. Seed initial inventory
 curl -X POST http://localhost:5051/api/inventory/seed \
   -H "Content-Type: application/json" \
   -d '[
-    {"productId": 1, "quantity": 100},
-    {"productId": 2, "quantity": 50}
+    {"productId": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "quantity": 100},
+    {"productId": "9c858901-8a57-4791-aeb7-1e5989a8f0c4", "quantity": 50}
   ]'
-```
 
-#### 2. Query Inventario
-```bash
-curl http://localhost:5051/api/inventory/1
-# Response: {"productId":1,"availableQuantity":100,...}
-```
+# 2. Query inventory
+curl http://localhost:5051/api/inventory/3fa85f64-5717-4562-b3fc-2c963f66afa6
 
-#### 3. Adjust Inventario
-```bash
-# Rimuovi 10 unità
+# 3. Adjust inventory (remove 10 units)
 curl -X POST http://localhost:5051/api/inventory/adjust \
   -H "Content-Type: application/json" \
-  -d '{"productId": 1, "delta": -10}'
+  -d '{"productId": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "delta": -10}'
 
-# Verifica
-curl http://localhost:5051/api/inventory/1
-# Response: {"availableQuantity":90,...}
-```
-
-#### 4. Test Kafka Integration
-```bash
-# Crea ordine via GatewayBff
+# 4. Test Kafka integration: create an order via GatewayBff
 curl -X POST http://localhost:5189/api/commands/orders \
   -H "Content-Type: application/json" \
-  -d '{
-    "items": [{"productId": 1, "quantity": 5}]
-  }'
+  -d '{"items": [{"productId": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "quantity": 5, "unitPrice": 9.99}]}'
 
-# Attendi 1-2 secondi per elaborazione asincrona
-
-# Verifica inventario aggiornato
-curl http://localhost:5051/api/inventory/1
-# Response: {"availableQuantity":85,...} (90-5=85)
+# Wait a few seconds for asynchronous processing, then verify
+curl http://localhost:5051/api/inventory/3fa85f64-5717-4562-b3fc-2c963f66afa6
 ```
 
-## Limitazioni & Miglioramenti
+## Limitations & Improvements
 
-### Limitazioni Attuali
-1. **No Reserved Quantity Logic**: ReservedQuantity non usato
-2. **No Inventory Reservation**: Stock non riservato durante checkout
-3. **No Restock Notifications**: No alert quando stock basso
-4. **No Audit Trail**: No storico modifiche inventario
-5. **No Multi-Warehouse**: Solo un warehouse virtuale
+### Current Limitations (verified in the code)
+1. **`ReservedQuantity` is never updated** — initialized to `0` and never written again; there is no stock reservation logic during checkout yet.
+2. **`AdjustInventoryQuantityAsync` refuses to bring stock to exactly 0** (`newQuantity <= 0`) — the last unit isn't sellable through this path.
+3. **Insufficient stock during Kafka consumption doesn't trigger a retry** — the message is committed anyway (see the Messaging section above); only technical exceptions block the commit.
+4. **Cache TTL hardcoded to 5 minutes**, not configurable from `appsettings` despite the file containing a `TtlMinutes` key that seems to suggest otherwise.
+5. **`RemoveInventoryItemAsync` is never invoked** — no explicit cache invalidation on write, only natural expiry.
+6. **No audit trail**: no history of inventory changes.
+7. **No multi-warehouse**: a single virtual "warehouse."
+8. **No automated tests** for this service.
 
-### Miglioramenti Proposti
+### Proposed Improvements
+The design proposals that follow (inventory reservation, low stock alerts, inventory history, multi-warehouse support) remain valid as future directions but **are not implemented** — none of them have corresponding code in the repository today. Before implementing them, it's worth consciously deciding whether the `<= 0` behavior of `AdjustInventoryQuantityAsync` is intentional, since a reservation logic would probably need to be based on a different comparison.
 
-#### 1. Inventory Reservation
-```csharp
-// Quando user inizia checkout
-ReserveInventory(productId, quantity, orderId)
-  → AvailableQuantity -= quantity
-  → ReservedQuantity += quantity
-  → Expira dopo 15 minuti se ordine non completato
-
-// Quando ordine confermato
-ConfirmReservation(orderId)
-  → ReservedQuantity -= quantity
-  → Update via Kafka come ora
-
-// Quando ordine cancellato o timeout
-ReleaseReservation(orderId)
-  → ReservedQuantity -= quantity
-  → AvailableQuantity += quantity
-```
-
-#### 2. Low Stock Alerts
-```csharp
-if (item.AvailableQuantity < threshold) {
-    PublishLowStockEvent(productId, currentQuantity);
-    → NotificationService invia email
-    → Dashboard mostra alert
-}
-```
-
-#### 3. Inventory History
-```csharp
-public class InventoryTransaction
-{
-    public int Id { get; set; }
-    public int ProductId { get; set; }
-    public int Delta { get; set; }
-    public int QuantityBefore { get; set; }
-    public int QuantityAfter { get; set; }
-    public string Reason { get; set; }  // "Order", "Restock", "Adjustment"
-    public string ReferenceId { get; set; }  // OrderId, etc.
-    public DateTime Timestamp { get; set; }
-}
-```
-
-#### 4. Multi-Warehouse Support
-```csharp
-public class InventoryItem
-{
-    // ... existing fields
-    public int WarehouseId { get; set; }
-    public string WarehouseLocation { get; set; }
-}
-
-// Logic to find closest warehouse with stock
-```
-
-## Integrazione con Altri Servizi
+## Integration with Other Services
 
 ### 1. OrderService
-- **Direzione**: OrderService → Kafka → InventoryService
-- **Messaggio**: OrderCreatedEvent
-- **Azione**: Riduzione automatica stock
+- **Direction**: OrderService → Kafka (`order-created`) → InventoryService
+- **Action**: stock reduction, with the commit caveats described above
 
 ### 2. GatewayBff
-- **Direzione**: BFF ↔ InventoryService
-- **Endpoints**: GET inventory, Adjust, Set
-- **Scopo**: Aggregazione dati per frontend
+- **Direction**: GatewayBff ↔ InventoryService, via named HTTP client `"InventoryService"` configured from `ServiceUrls:InventoryService` (`http://localhost:5051` in `appsettings.Development.json`)
+- **Endpoints used**: `GET /api/inventory/{productId}` (catalog aggregation in `GetCatalogQueryHandler`), `POST /api/inventory/adjust`, `POST /api/inventory/adjust`/`set` (manual commands)
 
 ### 3. ProductService
-- **Relazione**: Indiretta via ProductId
-- **No comunicazione diretta**: Servizi disaccoppiati
-- **Sincronizzazione**: ProductId condiviso
+- **Relationship**: indirect via a shared `ProductId` (Guid) — no direct communication between the two services
 
-### 4. NotificationService (Futuro)
-- **Integrazione**: InventoryService pubblica LowStockEvent
-- **Notifiche**: Email/SMS quando stock basso
-- **Scopo**: Alert proattivi
+### 4. NotificationService (not connected today)
+- No "low stock" event is currently published by InventoryService toward NotificationService — this remains a future extension, not a real state.
 
-## Conclusione
+## Conclusion
 
-InventoryService implementa un'architettura moderna event-driven:
-- ✅ **Event-Driven**: Kafka per aggiornamenti asincroni
-- ✅ **High Performance**: Redis cache per 85%+ richieste
-- ✅ **Reliable**: At-least-once delivery con commit manuali
-- ✅ **Scalable**: Horizontal scaling via consumer groups
-- ✅ **Decoupled**: Nessuna dipendenza diretta da altri servizi
-- ✅ **Observable**: Logging comprehensivo per monitoring
-- ✅ **Production-Ready**: Error handling e retry logic robusti
-
-Il servizio è pronto per production con le appropriate configurazioni di sicurezza e monitoring.
+InventoryService implements an event-driven architecture with cache-aside, functional for the main use case (reducing stock when an order is created, serving reads from cache). However, it is not "production-ready" without further work: non-configurable TTL, no retry for insufficient stock during Kafka consumption, no audit trail, no automated tests, and a `<= 0` behavior in `AdjustInventoryQuantityAsync` that deserves an explicit decision before building a reservation logic on top of it.

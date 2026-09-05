@@ -1,432 +1,235 @@
 # Kafka Integration for Asynchronous Inventory Updates
 
+> Updated to match the real code. The previous version of this document had `OrderCreatedEvent.OrderId`/`OrderItemEvent.ProductId` typed as `int`, `Acks.Leader` on the producer, a single-listener Kafka config, and log lines that don't exist anywhere in the codebase (they're actually logged in Italian — see the [Observability](#observability) section). Every discrepancy below was checked against the source directly.
+
 ## Overview
-Implemented Kafka-based event-driven architecture to asynchronously update inventory when orders are created. This ensures loose coupling between OrderService and InventoryService while maintaining data consistency.
+Kafka-based event-driven architecture that asynchronously updates inventory when orders are created. This keeps OrderService and InventoryService loosely coupled while still reaching eventual consistency.
 
 ## Architecture
 
 ### Event Flow
 ```
-1. User creates order via Frontend
-2. Frontend → GatewayBff → OrderService
-3. OrderService saves order to OrderDb
-4. OrderService publishes OrderCreatedEvent to Kafka
-5. Kafka stores event in "order-created" topic
-6. InventoryService consumes event from Kafka
-7. InventoryService reduces inventory quantities
-8. InventoryService updates InventoryDb and Redis cache
+1. User creates order via Frontend / GatewayBff / any HTTP client
+2. Frontend → GatewayBff → OrderService (POST /api/commands/orders)
+3. OrderService saves the order to OrderDb (PostgreSQL)
+4. OrderService publishes OrderCreatedEvent to Kafka topic "order-created"
+   — if this publish fails, the order is still returned successfully to the caller
+     (see OrderApplicationService.CreateOrderAsync — the Kafka call is wrapped in
+     try/catch and only logged on failure, never rethrown to the controller)
+5. InventoryService's OrderCreatedConsumer (a BackgroundService) consumes the event
+6. InventoryService reduces AvailableQuantity for each item — but see the
+   ⚠️ note under "InventoryService - Consumer" below: an insufficient-stock
+   result does NOT block the Kafka commit, only a thrown exception does
+7. InventoryService updates InventoryDb (PostgreSQL) and the Redis cache
 ```
 
 ## Components Implemented
 
-### 1. Shared Messages (src/Shared/Messages/)
+### 1. Shared Messages (`src/Shared/Messages/OrderCreatedEvent.cs`)
 
-#### OrderCreatedEvent.cs
+Real current shape — **both ids are `string`, not `int`**:
 ```csharp
 public record OrderCreatedEvent
 {
-    public int OrderId { get; init; }
+    public string OrderId { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }
-    public List<OrderItemEvent> Items { get; init; }
+    public List<OrderItemEvent> Items { get; init; } = new();
 }
 
 public record OrderItemEvent
 {
-    public int ProductId { get; init; }
+    public string ProductId { get; init; } = string.Empty;
     public int Quantity { get; init; }
 }
 ```
-- **Purpose**: Shared data contract between OrderService (producer) and InventoryService (consumer)
-- **Location**: Shared project to ensure consistency across services
-- **Data**: Order ID, creation timestamp, and list of items with product IDs and quantities
+- **Why strings**: `Order.Id` in OrderService is an `int` (EF identity) but `OrderItem.ProductId` is a `Guid` (matching ProductService/InventoryService). Rather than carry two different native types across the wire, `OrderApplicationService.CreateOrderAsync` converts both to `string` (`created.Id.ToString()`, `i.ProductId.ToString()`) before building the event. `InventoryService`'s consumer parses `ProductId` back with `Guid.Parse(item.ProductId)`.
+- **Purpose**: shared data contract between OrderService (producer) and InventoryService (consumer).
 
 ### 2. OrderService - Producer
 
-#### Configuration (src/OrderService/Configuration/)
-- **KafkaSettings.cs**: Configuration model
-  - BootstrapServers: Kafka broker address (default: localhost:9092)
-  - OrderCreatedTopic: Topic name (default: "order-created")
+#### Configuration (`src/OrderService/Infrastructure/Configuration/KafkaSettings.cs`)
+```csharp
+public class KafkaSettings
+{
+    public string BootstrapServers { get; set; } = "localhost:9092";
+    public string OrderCreatedTopic { get; set; } = "order-created";
+}
+```
+This typed class exists but `OrderEventProducer` doesn't actually consume it — it reads `configuration["Kafka:BootstrapServers"]` / `configuration["Kafka:OrderCreatedTopic"]` directly from `IConfiguration`, with the same string defaults hardcoded again inline. Harmless (both read the same `appsettings` section) but worth knowing if you go looking for where `KafkaSettings` is actually bound with `.Configure<KafkaSettings>()` — it isn't, in OrderService.
 
-#### Messaging (src/OrderService/Messaging/)
-- **IOrderEventProducer**: Interface for publishing events
-- **OrderEventProducer**: Kafka producer implementation
-  - Uses Confluent.Kafka library
-  - Configured with:
-    - **Acks.Leader**: Wait for leader acknowledgment
-    - **EnableIdempotence**: Prevent duplicate messages
-    - **MaxInFlight**: 5 concurrent requests
-    - **MessageSendMaxRetries**: 3 retry attempts
-    - **LingerMs**: 10ms batch window
-  - Publishes JSON-serialized events with order ID as key
-  - Comprehensive logging for debugging
-  - Graceful error handling (doesn't fail order creation)
+#### Messaging (`src/OrderService/Infrastructure/Messaging/OrderEventProducer.cs`)
+Real producer configuration:
+```csharp
+var config = new ProducerConfig
+{
+    BootstrapServers = bootstrapServers,
+    Acks = Acks.All,              // not Acks.Leader
+    EnableIdempotence = true,
+    MaxInFlight = 5,
+    MessageSendMaxRetries = 3,
+    LingerMs = 10
+};
+```
+- Publishes with `Key = $"order-{orderEvent.OrderId}"`, JSON-serialized value, explicit UTC timestamp.
+- On `ProduceException`, logs the error and **rethrows** — but the caller (`OrderApplicationService.CreateOrderAsync`) catches that rethrow, logs again, and swallows it. The order creation request itself never fails because of this.
 
-#### Controller Updates (src/OrderService/Controllers/)
-- **OrderCommandsController**: Enhanced CreateOrder endpoint
-  - Creates order in database
-  - Publishes OrderCreatedEvent to Kafka
-  - Returns success even if event publishing fails (logged as error)
-  - Non-blocking: Order creation succeeds independently of Kafka
-
-#### Program.cs Updates
-- Registered OrderEventProducer as singleton
-- Configured KafkaSettings from appsettings
+#### Controller (`src/OrderService/Controllers/OrdersController.cs`)
+`OrderCommandsController` (in the same file as `OrdersController`) handles `POST /api/commands/orders`. It delegates entirely to `IOrderApplicationService.CreateOrderAsync`, which does the persistence-then-publish orchestration described above. There's no separate "enhanced" controller layer beyond this — business logic lives in `OrderApplicationService` and the `Order` aggregate, not in the controller.
 
 ### 3. InventoryService - Consumer
 
-#### Configuration (src/InventoryService/Configuration/)
-- **KafkaSettings.cs**: Configuration model
-  - BootstrapServers: Kafka broker address
-  - OrderCreatedTopic: Topic to subscribe to
-  - ConsumerGroupId: Consumer group name (default: "inventory-service")
+#### Configuration (`src/InventoryService/Configuration/KafkaSettings.cs`)
+```csharp
+public class KafkaSettings
+{
+    public string BootstrapServers { get; set; } = "localhost:9092";
+    public string OrderCreatedTopic { get; set; } = "order-created";
+    public string ConsumerGroupId { get; set; } = "inventory-service";
+}
+```
+Unlike OrderService, this one **is** actually bound via `builder.Services.Configure<KafkaSettings>(...)` in `Program.cs` — but `OrderCreatedConsumer` itself doesn't inject `IOptions<KafkaSettings>` either; it reads `configuration["Kafka:..."]` directly in its constructor, same pattern as the producer side.
 
-#### Messaging (src/InventoryService/Messaging/)
-- **OrderCreatedConsumer**: Kafka consumer as BackgroundService
-  - Runs continuously in background
-  - Subscribes to "order-created" topic
-  - Configuration:
-    - **AutoOffsetReset.Earliest**: Process from beginning if new consumer
-    - **EnableAutoCommit**: false (manual commit for reliability)
-    - **EnableAutoOffsetStore**: false (manual offset management)
-  - Processing logic:
-    1. Consume message from Kafka
-    2. Deserialize OrderCreatedEvent
-    3. For each item: Reduce inventory by ordered quantity
-    4. Commit offset only after successful processing
-    5. On error: Don't commit, message will be reprocessed
-  - Scoped service creation for database operations
-  - Comprehensive logging for monitoring
-  - Graceful shutdown handling
+#### Messaging (`src/InventoryService/Messaging/OrderCreatedConsumer.cs`)
+`BackgroundService`, manual offset management:
+```csharp
+var config = new ConsumerConfig
+{
+    BootstrapServers = bootstrapServers,
+    GroupId = groupId,
+    AutoOffsetReset = AutoOffsetReset.Earliest,
+    EnableAutoCommit = false,
+    EnableAutoOffsetStore = false
+};
+```
 
-#### Program.cs Updates
-- Registered OrderCreatedConsumer as hosted service
-- Configured KafkaSettings from appsettings
-- Consumer starts automatically with application
+Real per-message flow:
+1. Consume message, log partition/offset.
+2. Deserialize `OrderCreatedEvent`.
+3. For each item in the event, call `AdjustInventoryQuantityAsync(Guid.Parse(item.ProductId), -item.Quantity)`:
+   - Returns `true` → logs success, loop continues.
+   - Returns `false` (item not found, or the adjustment would leave stock `<= 0` — see `INVENTORY_SERVICE_DOCUMENTATION.md` for the exact `<=` vs `<` detail) → logs a **warning**, loop continues.
+   - Throws → logs an **error**, then `throw;` propagates out of `ProcessMessageAsync`.
+4. If the foreach completes without an exception (even if some items logged step-3 warnings), the offset is committed and stored — the message is considered fully processed.
+5. If an exception propagated, the offset is **not** committed; the consumer loop catches it, waits 5 seconds, and the message is redelivered on the next poll.
+
+⚠️ **The most important correction in this document**: an insufficient-stock result is a normal, committed outcome — it is not retried. Only a technical failure (e.g. the database being unreachable) blocks the commit and forces redelivery. If you're testing "what happens when stock runs out," expect a warning log and a moved-forward offset, not a stuck consumer.
+
+### 4. PaymentService — not part of this flow (yet)
+`appsettings.Development.json` for PaymentService already has Kafka settings scaffolded:
+```json
+"Kafka": {
+  "BootstrapServers": "localhost:29092",
+  "PaymentProcessedTopic": "payment-processed",
+  "OrderCreatedTopic": "order-created",
+  "ConsumerGroupId": "payment-service"
+}
+```
+But `PaymentService/Program.cs` is still the unmodified ASP.NET template — there is no consumer, no producer, and no controller in this service at all. If you're looking for where PaymentService reacts to `order-created` or publishes `payment-processed`, it doesn't exist yet; this config is scaffolding for future work only.
 
 ## Configuration
 
-### OrderService - appsettings.Development.json
+### OrderService — `appsettings.Development.json`
 ```json
 {
   "Kafka": {
-    "BootstrapServers": "localhost:9092",
+    "BootstrapServers": "localhost:29092",
     "OrderCreatedTopic": "order-created"
-  },
-  "Logging": {
-    "LogLevel": {
-      "Confluent.Kafka": "Information"
-    }
   }
 }
 ```
 
-### InventoryService - appsettings.Development.json
+### InventoryService — `appsettings.Development.json`
 ```json
 {
   "Kafka": {
-    "BootstrapServers": "localhost:9092",
+    "BootstrapServers": "localhost:29092",
     "OrderCreatedTopic": "order-created",
     "ConsumerGroupId": "inventory-service"
-  },
-  "Logging": {
-    "LogLevel": {
-      "Confluent.Kafka": "Information",
-      "InventoryService.Messaging": "Debug"
-    }
   }
 }
 ```
 
-## NuGet Packages Added
-
-### OrderService & InventoryService
-- **Confluent.Kafka 2.6.1**: Official .NET client for Apache Kafka
-  - High-performance, feature-rich Kafka client
-  - Supports producer and consumer APIs
-  - Built on librdkafka (C library)
-
-### Project References
-- OrderService now references Shared project
-- InventoryService already referenced Shared project
+Both use `29092`, not `9092` — see the dual-listener explanation below. This is a value added this session; previously both files pointed at `9092`, which only works when the service itself is also running inside the Docker network.
 
 ## Docker Infrastructure
 
-### Kafka Setup (docker-compose.yml)
+### Kafka Setup (real `docker/docker-compose.yml`, KRaft mode, dual listener)
 ```yaml
 kafka:
   image: confluentinc/cp-kafka:7.4.0
-  ports: 9092:9092
+  container_name: dos_kafka
+  hostname: kafka
+  ports:
+    - "9092:9092"
+    - "29092:29092"
   environment:
-    # KRaft mode (Zookeeper-less)
     KAFKA_NODE_ID: 1
     KAFKA_PROCESS_ROLES: broker,controller
-    KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+    KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
     KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
     KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
 ```
 
-**Note**: This configuration uses **KRaft mode** (Kafka Raft metadata mode), introduced in Kafka 2.8+. 
-KRaft eliminates the dependency on Zookeeper by using Kafka's own Raft consensus protocol for metadata management.
-This simplifies deployment and improves reliability.
+⚠️ **Two listeners, added this session, and why**: `PLAINTEXT` on `9092` is advertised as `kafka:9092` — reachable only from other containers on `dos_network` (e.g. `order-service`, `inventory-service` when they run via Docker Compose). `PLAINTEXT_HOST` on `29092` is advertised as `localhost:29092` — reachable from the host machine, i.e. any service you launch with `dotnet run` or via the `AppHost`/.NET Aspire orchestrator directly against the dockerized broker. Match your bootstrap-servers value to how the connecting process is actually running:
 
-## Key Features
+| Where the service runs | BootstrapServers to use |
+|---|---|
+| Inside Docker Compose (`order-service`, `inventory-service` containers) | `kafka:9092` (set via `Kafka__BootstrapServers=kafka:9092` env var in `docker-compose.yml`) |
+| On the host via `dotnet run` or the AppHost | `localhost:29092` (set in each service's `appsettings.Development.json`) |
+| `docker exec` into the `dos_kafka` container itself (CLI tools below) | `localhost:9092` — you're inside the container's own network namespace, where the `PLAINTEXT` listener is bound locally |
 
-### Reliability
-1. **At-Least-Once Delivery**: Manual offset commits ensure no message loss
-2. **Idempotent Producer**: Prevents duplicate messages
-3. **Retry Logic**: Automatic retries on transient failures
-4. **Error Handling**: Failed messages are reprocessed (not committed)
+`kafka-ui` (port `8080`, http://localhost:8080) is also part of this compose file and is the easiest way to browse topics, partitions, and consumer group lag without the CLI commands below.
 
-### Scalability
-1. **Asynchronous Processing**: Order creation doesn't wait for inventory updates
-2. **Horizontal Scaling**: Multiple consumer instances can share load (consumer group)
-3. **Buffering**: Kafka handles traffic spikes
-4. **Decoupling**: Services can scale independently
+## Reliability & Guarantees — precisely, not generically
 
-### Observability
-1. **Comprehensive Logging**: All operations logged with context
-2. **Partition/Offset Tracking**: Messages tracked throughout pipeline
-3. **Error Logging**: Failures logged with full details
-4. **Performance Metrics**: Can monitor consumer lag, throughput
+- **At-least-once delivery for technical failures**: manual commit means a crash or exception mid-processing causes redelivery.
+- **No delivery guarantee beyond "committed" for business failures**: as detailed above, insufficient stock is logged and committed, not retried.
+- **Idempotent producer** (`EnableIdempotence = true`) prevents the *producer* from creating duplicate messages on retry — this says nothing about whether the *consumer's* effect (decrementing stock) is idempotent, and it currently is not guarded against reprocessing the same message twice after a technical-failure redelivery.
+- **Order creation never blocks on Kafka** — verified in `OrderApplicationService.CreateOrderAsync`.
 
-### Fault Tolerance
-1. **Service Independence**: OrderService succeeds even if Kafka is down
-2. **Message Durability**: Kafka persists messages
-3. **Automatic Reconnection**: Consumer reconnects after failures
-4. **Graceful Degradation**: Orders created even if inventory update fails
+## Observability
+
+⚠️ **The actual log messages are mostly in Italian, not English.** If you're grepping logs or writing alerting rules against the English phrases historically documented here, they won't match anything. Verified directly from source:
+
+| Component | Real log message (verbatim) | Level |
+|---|---|---|
+| InventoryService, consumer constructor | `"Kafka consumer initialized for topic {Topic} with group {GroupId} at {BootstrapServers}"` | Info — **this one is in English** |
+| InventoryService, consume loop start | `"Avvio consumer Kafka per topic: {Topic}"` | Info |
+| InventoryService, message received | `"Ricevuto messaggio dalla partizione {Partition} all'offset {Offset}"` | Info |
+| InventoryService, processing event | `"Elaborazione OrderCreatedEvent per Ordine {OrderId} con {ItemCount} articoli"` | Info |
+| InventoryService, stock reduced | `"Ridotto inventario per Prodotto {ProductId} di {Quantity} unità (Ordine {OrderId})"` | Info |
+| InventoryService, insufficient stock | `"Impossibile ridurre inventario per Prodotto {ProductId} ... - inventario insufficiente o prodotto non trovato"` | Warning |
+| InventoryService, all items done | `"Completati aggiornamenti inventario per Ordine {OrderId}"` | Info |
+| InventoryService, offset committed | `"Messaggio elaborato e confermato con successo all'offset {Offset}"` | Info |
+| InventoryService, consume/process error | `"Errore durante il consumo del messaggio: {Error}"` / `"Errore durante l'elaborazione del messaggio"` | Error |
+| OrderService, producer init | `"Producer Kafka inizializzato per topic {Topic} su {BootstrapServers}"` | Info |
+| OrderService, publish success | `"Pubblicato evento OrderCreated per Ordine {OrderId} partizione {Partition} offset {Offset}"` | Info |
+| OrderService, publish failure | `"Impossibile pubblicare evento OrderCreated per Ordine {OrderId}: {Error}"` | Error |
+| OrderService (Application layer), publish success/failure | `"Pubblicato evento OrderCreated per Ordine {OrderId}"` / `"Impossibile pubblicare evento OrderCreated per Ordine {OrderId}"` | Info / Error |
 
 ## Testing the Integration
 
-### Prerequisites
-1. Start Docker infrastructure:
-   ```bash
-   cd docker
-   docker-compose up -d
-   ```
-   
-2. Verify Kafka is running:
-   ```bash
-   docker logs dos_kafka
-   ```
-
-### Manual Testing Steps
-
-1. **Start Services**:
-   ```bash
-   # Terminal 1: OrderService
-   cd src/OrderService
-   dotnet run
-   
-   # Terminal 2: InventoryService
-   cd src/InventoryService
-   dotnet run
-   
-   # Terminal 3: GatewayBff
-   cd src/GatewayBff
-   dotnet run
-   
-   # Terminal 4: Frontend
-   cd src/frontend/distributed-order-app
-   npm start
-   ```
-
-2. **Initialize Inventory**:
-   ```bash
-   curl -X POST http://localhost:5051/api/inventory/seed \
-     -H "Content-Type: application/json" \
-     -d '[
-       {"productId": 1, "quantity": 100},
-       {"productId": 2, "quantity": 50}
-     ]'
-   ```
-
-3. **Check Initial Inventory**:
-   ```bash
-   curl http://localhost:5051/api/inventory/1
-   # Should show: {"productId": 1, "availableQuantity": 100, ...}
-   ```
-
-4. **Create Order via Frontend**:
-   - Navigate to http://localhost:4200
-   - Go to "Create Order"
-   - Add products to cart
-   - Submit order
-
-5. **Verify Order Created**:
-   ```bash
-   curl http://localhost:5189/api/queries/orders
-   ```
-
-6. **Check Inventory Updated**:
-   ```bash
-   curl http://localhost:5051/api/inventory/1
-   # Should show reduced quantity
-   ```
-
-7. **Monitor Logs**:
-   - **OrderService**: Look for "Published OrderCreated event"
-   - **InventoryService**: Look for "Processing OrderCreatedEvent" and "Reduced inventory"
-
-### Kafka Monitoring
-
-#### List Topics
-```bash
-docker exec -it dos_kafka kafka-topics \
-  --bootstrap-server localhost:9092 \
-  --list
-```
-
-#### View Messages
-```bash
-docker exec -it dos_kafka kafka-console-consumer \
-  --bootstrap-server localhost:9092 \
-  --topic order-created \
-  --from-beginning
-```
-
-#### Check Consumer Group
-```bash
-docker exec -it dos_kafka kafka-consumer-groups \
-  --bootstrap-server localhost:9092 \
-  --describe \
-  --group inventory-service
-```
-
-## Monitoring & Debugging
-
-### Log Patterns to Watch
-
-#### OrderService (Producer)
-```
-✅ SUCCESS: "Published OrderCreated event for Order {OrderId} to partition {Partition} at offset {Offset}"
-❌ ERROR: "Failed to publish OrderCreated event for Order {OrderId}: {Error}"
-```
-
-#### InventoryService (Consumer)
-```
-✅ STARTUP: "Kafka consumer initialized for topic order-created"
-✅ SUBSCRIBED: "Subscribed to Kafka topic: order-created"
-✅ RECEIVED: "Received message from partition {Partition} at offset {Offset}"
-✅ PROCESSING: "Processing OrderCreatedEvent for Order {OrderId} with {ItemCount} items"
-✅ UPDATED: "Reduced inventory for Product {ProductId} by {Quantity} units"
-✅ COMMITTED: "Successfully processed and committed message at offset {Offset}"
-⚠️ WARNING: "Failed to reduce inventory for Product {ProductId} - insufficient inventory"
-❌ ERROR: "Error processing message"
-```
-
-### Common Issues & Solutions
-
-#### Issue: Consumer not receiving messages
-**Solution**:
-- Check Kafka is running: `docker ps | grep kafka`
-- Verify topic exists: `docker exec dos_kafka kafka-topics --list --bootstrap-server localhost:9092`
-- Check consumer group: Consumer might have processed all messages
-
-#### Issue: Inventory not updating
-**Solution**:
-- Check InventoryService logs for errors
-- Verify consumer is running (HostedService started)
-- Check database connection
-- Verify products exist in inventory
-
-#### Issue: "Failed to publish OrderCreated event"
-**Solution**:
-- Check Kafka connectivity
-- Verify BootstrapServers configuration
-- Check Kafka broker logs: `docker logs dos_kafka`
-
-#### Issue: Duplicate inventory deductions
-**Solution**:
-- Check consumer offset commits
-- Verify EnableIdempotence is true on producer
-- Review consumer group state
-
-## Performance Considerations
-
-### Producer (OrderService)
-- **Throughput**: ~10,000 messages/second with batching
-- **Latency**: ~10ms overhead (LingerMs setting)
-- **Memory**: Minimal, messages are small (~1KB)
-
-### Consumer (InventoryService)
-- **Throughput**: Limited by database write speed
-- **Latency**: Depends on inventory operation complexity
-- **Parallelism**: Can add more consumer instances
-
-### Optimization Options
-1. **Batch Processing**: Process multiple messages per transaction
-2. **Compression**: Enable Kafka message compression
-3. **Partitioning**: Use product ID as partition key for parallel processing
-4. **Caching**: Redis cache reduces database load
-
-## Future Enhancements
-
-### Short Term
-1. **Dead Letter Queue**: For failed messages after retries
-2. **Message Validation**: Schema validation (e.g., Avro, Protobuf)
-3. **Metrics**: Prometheus/Grafana integration
-4. **Health Checks**: Kafka connectivity health endpoints
-
-### Medium Term
-1. **Saga Pattern**: Compensating transactions for failures
-2. **Event Sourcing**: Store all events for audit trail
-3. **CQRS**: Separate read/write models with event replay
-4. **Outbox Pattern**: Ensure database and Kafka consistency
-
-### Long Term
-1. **Event Versioning**: Handle message schema evolution
-2. **Multi-Region**: Cross-datacenter replication
-3. **Stream Processing**: Real-time analytics with Kafka Streams
-4. **Event Catalog**: Centralized event documentation
+See `KAFKA_TESTING_GUIDE.md` for the full step-by-step walkthrough with corrected ports, ids, and expected (Italian) log output.
 
 ## Security Considerations
 
 ### Current Setup (Development)
-- No authentication (suitable for local development)
-- Plaintext communication
-- Auto-create topics enabled
+- No authentication, plaintext, `KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"` — appropriate for local dev only.
 
-### Production Recommendations
-1. **Authentication**: SASL/SCRAM or mTLS
-2. **Encryption**: TLS for data in transit
-3. **Authorization**: ACLs for topic access
-4. **Network**: Firewall rules, VPC isolation
-5. **Monitoring**: Security event logging
-6. **Audit**: Track all message access
-
-## Files Modified/Created
-
-### New Files
-- ✅ `Shared/Messages/OrderCreatedEvent.cs` - Event contract
-- ✅ `OrderService/Configuration/KafkaSettings.cs` - Producer config
-- ✅ `OrderService/Messaging/OrderEventProducer.cs` - Producer implementation
-- ✅ `InventoryService/Configuration/KafkaSettings.cs` - Consumer config
-- ✅ `InventoryService/Messaging/OrderCreatedConsumer.cs` - Consumer implementation
-
-### Modified Files
-- ✅ `OrderService/OrderService.csproj` - Added Kafka package & Shared reference
-- ✅ `OrderService/Program.cs` - Registered producer
-- ✅ `OrderService/Controllers/OrdersController.cs` - Publish events
-- ✅ `OrderService/appsettings.Development.json` - Kafka config
-- ✅ `InventoryService/InventoryService.csproj` - Added Kafka package
-- ✅ `InventoryService/Program.cs` - Registered consumer
-- ✅ `InventoryService/appsettings.Development.json` - Kafka config
-- ✅ `Shared/Class1.cs` - Cleaned up
-
-Total: 12 files (5 new, 7 modified)
+### Production Recommendations (not implemented — aspirational)
+SASL/SCRAM or mTLS, TLS in transit, ACLs per topic, network isolation, security event logging. None of this exists in the current `docker-compose.yml`.
 
 ## Summary
 
-The Kafka integration provides:
-- ✅ **Asynchronous inventory updates** when orders are created
-- ✅ **Loose coupling** between OrderService and InventoryService
-- ✅ **Reliability** with at-least-once delivery guarantees
-- ✅ **Scalability** for handling high order volumes
-- ✅ **Observability** with comprehensive logging
-- ✅ **Fault tolerance** with automatic retries and error handling
+The Kafka integration provides asynchronous inventory updates decoupled from order creation, with the caveats documented above:
+- ✅ Order creation never blocks on Kafka being reachable.
+- ✅ At-least-once delivery for technical failures via manual commit.
+- ⚠️ No retry for the business condition "insufficient stock" — that message is committed regardless.
+- ⚠️ Consumer-side idempotency is not explicitly guarded; only the producer is idempotent.
+- ⚠️ PaymentService is not part of this flow despite having Kafka settings scaffolded.
 
-The system is production-ready with proper error handling, logging, and resilience patterns. All services compile successfully and are ready for testing!
+Treat this as a working development-mode integration with known gaps, not a production-hardened pipeline — there's no dead-letter queue, no schema validation, no metrics/health endpoint for Kafka connectivity, and no authentication on the broker.
