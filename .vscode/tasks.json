@@ -4,6 +4,18 @@
 	"// Utilizzabile tramite Ctrl+Shift+P -> Tasks: Run Task": "",
 	"tasks": [
 		{
+			"label": "build AppHost",
+			"command": "dotnet",
+			"type": "process",
+			"args": [
+				"build",
+				"${workspaceFolder}/src/AppHost/AppHost.csproj",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "build OrderService",
 			"command": "dotnet",
 			"type": "process",

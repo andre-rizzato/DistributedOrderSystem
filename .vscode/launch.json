@@ -2,6 +2,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "AppHost (Aspire)",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/AppHost/bin/Debug/net10.0/AppHost.dll",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build AppHost",
+            "cwd": "${workspaceFolder}/src/AppHost",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            }
+        },
+        {
             "name": "OrderService",
             "type": "coreclr",
             "request": "launch",
