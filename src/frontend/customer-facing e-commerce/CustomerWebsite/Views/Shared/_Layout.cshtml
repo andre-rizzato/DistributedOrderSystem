@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@inject IConfiguration Configuration
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="utf-8" />
@@ -248,6 +249,44 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/shopverse.js" asp-append-version="true"></script>
+
+    @* ================================================================
+       Chat Widget (ShopVerse)
+       ================================================================
+       This block does two things, in this order (order matters):
+
+       1) Set window.chatWidgetConfig BEFORE the widget script loads below.
+          The widget file (chat-widget.min.js) checks for this global
+          variable the instant it runs and auto-starts itself if it's
+          already set — if the <script src="...chat-widget.min.js"> tag
+          came first, the widget would initialize with default config
+          instead of ours.
+
+       2) Load the widget script itself from ChatbotService. This is just a
+          <script src>, so it is NOT subject to CORS (only fetch/XHR calls
+          are) — the browser is allowed to load JS/CSS/images cross-origin,
+          it just can't script-read the response of a cross-origin fetch
+          without permission. The chat messages themselves ARE fetch calls
+          (see chat-widget.min.js -> sendToBackend), which is why
+          useBffRouting is true here: they go to GatewayBff
+          (bffBaseUrl), and GatewayBff already allows any origin (see
+          Program.cs -> AddCors("AllowFrontend") in the GatewayBff project),
+          rather than going straight to ChatbotService, whose CORS policy
+          only allow-lists the Angular app and GatewayBff itself — not
+          ShopVerse's own origin.
+    *@
+    <script>
+        window.chatWidgetConfig = {
+            useBffRouting: true,
+            bffBaseUrl: '@(Configuration["Services:GatewayBff:BaseUrl"])/api/gateway/chat',
+            theme: 'light',
+            position: 'bottom-right',
+            botName: 'ShopVerse Assistant',
+            welcomeMessage: 'Ciao! Come posso aiutarti su ShopVerse oggi?'
+        };
+    </script>
+    <script src="@(Configuration["Services:ChatbotService:BaseUrl"])/api/chatwidget/chat-widget.min.js"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

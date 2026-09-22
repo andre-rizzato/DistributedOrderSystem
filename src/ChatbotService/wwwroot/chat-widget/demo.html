@@ -372,7 +372,7 @@
             
             <div class="code-block" id="integrationCode">
 &lt;!-- Includi il widget nel tuo HTML --&gt;
-&lt;script src="/api/chatbot/widget/chat-widget.min.js"&gt;&lt;/script&gt;
+&lt;script src="/api/chatwidget/chat-widget.min.js"&gt;&lt;/script&gt;
 &lt;script&gt;
   // Configurazione per BFF routing
   window.chatWidgetConfig = {
@@ -515,7 +515,7 @@ widget.updateConfig({ theme: 'light' });
             const welcomeMessage = document.getElementById('welcomeMessage').value;
             
             const code = `&lt;!-- Includi il widget nel tuo HTML --&gt;
-&lt;script src="${useBff ? '/api/chatbot/widget/' : 'https://your-chatbot-service.com/'}chat-widget.min.js"&gt;&lt;/script&gt;
+&lt;script src="${useBff ? '/api/chatwidget/' : 'https://your-chatbot-service.com/api/chatwidget/'}chat-widget.min.js"&gt;&lt;/script&gt;
 &lt;script&gt;
   window.chatWidgetConfig = {
     useBffRouting: ${useBff},
