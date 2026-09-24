@@ -4,7 +4,7 @@ using MediatR;
 using ProductService.Application.DTOs;
 
 /// <summary>
-/// CQRS Query: ricerca prodotti con filtri multipli.
+/// CQRS Query: searches products using multiple filters.
 /// </summary>
 public record SearchProductsQuery(
     string? SearchTerm = null,

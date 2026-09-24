@@ -5,7 +5,7 @@ using ProductService.Application.Common.Interfaces;
 using ProductService.Domain.Interfaces;
 
 /// <summary>
-/// Handler per DeleteProductCommand.
+/// Handler for DeleteProductCommand.
 /// </summary>
 public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand, bool>
 {
@@ -29,7 +29,7 @@ public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand,
         if (deleted)
         {
             await _cache.RemoveProductAsync(request.Id, ct);
-            _logger.LogInformation("Prodotto eliminato: {ProductId}", request.Id);
+            _logger.LogInformation("Product deleted: {ProductId}", request.Id);
         }
         return deleted;
     }

@@ -13,7 +13,7 @@ using NotificationService.Services;
 namespace NotificationService.Services.Implementations;
 
 /// <summary>
-/// Implementazione del servizio Push usando Firebase Cloud Messaging
+/// Push service implementation using Firebase Cloud Messaging
 /// </summary>
 public class FirebasePushService : IPushService
 {
@@ -23,15 +23,15 @@ public class FirebasePushService : IPushService
     private readonly FirebaseMessaging _messaging;
 
     public FirebasePushService(
-        IOptions<PushNotificationSettings> settings, 
+        IOptions<PushNotificationSettings> settings,
         ILogger<FirebasePushService> logger,
         NotificationContext context)
     {
         _settings = settings.Value;
         _logger = logger;
         _context = context;
-        
-        // Inizializza Firebase se non già fatto
+
+        // Initialize Firebase if not already done
         if (FirebaseApp.DefaultInstance == null)
         {
             FirebaseApp.Create(new AppOptions
@@ -39,7 +39,7 @@ public class FirebasePushService : IPushService
                 Credential = GoogleCredential.FromJson(_settings.ServiceAccountJson)
             });
         }
-        
+
         _messaging = FirebaseMessaging.DefaultInstance;
     }
 
@@ -63,8 +63,8 @@ public class FirebasePushService : IPushService
             };
 
             var response = await _messaging.SendAsync(message, cancellationToken);
-            
-            _logger.LogInformation("Notifica push inviata con successo. Response: {Response}", response);
+
+            _logger.LogInformation("Push notification sent successfully. Response: {Response}", response);
 
             return new NotificationResponse
             {
@@ -76,8 +76,8 @@ public class FirebasePushService : IPushService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica push a token {Token}", request.DeviceToken);
-            return NotificationResponse.CreateError($"Errore invio push: {ex.Message}");
+            _logger.LogError(ex, "Error sending push notification to token {Token}", request.DeviceToken);
+            return NotificationResponse.CreateError($"Push send error: {ex.Message}");
         }
     }
 
@@ -89,7 +89,7 @@ public class FirebasePushService : IPushService
             TotalRequests = requests.Count
         };
 
-        // Raggruppa per contenuto simile per ottimizzare l'invio
+        // Group by similar content to optimize sending
         var messages = requests.Select(request => new Message
         {
             Token = request.DeviceToken,
@@ -107,7 +107,7 @@ public class FirebasePushService : IPushService
         try
         {
             var batchResponse = await _messaging.SendAllAsync(messages, cancellationToken);
-            
+
             for (int i = 0; i < requests.Count; i++)
             {
                 var result = batchResponse.Responses[i];
@@ -129,15 +129,15 @@ public class FirebasePushService : IPushService
                     {
                         Recipient = requests[i].DeviceToken,
                         Success = false,
-                        Error = result.Exception?.Message ?? "Errore sconosciuto"
+                        Error = result.Exception?.Message ?? "Unknown error"
                     });
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio bulk push notifications");
-            // Se fallisce tutto il batch
+            _logger.LogError(ex, "Error sending bulk push notifications");
+            // If the whole batch fails
             response.FailureCount = response.TotalRequests;
             foreach (var request in requests)
             {
@@ -159,13 +159,13 @@ public class FirebasePushService : IPushService
     {
         try
         {
-            // Ottieni tutti i token dispositivo dell'utente
+            // Get all of the user's device tokens
             var deviceTokens = await GetUserDeviceTokensAsync(userId, cancellationToken);
-            
+
             if (!deviceTokens.Any())
             {
-                _logger.LogWarning("Nessun token dispositivo trovato per utente {UserId}", userId);
-                return NotificationResponse.CreateError("Nessun dispositivo registrato per l'utente");
+                _logger.LogWarning("No device token found for user {UserId}", userId);
+                return NotificationResponse.CreateError("No device registered for the user");
             }
 
             var requests = deviceTokens.Select(token => new SendPushNotificationRequest
@@ -178,19 +178,19 @@ public class FirebasePushService : IPushService
             }).ToList();
 
             var bulkResponse = await SendBulkPushNotificationAsync(requests, cancellationToken);
-            
+
             return new NotificationResponse
             {
                 Success = bulkResponse.Success,
                 MessageId = $"user_{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}",
                 Status = bulkResponse.Success ? "sent" : "failed",
-                Error = bulkResponse.Success ? null : $"Invio fallito per {bulkResponse.FailureCount} dispositivi"
+                Error = bulkResponse.Success ? null : $"Send failed for {bulkResponse.FailureCount} devices"
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio push all'utente {UserId}", userId);
-            return NotificationResponse.CreateError($"Errore invio push utente: {ex.Message}");
+            _logger.LogError(ex, "Error sending push notification to user {UserId}", userId);
+            return NotificationResponse.CreateError($"User push send error: {ex.Message}");
         }
     }
 
@@ -211,8 +211,8 @@ public class FirebasePushService : IPushService
             };
 
             var response = await _messaging.SendAsync(message, cancellationToken);
-            
-            _logger.LogInformation("Notifica push inviata al topic {Topic}. Response: {Response}", topic, response);
+
+            _logger.LogInformation("Push notification sent to topic {Topic}. Response: {Response}", topic, response);
 
             return new NotificationResponse
             {
@@ -224,8 +224,8 @@ public class FirebasePushService : IPushService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio push al topic {Topic}", topic);
-            return NotificationResponse.CreateError($"Errore invio push topic: {ex.Message}");
+            _logger.LogError(ex, "Error sending push notification to topic {Topic}", topic);
+            return NotificationResponse.CreateError($"Topic push send error: {ex.Message}");
         }
     }
 
@@ -234,27 +234,27 @@ public class FirebasePushService : IPushService
     {
         try
         {
-            // Verifica se il token esiste già
+            // Check whether the token already exists
             var existingToken = await _context.Database
                 .SqlQuery<string>($"SELECT DeviceToken FROM UserDeviceTokens WHERE UserId = {userId} AND DeviceToken = {deviceToken}")
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (existingToken == null)
             {
-                // Inserisci nuovo token
+                // Insert new token
                 await _context.Database.ExecuteSqlAsync(
-                    $@"INSERT INTO UserDeviceTokens (UserId, DeviceToken, Platform, RegisteredAt, IsActive) 
+                    $@"INSERT INTO UserDeviceTokens (UserId, DeviceToken, Platform, RegisteredAt, IsActive)
                        VALUES ({userId}, {deviceToken}, {platform}, {DateTime.UtcNow}, 1)",
                     cancellationToken);
-                    
-                _logger.LogInformation("Token dispositivo registrato per utente {UserId}: {Token}", userId, deviceToken);
+
+                _logger.LogInformation("Device token registered for user {UserId}: {Token}", userId, deviceToken);
             }
             else
             {
-                // Aggiorna timestamp
+                // Update timestamp
                 await _context.Database.ExecuteSqlAsync(
-                    $@"UPDATE UserDeviceTokens 
-                       SET RegisteredAt = {DateTime.UtcNow}, IsActive = 1 
+                    $@"UPDATE UserDeviceTokens
+                       SET RegisteredAt = {DateTime.UtcNow}, IsActive = 1
                        WHERE UserId = {userId} AND DeviceToken = {deviceToken}",
                     cancellationToken);
             }
@@ -263,13 +263,13 @@ public class FirebasePushService : IPushService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la registrazione token dispositivo per utente {UserId}", userId);
+            _logger.LogError(ex, "Error registering device token for user {UserId}", userId);
             return false;
         }
     }
 
     /// <summary>
-    /// Ottieni token dispositivi per un utente
+    /// Gets device tokens for a user
     /// </summary>
     private async Task<List<string>> GetUserDeviceTokensAsync(string userId, CancellationToken cancellationToken)
     {
@@ -281,13 +281,13 @@ public class FirebasePushService : IPushService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero token dispositivi per utente {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving device tokens for user {UserId}", userId);
             return new List<string>();
         }
     }
 
     /// <summary>
-    /// Crea configurazione Android specifica
+    /// Builds the Android-specific configuration
     /// </summary>
     private AndroidConfig CreateAndroidConfig(SendPushNotificationRequest request)
     {
@@ -307,7 +307,7 @@ public class FirebasePushService : IPushService
     }
 
     /// <summary>
-    /// Crea configurazione iOS specifica
+    /// Builds the iOS-specific configuration
     /// </summary>
     private ApnsConfig CreateApnsConfig(SendPushNotificationRequest request)
     {
@@ -334,13 +334,13 @@ public class FirebasePushService : IPushService
 }
 
 /// <summary>
-/// Implementazione mock del servizio Push per testing
+/// Mock implementation of the Push service for testing
 /// </summary>
 public class MockPushService : IPushService
 {
     private readonly ILogger<MockPushService> _logger;
     private readonly Dictionary<string, List<string>> _userTokens = new();
-    
+
     public MockPushService(ILogger<MockPushService> logger)
     {
         _logger = logger;
@@ -350,8 +350,8 @@ public class MockPushService : IPushService
     public Task<NotificationResponse> SendPushNotificationAsync(SendPushNotificationRequest request, CancellationToken cancellationToken = default)
     {
         var messageId = Guid.NewGuid().ToString();
-        
-        _logger.LogInformation("PUSH MOCK inviata a token {Token}\nTitolo: {Title}\nMessaggio: {Body}", 
+
+        _logger.LogInformation("MOCK PUSH sent to token {Token}\nTitle: {Title}\nMessage: {Body}",
             request.DeviceToken, request.Title, request.Body);
 
         return Task.FromResult(new NotificationResponse
@@ -393,8 +393,8 @@ public class MockPushService : IPushService
     public Task<NotificationResponse> SendToUserAsync(string userId, string title, string body, Dictionary<string, string>? data = null, CancellationToken cancellationToken = default)
     {
         var tokenCount = _userTokens.ContainsKey(userId) ? _userTokens[userId].Count : 0;
-        
-        _logger.LogInformation("PUSH MOCK inviata all'utente {UserId} ({TokenCount} dispositivi)\nTitolo: {Title}\nMessaggio: {Body}", 
+
+        _logger.LogInformation("MOCK PUSH sent to user {UserId} ({TokenCount} devices)\nTitle: {Title}\nMessage: {Body}",
             userId, tokenCount, title, body);
 
         return Task.FromResult(new NotificationResponse
@@ -408,7 +408,7 @@ public class MockPushService : IPushService
     /// <inheritdoc/>
     public Task<NotificationResponse> SendToTopicAsync(string topic, string title, string body, Dictionary<string, string>? data = null, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("PUSH MOCK inviata al topic {Topic}\nTitolo: {Title}\nMessaggio: {Body}", 
+        _logger.LogInformation("MOCK PUSH sent to topic {Topic}\nTitle: {Title}\nMessage: {Body}",
             topic, title, body);
 
         return Task.FromResult(new NotificationResponse
@@ -432,7 +432,7 @@ public class MockPushService : IPushService
             _userTokens[userId].Add(deviceToken);
         }
 
-        _logger.LogInformation("Token MOCK registrato per utente {UserId}: {Token} ({Platform})", 
+        _logger.LogInformation("MOCK token registered for user {UserId}: {Token} ({Platform})",
             userId, deviceToken, platform);
 
         return Task.FromResult(true);

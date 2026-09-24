@@ -4,7 +4,7 @@ using System.Text;
 namespace UserService.Services;
 
 /// <summary>
-/// Servizio per criptare/decriptare informazioni sensibili dei metodi di pagamento
+/// Service for encrypting/decrypting sensitive payment method information
 /// </summary>
 public interface IPaymentEncryptionService
 {
@@ -20,7 +20,7 @@ public class PaymentEncryptionService : IPaymentEncryptionService
 
     public PaymentEncryptionService(IConfiguration configuration)
     {
-        // In produzione, usa Azure Key Vault o AWS KMS
+        // In production, use Azure Key Vault or AWS KMS
         var encryptionKey = configuration["Encryption:Key"] ?? throw new InvalidOperationException("Encryption key not configured");
         var encryptionIv = configuration["Encryption:IV"] ?? throw new InvalidOperationException("Encryption IV not configured");
         

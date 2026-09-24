@@ -5,7 +5,7 @@ using CustomerWebsite.Services;
 namespace CustomerWebsite.Controllers;
 
 /// <summary>
-/// Controller per il processo di checkout
+/// Controller for the checkout process
 /// </summary>
 public class CheckoutController : Controller
 {
@@ -24,7 +24,7 @@ public class CheckoutController : Controller
     }
 
     /// <summary>
-    /// Pagina principale del checkout
+    /// Main checkout page
     /// </summary>
     public async Task<IActionResult> Index()
     {
@@ -35,7 +35,7 @@ public class CheckoutController : Controller
 
             if (!cart.Items.Any())
             {
-                TempData["ErrorMessage"] = "Il tuo carrello è vuoto.";
+                TempData["ErrorMessage"] = "Your cart is empty.";
                 return RedirectToAction("Index", "Cart");
             }
 
@@ -49,13 +49,13 @@ public class CheckoutController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'inizializzazione del checkout");
+            _logger.LogError(ex, "Error initializing checkout");
             return RedirectToAction("Index", "Cart");
         }
     }
 
     /// <summary>
-    /// Step 2: Indirizzo di spedizione
+    /// Step 2: Shipping address
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> ShippingAddress(CheckoutModel model)
@@ -67,13 +67,13 @@ public class CheckoutController : Controller
 
             if (ModelState.IsValid)
             {
-                // Carica le opzioni di spedizione disponibili
+                // Load the available shipping options
                 model.AvailableShippingOptions = await _orderService.GetShippingOptionsAsync(
-                    model.ShippingAddress, 
+                    model.ShippingAddress,
                     model.Cart.Items);
 
                 model.CurrentStep = CheckoutStep.ShippingMethod;
-                
+
                 TempData["CheckoutModel"] = Newtonsoft.Json.JsonConvert.SerializeObject(model);
                 return View("Index", model);
             }
@@ -83,13 +83,13 @@ public class CheckoutController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la validazione dell'indirizzo di spedizione");
+            _logger.LogError(ex, "Error validating the shipping address");
             return RedirectToAction(nameof(Index));
         }
     }
 
     /// <summary>
-    /// Step 3: Metodo di spedizione
+    /// Step 3: Shipping method
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> ShippingMethod(CheckoutModel model, Guid shippingOptionId)
@@ -99,9 +99,9 @@ public class CheckoutController : Controller
             var sessionId = HttpContext.Session.Id;
             model.Cart = await _cartService.GetCartAsync(sessionId);
 
-            // Trova l'opzione di spedizione selezionata
+            // Find the selected shipping option
             model.AvailableShippingOptions = await _orderService.GetShippingOptionsAsync(
-                model.ShippingAddress, 
+                model.ShippingAddress,
                 model.Cart.Items);
 
             var selectedOption = model.AvailableShippingOptions
@@ -116,19 +116,19 @@ public class CheckoutController : Controller
                 return View("Index", model);
             }
 
-            ModelState.AddModelError("", "Seleziona un metodo di spedizione valido.");
+            ModelState.AddModelError("", "Select a valid shipping method.");
             model.CurrentStep = CheckoutStep.ShippingMethod;
             return View("Index", model);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la selezione del metodo di spedizione");
+            _logger.LogError(ex, "Error selecting the shipping method");
             return RedirectToAction(nameof(Index));
         }
     }
 
     /// <summary>
-    /// Step 4: Metodo di pagamento
+    /// Step 4: Payment method
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> PaymentMethod(CheckoutModel model)
@@ -140,8 +140,8 @@ public class CheckoutController : Controller
 
             if (ModelState.IsValid)
             {
-                // Calcola le tasse finali
-                model.TaxAmount = model.Cart.Subtotal * 0.22m; // IVA italiana 22%
+                // Compute the final taxes
+                model.TaxAmount = model.Cart.Subtotal * 0.22m; // Italian VAT 22%
 
                 model.CurrentStep = CheckoutStep.ReviewOrder;
 
@@ -154,13 +154,13 @@ public class CheckoutController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la validazione del metodo di pagamento");
+            _logger.LogError(ex, "Error validating the payment method");
             return RedirectToAction(nameof(Index));
         }
     }
 
     /// <summary>
-    /// Step 5: Conferma ordine
+    /// Step 5: Order confirmation
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> PlaceOrder(CheckoutModel model)
@@ -175,34 +175,34 @@ public class CheckoutController : Controller
                 return RedirectToAction(nameof(Index));
             }
 
-            // In un'implementazione reale, dovresti ottenere l'ID utente dal sistema di autenticazione
+            // In a real implementation, the user ID should come from the authentication system
             Guid? userId = null; // User.IsAuthenticated ? GetCurrentUserId() : null;
 
-            // Crea l'ordine
+            // Create the order
             var order = await _orderService.CreateOrderAsync(model, userId);
 
             if (order != null)
             {
-                // Svuota il carrello dopo l'ordine confermato
+                // Empty the cart once the order is confirmed
                 await _cartService.ClearCartAsync(sessionId);
 
-                // Reindirizza alla pagina di conferma
+                // Redirect to the confirmation page
                 return RedirectToAction(nameof(OrderConfirmation), new { orderId = order.OrderId });
             }
 
-            ModelState.AddModelError("", "Si è verificato un errore durante la creazione dell'ordine. Riprova.");
+            ModelState.AddModelError("", "An error occurred while creating the order. Please try again.");
             return View("Index", model);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la creazione dell'ordine");
-            ModelState.AddModelError("", "Si è verificato un errore interno. Riprova.");
+            _logger.LogError(ex, "Error creating the order");
+            ModelState.AddModelError("", "An internal error occurred. Please try again.");
             return View("Index", model);
         }
     }
 
     /// <summary>
-    /// Pagina di conferma ordine
+    /// Order confirmation page
     /// </summary>
     public async Task<IActionResult> OrderConfirmation(Guid orderId)
     {
@@ -218,12 +218,12 @@ public class CheckoutController : Controller
             var model = new OrderSummaryModel
             {
                 Order = order,
-                ConfirmationMessage = "Il tuo ordine è stato confermato con successo!",
+                ConfirmationMessage = "Your order has been confirmed successfully!",
                 NextSteps = new List<string>
                 {
-                    "Riceverai una email di conferma entro pochi minuti",
-                    "Ti invieremo aggiornamenti sullo stato della spedizione",
-                    "Puoi tracciare il tuo ordine nella sezione I miei ordini"
+                    "You will receive a confirmation email within a few minutes",
+                    "We will send you updates on the shipping status",
+                    "You can track your order in the My Orders section"
                 }
             };
 
@@ -231,13 +231,13 @@ public class CheckoutController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la visualizzazione della conferma ordine");
+            _logger.LogError(ex, "Error displaying the order confirmation");
             return RedirectToAction("Index", "Home");
         }
     }
 
     /// <summary>
-    /// Applica codice promozionale
+    /// Applies a promo code
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> ApplyPromoCode([FromBody] PromoCodeModel model)
@@ -246,55 +246,55 @@ public class CheckoutController : Controller
         {
             if (string.IsNullOrWhiteSpace(model.Code))
             {
-                return Json(new { success = false, message = "Inserisci un codice promozionale valido" });
+                return Json(new { success = false, message = "Enter a valid promo code" });
             }
 
             var sessionId = HttpContext.Session.Id;
             var cart = await _cartService.GetCartAsync(sessionId);
 
             var isValid = await _orderService.ValidatePromoCodeAsync(model.Code, cart.Subtotal);
-            
+
             if (isValid)
             {
                 var discountAmount = await _orderService.CalculatePromoCodeDiscountAsync(model.Code, cart.Subtotal);
-                
-                return Json(new 
-                { 
-                    success = true, 
+
+                return Json(new
+                {
+                    success = true,
                     discountAmount = discountAmount,
-                    message = $"Codice promozionale applicato! Sconto: €{discountAmount:F2}"
+                    message = $"Promo code applied! Discount: €{discountAmount:F2}"
                 });
             }
 
-            return Json(new { success = false, message = "Codice promozionale non valido o scaduto" });
+            return Json(new { success = false, message = "Invalid or expired promo code" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'applicazione del codice promozionale");
-            return Json(new { success = false, message = "Errore interno del server" });
+            _logger.LogError(ex, "Error applying the promo code");
+            return Json(new { success = false, message = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Rimuove codice promozionale
+    /// Removes a promo code
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> RemovePromoCode()
     {
         try
         {
-            // Implementazione per rimuovere il codice promozionale
-            return Json(new { success = true, message = "Codice promozionale rimosso" });
+            // Implementation for removing the promo code
+            return Json(new { success = true, message = "Promo code removed" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la rimozione del codice promozionale");
-            return Json(new { success = false, message = "Errore interno del server" });
+            _logger.LogError(ex, "Error removing the promo code");
+            return Json(new { success = false, message = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Calcola le spese di spedizione per un indirizzo
+    /// Calculates shipping cost for an address
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> CalculateShipping([FromBody] AddressModel address)
@@ -306,9 +306,9 @@ public class CheckoutController : Controller
 
             var shippingOptions = await _orderService.GetShippingOptionsAsync(address, cart.Items);
 
-            return Json(new 
-            { 
-                success = true, 
+            return Json(new
+            {
+                success = true,
                 options = shippingOptions.Select(o => new
                 {
                     id = o.ShippingOptionId,
@@ -322,8 +322,8 @@ public class CheckoutController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il calcolo della spedizione");
-            return Json(new { success = false, message = "Errore nel calcolo della spedizione" });
+            _logger.LogError(ex, "Error calculating shipping");
+            return Json(new { success = false, message = "Error calculating shipping" });
         }
     }
 }

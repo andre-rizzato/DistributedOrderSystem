@@ -19,13 +19,13 @@ public class WishlistService : IWishlistService
 
     public async Task<Wishlist> GetWishlistAsync(Guid userId, CancellationToken ct = default)
     {
-        _logger.LogInformation("Recupero wishlist per utente {UserId}", userId);
+        _logger.LogInformation("Retrieving wishlist for user {UserId}", userId);
         return await _storage.GetWishlistAsync(userId, ct);
     }
 
     public async Task<WishlistItem> AddToWishlistAsync(Guid userId, Guid productId, CancellationToken ct = default)
     {
-        _logger.LogInformation("Aggiunta prodotto {ProductId} alla wishlist (Utente: {UserId})", productId, userId);
+        _logger.LogInformation("Adding product {ProductId} to wishlist (User: {UserId})", productId, userId);
         
         var wishlist = await _storage.GetWishlistAsync(userId, ct);
         
@@ -51,7 +51,7 @@ public class WishlistService : IWishlistService
 
     public async Task<bool> RemoveFromWishlistAsync(Guid userId, Guid productId, CancellationToken ct = default)
     {
-        _logger.LogInformation("Rimozione prodotto {ProductId} dalla wishlist (Utente: {UserId})", productId, userId);
+        _logger.LogInformation("Removing product {ProductId} from wishlist (User: {UserId})", productId, userId);
         
         var wishlist = await _storage.GetWishlistAsync(userId, ct);
         var item = wishlist.Items.FirstOrDefault(i => i.ProductId == productId);
@@ -70,7 +70,7 @@ public class WishlistService : IWishlistService
 
     public async Task<bool> MoveToCartAsync(Guid userId, Guid productId, string sessionId, CancellationToken ct = default)
     {
-        _logger.LogInformation("Spostamento prodotto {ProductId} dalla wishlist al carrello", productId);
+        _logger.LogInformation("Moving product {ProductId} from wishlist to cart", productId);
         
         var wishlist = await _storage.GetWishlistAsync(userId, ct);
         var item = wishlist.Items.FirstOrDefault(i => i.ProductId == productId);

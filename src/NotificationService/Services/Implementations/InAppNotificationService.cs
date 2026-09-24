@@ -11,7 +11,7 @@ using System.Text.Json;
 namespace NotificationService.Services.Implementations;
 
 /// <summary>
-/// Implementazione del servizio per notifiche in-app usando SignalR
+/// Implementation of the in-app notification service using SignalR
 /// </summary>
 public class SignalRInAppNotificationService : IInAppNotificationService
 {
@@ -37,7 +37,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
     {
         try
         {
-            // Salva la notifica nel database
+            // Save the notification to the database
             var notification = new Notification
             {
                 Type = NotificationType.InApp,
@@ -58,7 +58,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync(cancellationToken);
 
-            // Invia notifica real-time tramite SignalR
+            // Send the notification in real time via SignalR
             await _hubContext.Clients.Group($"user_{request.UserId}").SendAsync("ReceiveNotification", new
             {
                 id = notification.Id,
@@ -73,10 +73,10 @@ public class SignalRInAppNotificationService : IInAppNotificationService
                 referenceType = request.ReferenceType
             }, cancellationToken);
 
-            // Aggiorna contatore notifiche non lette in Redis
+            // Update the unread notification counter in Redis
             await UpdateUnreadCountAsync(request.UserId, cancellationToken);
 
-            _logger.LogInformation("Notifica in-app inviata all'utente {UserId}: {Title}", request.UserId, request.Title);
+            _logger.LogInformation("In-app notification sent to user {UserId}: {Title}", request.UserId, request.Title);
 
             return new NotificationResponse
             {
@@ -88,8 +88,8 @@ public class SignalRInAppNotificationService : IInAppNotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica in-app all'utente {UserId}", request.UserId);
-            return NotificationResponse.CreateError($"Errore invio notifica in-app: {ex.Message}");
+            _logger.LogError(ex, "Error sending in-app notification to user {UserId}", request.UserId);
+            return NotificationResponse.CreateError($"In-app notification send error: {ex.Message}");
         }
     }
 
@@ -98,7 +98,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
     {
         try
         {
-            // Invia a tutti gli utenti connessi
+            // Send to all connected users
             await _hubContext.Clients.All.SendAsync("ReceiveBroadcast", new
             {
                 title,
@@ -109,16 +109,16 @@ public class SignalRInAppNotificationService : IInAppNotificationService
                 source = "System"
             }, cancellationToken);
 
-            // Conta utenti connessi (approssimativo tramite Redis)
+            // Count connected users (approximate, via Redis)
             var connectedUsers = await GetConnectedUsersCountAsync();
-            
-            _logger.LogInformation("Notifica broadcast inviata: {Title} - Utenti raggiunti: {UserCount}", title, connectedUsers);
-            
+
+            _logger.LogInformation("Broadcast notification sent: {Title} - Users reached: {UserCount}", title, connectedUsers);
+
             return connectedUsers;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica broadcast");
+            _logger.LogError(ex, "Error sending broadcast notification");
             return 0;
         }
     }
@@ -129,12 +129,12 @@ public class SignalRInAppNotificationService : IInAppNotificationService
         try
         {
             int sentCount = 0;
-            
+
             foreach (var userId in userIds)
             {
                 try
                 {
-                    // Invia a utente specifico
+                    // Send to a specific user
                     await _hubContext.Clients.Group($"user_{userId}").SendAsync("ReceiveNotification", new
                     {
                         title,
@@ -146,7 +146,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
                         userId
                     }, cancellationToken);
 
-                    // Salva notifica persistente
+                    // Save persistent notification
                     var notification = new Notification
                     {
                         Type = NotificationType.InApp,
@@ -167,26 +167,26 @@ public class SignalRInAppNotificationService : IInAppNotificationService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Errore invio notifica gruppo per utente {UserId}", userId);
+                    _logger.LogWarning(ex, "Error sending group notification for user {UserId}", userId);
                 }
             }
 
             await _context.SaveChangesAsync(cancellationToken);
-            
-            // Aggiorna contatori non lette per tutti gli utenti
+
+            // Update unread counters for all users
             foreach (var userId in userIds)
             {
                 await UpdateUnreadCountAsync(userId, cancellationToken);
             }
 
-            _logger.LogInformation("Notifica gruppo inviata: {Title} - Utenti raggiunti: {SentCount}/{TotalCount}", 
+            _logger.LogInformation("Group notification sent: {Title} - Users reached: {SentCount}/{TotalCount}",
                 title, sentCount, userIds.Count);
-            
+
             return sentCount;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica gruppo");
+            _logger.LogError(ex, "Error sending group notification");
             return 0;
         }
     }
@@ -197,7 +197,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
         try
         {
             return await _context.Notifications
-                .Where(n => n.UserId == userId && 
+                .Where(n => n.UserId == userId &&
                            n.Type == NotificationType.InApp &&
                            n.Status != NotificationStatus.Read)
                 .OrderByDescending(n => n.CreatedAt)
@@ -206,7 +206,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero notifiche non lette per utente {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving unread notifications for user {UserId}", userId);
             return new List<Notification>();
         }
     }
@@ -228,11 +228,11 @@ public class SignalRInAppNotificationService : IInAppNotificationService
             notification.DeliveredAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(cancellationToken);
-            
-            // Aggiorna contatore in Redis
+
+            // Update the counter in Redis
             await UpdateUnreadCountAsync(userId, cancellationToken);
-            
-            // Notifica il client dell'aggiornamento
+
+            // Notify the client of the update
             await _hubContext.Clients.Group($"user_{userId}").SendAsync("NotificationRead", new
             {
                 notificationId,
@@ -243,7 +243,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la marcatura come letta della notifica {NotificationId} per utente {UserId}", 
+            _logger.LogError(ex, "Error marking notification {NotificationId} as read for user {UserId}",
                 notificationId, userId);
             return false;
         }
@@ -255,7 +255,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
         try
         {
             var unreadNotifications = await _context.Notifications
-                .Where(n => n.UserId == userId && 
+                .Where(n => n.UserId == userId &&
                            n.Type == NotificationType.InApp &&
                            n.Status != NotificationStatus.Read)
                 .ToListAsync(cancellationToken);
@@ -267,45 +267,45 @@ public class SignalRInAppNotificationService : IInAppNotificationService
             }
 
             await _context.SaveChangesAsync(cancellationToken);
-            
-            // Aggiorna contatore in Redis
+
+            // Update the counter in Redis
             await _redis.StringSetAsync($"unread_count_{userId}", "0");
-            
-            // Notifica il client
+
+            // Notify the client
             await _hubContext.Clients.Group($"user_{userId}").SendAsync("AllNotificationsRead", new
             {
                 count = unreadNotifications.Count,
                 timestamp = DateTime.UtcNow
             }, cancellationToken);
 
-            _logger.LogInformation("Marcate come lette {Count} notifiche per utente {UserId}", 
+            _logger.LogInformation("Marked {Count} notifications as read for user {UserId}",
                 unreadNotifications.Count, userId);
 
             return unreadNotifications.Count;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la marcatura di tutte le notifiche come lette per utente {UserId}", userId);
+            _logger.LogError(ex, "Error marking all notifications as read for user {UserId}", userId);
             return 0;
         }
     }
 
     /// <summary>
-    /// Aggiorna il contatore di notifiche non lette in Redis
+    /// Updates the unread notification counter in Redis
     /// </summary>
     private async Task UpdateUnreadCountAsync(string userId, CancellationToken cancellationToken)
     {
         try
         {
             var unreadCount = await _context.Notifications
-                .CountAsync(n => n.UserId == userId && 
+                .CountAsync(n => n.UserId == userId &&
                                 n.Type == NotificationType.InApp &&
-                                n.Status != NotificationStatus.Read, 
+                                n.Status != NotificationStatus.Read,
                            cancellationToken);
 
             await _redis.StringSetAsync($"unread_count_{userId}", unreadCount.ToString());
-            
-            // Notifica il contatore aggiornato
+
+            // Notify the updated counter
             await _hubContext.Clients.Group($"user_{userId}").SendAsync("UnreadCountUpdate", new
             {
                 count = unreadCount,
@@ -314,12 +314,12 @@ public class SignalRInAppNotificationService : IInAppNotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Errore durante l'aggiornamento contatore non lette per utente {UserId}", userId);
+            _logger.LogWarning(ex, "Error updating unread counter for user {UserId}", userId);
         }
     }
 
     /// <summary>
-    /// Ottiene il conteggio approssimativo degli utenti connessi
+    /// Gets the approximate count of connected users
     /// </summary>
     private async Task<int> GetConnectedUsersCountAsync()
     {
@@ -327,7 +327,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
         {
             var keys = _redis.Multiplexer.GetServer(_redis.Multiplexer.GetEndPoints().First())
                 .Keys(pattern: "user_connections_*");
-            
+
             return keys.Count();
         }
         catch
@@ -338,7 +338,7 @@ public class SignalRInAppNotificationService : IInAppNotificationService
 }
 
 /// <summary>
-/// Hub SignalR per le notifiche in tempo reale
+/// SignalR hub for real-time notifications
 /// </summary>
 public class NotificationHub : Hub
 {
@@ -352,39 +352,39 @@ public class NotificationHub : Hub
     }
 
     /// <summary>
-    /// Associa connessione a un utente
+    /// Associates a connection with a user
     /// </summary>
     public async Task JoinUserGroup(string userId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
         await _redis.StringSetAsync($"connection_{Context.ConnectionId}", userId);
         await _redis.SetAddAsync($"user_connections_{userId}", Context.ConnectionId);
-        
-        _logger.LogDebug("Utente {UserId} associato alla connessione {ConnectionId}", userId, Context.ConnectionId);
+
+        _logger.LogDebug("User {UserId} associated with connection {ConnectionId}", userId, Context.ConnectionId);
     }
 
     /// <summary>
-    /// Rimuove connessione da un utente
+    /// Removes a connection from a user
     /// </summary>
     public async Task LeaveUserGroup(string userId)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user_{userId}");
         await _redis.KeyDeleteAsync($"connection_{Context.ConnectionId}");
         await _redis.SetRemoveAsync($"user_connections_{userId}", Context.ConnectionId);
-        
-        _logger.LogDebug("Utente {UserId} rimosso dalla connessione {ConnectionId}", userId, Context.ConnectionId);
+
+        _logger.LogDebug("User {UserId} removed from connection {ConnectionId}", userId, Context.ConnectionId);
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        // Pulisci mappings Redis quando l'utente si disconnette
+        // Clean up Redis mappings when the user disconnects
         var userId = await _redis.StringGetAsync($"connection_{Context.ConnectionId}");
         if (userId.HasValue)
         {
             await _redis.SetRemoveAsync($"user_connections_{userId}", Context.ConnectionId);
             await _redis.KeyDeleteAsync($"connection_{Context.ConnectionId}");
-            
-            _logger.LogDebug("Connessione {ConnectionId} pulita per utente {UserId}", Context.ConnectionId, userId);
+
+            _logger.LogDebug("Connection {ConnectionId} cleaned up for user {UserId}", Context.ConnectionId, userId);
         }
 
         await base.OnDisconnectedAsync(exception);

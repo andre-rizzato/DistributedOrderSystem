@@ -4,25 +4,25 @@ using CustomerWebsite.Models;
 namespace CustomerWebsite.Components;
 
 /// <summary>
-/// ViewComponent per la visualizzazione della card prodotto
-/// Utilizzato per creare card prodotti riutilizzabili in tutta l'applicazione
+/// ViewComponent for rendering the product card
+/// Used to create reusable product cards throughout the application
 /// </summary>
 public class ProductCardViewComponent : ViewComponent
 {
     /// <summary>
-    /// Metodo di invocazione del componente
+    /// Component invocation method
     /// </summary>
-    /// <param name="product">Il prodotto da visualizzare</param>
-    /// <returns>View con il modello del prodotto</returns>
+    /// <param name="product">The product to display</param>
+    /// <returns>View with the product model</returns>
     public IViewComponentResult Invoke(ProductDisplayModel product)
     {
-        // Validazione del parametro in ingresso
+        // Validate the incoming parameter
         if (product == null)
         {
-            throw new ArgumentNullException(nameof(product), "Il prodotto non può essere null");
+            throw new ArgumentNullException(nameof(product), "Product cannot be null");
         }
 
-        // Passa il modello alla vista del componente
+        // Pass the model to the component's view
         return View(product);
     }
 }

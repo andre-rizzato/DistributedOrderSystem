@@ -1,44 +1,44 @@
-// ShopVerse JavaScript Functions - Funzionalità Interattive Avanzate
-// Script principale per la gestione dell'interattività della piattaforma e-commerce
+// ShopVerse JavaScript Functions - Advanced Interactive Features
+// Main script for handling the e-commerce platform's interactivity
 
-// Inizializzazione principale quando il DOM è completamente caricato
+// Main initialization once the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 ShopVerse - Inizializzazione funzionalità...');
-    
-    // Inizializza tutte le funzionalità principali della piattaforma
-    initializeSearch();        // Sistema di ricerca intelligente
-    initializeCart();          // Gestione carrello della spesa
-    initializeProductCards();  // Interattività cards prodotto
-    initializeQuantityControls(); // Controlli quantità prodotti
-    
-    console.log('✅ ShopVerse - Tutte le funzionalità sono attive!');
+    console.log('🚀 ShopVerse - Initializing features...');
+
+    // Initialize all of the platform's main features
+    initializeSearch();        // Smart search system
+    initializeCart();          // Shopping cart management
+    initializeProductCards();  // Product card interactivity
+    initializeQuantityControls(); // Product quantity controls
+
+    console.log('✅ ShopVerse - All features are active!');
 });
 
 // ========================================
-// SISTEMA DI RICERCA INTELLIGENTE
+// SMART SEARCH SYSTEM
 // ========================================
 
 /**
- * Inizializza il sistema di ricerca con autocomplete avanzato
- * Gestisce suggerimenti in tempo reale e UX ottimizzata
+ * Initializes the search system with advanced autocomplete
+ * Handles real-time suggestions and an optimized UX
  */
 function initializeSearch() {
     const searchInput = document.getElementById('searchInput');
     const searchSuggestions = document.getElementById('searchSuggestions');
-    
+
     if (searchInput) {
-        // Event listener per input con debounce per performance ottimali
+        // Input listener with debounce for optimal performance
         searchInput.addEventListener('input', debounce(function() {
             const query = this.value.trim();
-            // Avvia ricerca suggerimenti solo con almeno 2 caratteri
+            // Only trigger suggestion search with at least 2 characters
             if (query.length >= 2) {
                 fetchSearchSuggestions(query);
             } else {
                 hideSearchSuggestions();
             }
-        }, 300)); // Debounce di 300ms per evitare troppe richieste
-        
-        // Nasconde suggerimenti quando si clicca fuori dall'area di ricerca
+        }, 300)); // 300ms debounce to avoid too many requests
+
+        // Hide suggestions when clicking outside the search area
         document.addEventListener('click', function(e) {
             if (!searchInput.contains(e.target) && !searchSuggestions?.contains(e.target)) {
                 hideSearchSuggestions();
@@ -48,44 +48,44 @@ function initializeSearch() {
 }
 
 /**
- * Recupera suggerimenti di ricerca dal server tramite API call
- * @param {string} query - Termine di ricerca inserito dall'utente
+ * Fetches search suggestions from the server via an API call
+ * @param {string} query - Search term entered by the user
  */
 async function fetchSearchSuggestions(query) {
     try {
-        // Chiamata AJAX al controller per ottenere suggerimenti intelligenti
+        // AJAX call to the controller to get smart suggestions
         const response = await fetch(`/Home/SearchSuggestions?query=${encodeURIComponent(query)}`);
         const suggestions = await response.json();
         displaySearchSuggestions(suggestions);
     } catch (error) {
-        console.error('❌ ShopVerse - Errore nel caricamento dei suggerimenti:', error);
+        console.error('❌ ShopVerse - Error loading suggestions:', error);
     }
 }
 
 /**
- * Visualizza i suggerimenti di ricerca in un dropdown elegante
- * @param {Array} suggestions - Array di suggerimenti dal server
+ * Displays search suggestions in a stylish dropdown
+ * @param {Array} suggestions - Array of suggestions from the server
  */
 function displaySearchSuggestions(suggestions) {
     const suggestionsContainer = document.getElementById('searchSuggestions');
     if (!suggestionsContainer) return;
-    
+
     if (suggestions.length === 0) {
         hideSearchSuggestions();
         return;
     }
-    
-    // Genera HTML per ogni suggerimento con click handler
-    suggestionsContainer.innerHTML = suggestions.map(suggestion => 
+
+    // Generate HTML for each suggestion with a click handler
+    suggestionsContainer.innerHTML = suggestions.map(suggestion =>
         `<div class="suggestion-item" onclick="selectSuggestion('${suggestion}')">${suggestion}</div>`
     ).join('');
-    
-    // Mostra il container dei suggerimenti
+
+    // Show the suggestions container
     suggestionsContainer.style.display = 'block';
 }
 
 /**
- * Nasconde il dropdown dei suggerimenti di ricerca
+ * Hides the search suggestions dropdown
  */
 function hideSearchSuggestions() {
     const suggestionsContainer = document.getElementById('searchSuggestions');
@@ -95,35 +95,35 @@ function hideSearchSuggestions() {
 }
 
 /**
- * Gestisce la selezione di un suggerimento da parte dell'utente
- * @param {string} suggestion - Suggerimento selezionato
+ * Handles the user selecting a suggestion
+ * @param {string} suggestion - Selected suggestion
  */
 function selectSuggestion(suggestion) {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.value = suggestion;
         hideSearchSuggestions();
-        performSearch(); // Esegue immediatamente la ricerca
+        performSearch(); // Immediately run the search
     }
 }
 
 /**
- * Esegue la ricerca navigando alla pagina risultati
+ * Runs the search by navigating to the results page
  */
 function performSearch() {
     const searchInput = document.getElementById('searchInput');
     if (searchInput && searchInput.value.trim()) {
-        // Redirect alla pagina di ricerca con parametri URL
+        // Redirect to the search page with URL parameters
         window.location.href = `/Product/Search?query=${encodeURIComponent(searchInput.value.trim())}`;
     }
 }
 
-// Funzionalità carrello
+// Cart functionality
 function initializeCart() {
     updateCartBadge();
 }
 
-// Aggiungi al carrello
+// Add to cart
 async function addToCart(productId, quantity = 1) {
     try {
         const response = await fetch('/Cart/AddToCart', {
@@ -132,35 +132,35 @@ async function addToCart(productId, quantity = 1) {
                 'Content-Type': 'application/json',
                 'RequestVerificationToken': getAntiForgeryToken()
             },
-            body: JSON.stringify({ 
-                ProductId: productId, 
-                Quantity: quantity 
+            body: JSON.stringify({
+                ProductId: productId,
+                Quantity: quantity
             })
         });
-        
+
         if (response.ok) {
             const result = await response.json();
-            showNotification('Prodotto aggiunto al carrello!', 'success');
+            showNotification('Product added to cart!', 'success');
             updateCartBadge();
-            
-            // Animazione button
+
+            // Button animation
             const button = event.target;
-            button.innerHTML = '<i class="fas fa-check"></i> Aggiunto!';
+            button.innerHTML = '<i class="fas fa-check"></i> Added!';
             button.classList.add('btn-success');
             setTimeout(() => {
-                button.innerHTML = '<i class="fas fa-shopping-cart"></i> Aggiungi al carrello';
+                button.innerHTML = '<i class="fas fa-shopping-cart"></i> Add to cart';
                 button.classList.remove('btn-success');
             }, 2000);
         } else {
-            showNotification('Errore nell\'aggiungere il prodotto al carrello', 'error');
+            showNotification('Error adding the product to the cart', 'error');
         }
     } catch (error) {
-        console.error('Errore nell\'aggiungere al carrello:', error);
-        showNotification('Errore di connessione', 'error');
+        console.error('Error adding to cart:', error);
+        showNotification('Connection error', 'error');
     }
 }
 
-// Rimuovi dal carrello
+// Remove from cart
 async function removeFromCart(productId) {
     try {
         const response = await fetch(`/Cart/RemoveFromCart/${productId}`, {
@@ -169,21 +169,21 @@ async function removeFromCart(productId) {
                 'RequestVerificationToken': getAntiForgeryToken()
             }
         });
-        
+
         if (response.ok) {
-            showNotification('Prodotto rimosso dal carrello', 'success');
+            showNotification('Product removed from cart', 'success');
             updateCartBadge();
-            location.reload(); // Ricarica la pagina carrello
+            location.reload(); // Reload the cart page
         } else {
-            showNotification('Errore nella rimozione del prodotto', 'error');
+            showNotification('Error removing the product', 'error');
         }
     } catch (error) {
-        console.error('Errore nella rimozione dal carrello:', error);
-        showNotification('Errore di connessione', 'error');
+        console.error('Error removing from cart:', error);
+        showNotification('Connection error', 'error');
     }
 }
 
-// Aggiorna quantità nel carrello
+// Update cart quantity
 async function updateCartQuantity(productId, quantity) {
     try {
         const response = await fetch('/Cart/UpdateQuantity', {
@@ -192,24 +192,24 @@ async function updateCartQuantity(productId, quantity) {
                 'Content-Type': 'application/json',
                 'RequestVerificationToken': getAntiForgeryToken()
             },
-            body: JSON.stringify({ 
-                ProductId: productId, 
-                Quantity: quantity 
+            body: JSON.stringify({
+                ProductId: productId,
+                Quantity: quantity
             })
         });
-        
+
         if (response.ok) {
             updateCartBadge();
             updateCartTotals();
         } else {
-            showNotification('Errore nell\'aggiornamento della quantità', 'error');
+            showNotification('Error updating the quantity', 'error');
         }
     } catch (error) {
-        console.error('Errore nell\'aggiornamento quantità:', error);
+        console.error('Error updating quantity:', error);
     }
 }
 
-// Aggiorna badge carrello
+// Update cart badge
 async function updateCartBadge() {
     try {
         const response = await fetch('/Cart/GetCartCount');
@@ -222,40 +222,40 @@ async function updateCartBadge() {
             }
         }
     } catch (error) {
-        console.error('Errore nell\'aggiornamento del badge carrello:', error);
+        console.error('Error updating the cart badge:', error);
     }
 }
 
-// Aggiorna totali carrello
+// Update cart totals
 async function updateCartTotals() {
     try {
         const response = await fetch('/Cart/GetCartTotals');
         if (response.ok) {
             const totals = await response.json();
             document.getElementById('subtotal').textContent = `€${totals.subtotal.toFixed(2)}`;
-            document.getElementById('shipping').textContent = totals.shipping > 0 ? `€${totals.shipping.toFixed(2)}` : 'Gratuita';
+            document.getElementById('shipping').textContent = totals.shipping > 0 ? `€${totals.shipping.toFixed(2)}` : 'Free';
             document.getElementById('total').textContent = `€${totals.total.toFixed(2)}`;
         }
     } catch (error) {
-        console.error('Errore nell\'aggiornamento dei totali:', error);
+        console.error('Error updating the totals:', error);
     }
 }
 
-// Inizializza cards prodotti
+// Initialize product cards
 function initializeProductCards() {
     const productCards = document.querySelectorAll('.product-card');
     productCards.forEach(card => {
         card.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-5px)';
         });
-        
+
         card.addEventListener('mouseleave', function() {
             this.style.transform = 'translateY(0)';
         });
     });
 }
 
-// Controlli quantità
+// Quantity controls
 function initializeQuantityControls() {
     const quantityInputs = document.querySelectorAll('.quantity-input');
     quantityInputs.forEach(input => {
@@ -280,22 +280,22 @@ async function addToWishlist(productId) {
             },
             body: JSON.stringify({ ProductId: productId })
         });
-        
+
         if (response.ok) {
             const button = event.target;
             button.classList.toggle('text-danger');
             const isInWishlist = button.classList.contains('text-danger');
             showNotification(
-                isInWishlist ? 'Aggiunto alla lista desideri' : 'Rimosso dalla lista desideri', 
+                isInWishlist ? 'Added to wishlist' : 'Removed from wishlist',
                 'success'
             );
         }
     } catch (error) {
-        console.error('Errore nella gestione wishlist:', error);
+        console.error('Error handling the wishlist:', error);
     }
 }
 
-// Notifiche
+// Notifications
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} notification-toast`;
@@ -309,9 +309,9 @@ function showNotification(message, type = 'info') {
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         border-radius: 4px;
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.style.opacity = '0';
         setTimeout(() => notification.remove(), 300);
@@ -335,7 +335,7 @@ function getAntiForgeryToken() {
     return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
 }
 
-// Filtri prodotti
+// Product filters
 function applyFilters() {
     const form = document.getElementById('filtersForm');
     if (form) {
@@ -343,25 +343,25 @@ function applyFilters() {
     }
 }
 
-// Ordinamento prodotti
+// Product sorting
 function changeSorting(sortBy) {
     const url = new URL(window.location);
     url.searchParams.set('sortBy', sortBy);
     window.location.href = url.toString();
 }
 
-// Paginazione
+// Pagination
 function goToPage(page) {
     const url = new URL(window.location);
     url.searchParams.set('page', page);
     window.location.href = url.toString();
 }
 
-// Zoom immagine prodotto
+// Product image zoom
 function initializeImageZoom() {
     const mainImage = document.getElementById('mainProductImage');
     const thumbnails = document.querySelectorAll('.thumbnail-image');
-    
+
     thumbnails.forEach(thumbnail => {
         thumbnail.addEventListener('click', function() {
             mainImage.src = this.src;
@@ -371,44 +371,44 @@ function initializeImageZoom() {
     });
 }
 
-// Comparazione prodotti
+// Product comparison
 let compareList = [];
 
 function addToCompare(productId) {
     if (compareList.length >= 3) {
-        showNotification('Puoi confrontare massimo 3 prodotti', 'warning');
+        showNotification('You can compare up to 3 products', 'warning');
         return;
     }
-    
+
     if (!compareList.includes(productId)) {
         compareList.push(productId);
         updateCompareButton(productId, true);
-        showNotification('Prodotto aggiunto al confronto', 'success');
+        showNotification('Product added to comparison', 'success');
     }
 }
 
 function removeFromCompare(productId) {
     compareList = compareList.filter(id => id !== productId);
     updateCompareButton(productId, false);
-    showNotification('Prodotto rimosso dal confronto', 'success');
+    showNotification('Product removed from comparison', 'success');
 }
 
 function updateCompareButton(productId, isAdded) {
     const button = document.querySelector(`[data-compare-product="${productId}"]`);
     if (button) {
-        button.textContent = isAdded ? 'Rimuovi confronto' : 'Confronta';
-        button.onclick = isAdded ? 
-            () => removeFromCompare(productId) : 
+        button.textContent = isAdded ? 'Remove from comparison' : 'Compare';
+        button.onclick = isAdded ?
+            () => removeFromCompare(productId) :
             () => addToCompare(productId);
     }
 }
 
 function showComparison() {
     if (compareList.length < 2) {
-        showNotification('Seleziona almeno 2 prodotti per confrontarli', 'warning');
+        showNotification('Select at least 2 products to compare them', 'warning');
         return;
     }
-    
+
     const compareIds = compareList.join(',');
     window.open(`/Product/Compare?productIds=${compareIds}`, '_blank');
 }

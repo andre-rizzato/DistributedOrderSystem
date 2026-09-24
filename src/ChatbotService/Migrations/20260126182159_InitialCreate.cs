@@ -108,10 +108,10 @@ namespace ChatbotService.Migrations
                 columns: new[] { "Id", "CreatedAt", "Entities", "ExpectedOutput", "Input", "Intent", "IsActive", "IsValidated", "Source", "UserId" },
                 values: new object[,]
                 {
-                    { new Guid("11111111-1111-1111-1111-111111111111"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, "Ciao! Sto bene, grazie. Come posso aiutarti oggi?", "Ciao, come stai?", "greeting", true, true, "Seed", null },
-                    { new Guid("22222222-2222-2222-2222-222222222222"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "{\"order_id\": \"12345\"}", "Cerco le informazioni del tuo ordine #12345. Un momento...", "Qual è lo stato del mio ordine 12345?", "order_status", true, true, "Seed", null },
-                    { new Guid("33333333-3333-3333-3333-333333333333"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, "Mi dispiace sentire che vuoi cancellare il tuo ordine. Puoi fornirmi il numero dell'ordine?", "Voglio cancellare il mio ordine", "cancel_order", true, true, "Seed", null },
-                    { new Guid("44444444-4444-4444-4444-444444444444"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "{\"product_name\": \"laptop gaming\"}", "Sto cercando laptop gaming disponibili nel nostro catalogo...", "Cerca laptop gaming", "product_search", true, true, "Seed", null }
+                    { new Guid("11111111-1111-1111-1111-111111111111"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, "Hi! I'm doing well, thanks. How can I help you today?", "Hi, how are you?", "greeting", true, true, "Seed", null },
+                    { new Guid("22222222-2222-2222-2222-222222222222"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "{\"order_id\": \"12345\"}", "Let me look up the information for your order #12345. One moment...", "What's the status of my order 12345?", "order_status", true, true, "Seed", null },
+                    { new Guid("33333333-3333-3333-3333-333333333333"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, "I'm sorry to hear you want to cancel your order. Can you give me the order number?", "I want to cancel my order", "cancel_order", true, true, "Seed", null },
+                    { new Guid("44444444-4444-4444-4444-444444444444"), new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "{\"product_name\": \"gaming laptop\"}", "I'm searching for gaming laptops available in our catalog...", "Search for a gaming laptop", "product_search", true, true, "Seed", null }
                 });
 
             migrationBuilder.CreateIndex(

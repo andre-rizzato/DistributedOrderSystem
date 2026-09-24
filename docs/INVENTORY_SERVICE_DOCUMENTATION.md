@@ -29,8 +29,7 @@ InventoryService/
 ├── Data/                          # Database Context
 │   └── InventoryContext.cs        # EF Core DbContext (Npgsql)
 ├── Messaging/                      # Kafka Integration
-│   ├── OrderCreatedConsumer.cs    # Real Kafka consumer
-│   └── MockOrderCreatedConsumer.cs
+│   └── OrderCreatedConsumer.cs    # Real Kafka consumer
 ├── Models/                         # Domain entities
 │   └── InventoryItem.cs           # Inventory model
 ├── Services/                       # Business logic
@@ -286,8 +285,8 @@ public class KafkaSettings
 2. Deserializes OrderCreatedEvent (JSON)
 3. For each item in the order:
    a. Calls AdjustInventoryQuantityAsync(Guid.Parse(item.ProductId), -item.Quantity)
-   b. If it returns true  → logs info "Reduced inventory..." [Italian: "Ridotto inventario..."]
-   c. If it returns false → logs warning "Unable to reduce inventory..." [Italian: "Impossibile ridurre inventario..."] — BUT the loop CONTINUES
+   b. If it returns true  → logs info "Reduced inventory..."
+   c. If it returns false → logs warning "Unable to reduce inventory..." — BUT the loop CONTINUES
    d. If it throws an exception → logs error, then `throw;` (explicit rethrow)
 4. If the foreach completes WITHOUT exceptions (even if some items were "false" at step 3c):
    - Commit offset + Store offset → the message is considered processed
@@ -411,18 +410,20 @@ Load Balancer → [Instance 1] [Instance 2] [Instance 3]
 ```
 ✅ INFO:
 - "Inventory for product {ProductId} served from cache"
-- "Reduced inventory for Product {ProductId} by {Quantity} units (Order {OrderId})" [Italian: "Ridotto inventario per Prodotto {ProductId} di {Quantity} unità (Ordine {OrderId})"]
-- "Message processed and successfully committed at offset {Offset}" [Italian: "Messaggio elaborato e confermato con successo all'offset {Offset}"]
+- "Reduced inventory for Product {ProductId} by {Quantity} units (Order {OrderId})"
+- "Message processed and successfully committed at offset {Offset}"
 
 ⚠️ WARNING:
 - "Inventory item for product {ProductId} not found."
 - "Insufficient inventory for product {ProductId}. Requested adjustment: {Delta}, Available: {AvailableQuantity}"
-- "Unable to reduce inventory for Product {ProductId} ... - insufficient inventory or product not found" [Italian: "Impossibile ridurre inventario per Prodotto {ProductId} ... - inventario insufficiente o prodotto non trovato"]
+- "Unable to reduce inventory for Product {ProductId} ... - insufficient inventory or product not found"
 
 ❌ ERROR:
-- "Error during message consumption: {Error}" [Italian: "Errore durante il consumo del messaggio: {Error}"]
-- "Error updating inventory for Product {ProductId} (Order {OrderId})" [Italian: "Errore durante l'aggiornamento dell'inventario per Prodotto {ProductId} (Ordine {OrderId})"]
+- "Error consuming message: {Error}"
+- "Error updating inventory for Product {ProductId} (Order {OrderId})"
 ```
+
+All log messages are in English (translated from Italian as of 2026-09-24).
 
 There is no `/health` endpoint yet in this service (unlike, for example, NotificationService, which exposes one).
 

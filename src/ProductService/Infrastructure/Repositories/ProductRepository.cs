@@ -6,9 +6,9 @@ using ProductService.Domain.Interfaces;
 using ProductService.Infrastructure.Data;
 
 /// <summary>
-/// Implementazione del Repository per Product.
-/// Risiede nell'Infrastructure layer e implementa l'interfaccia definita nel Domain layer.
-/// Questo è il Dependency Inversion Principle in azione (Clean Architecture).
+/// Repository implementation for Product.
+/// Lives in the Infrastructure layer and implements the interface defined in the Domain layer.
+/// This is the Dependency Inversion Principle in action (Clean Architecture).
 /// </summary>
 public class ProductRepository : IProductRepository
 {

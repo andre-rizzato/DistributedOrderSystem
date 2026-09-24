@@ -29,7 +29,7 @@ public class PaymentMethodsController : ControllerBase
     }
 
     /// <summary>
-    /// Ottieni tutti i metodi di pagamento dell'utente
+    /// Get all of the user's payment methods
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(List<PaymentMethodDto>), StatusCodes.Status200OK)]
@@ -50,7 +50,7 @@ public class PaymentMethodsController : ControllerBase
     }
 
     /// <summary>
-    /// Ottieni metodo di pagamento per ID
+    /// Get payment method by ID
     /// </summary>
     [HttpGet("{paymentMethodId:guid}")]
     [ProducesResponseType(typeof(PaymentMethodDto), StatusCodes.Status200OK)]
@@ -74,7 +74,7 @@ public class PaymentMethodsController : ControllerBase
     }
 
     /// <summary>
-    /// Aggiungi nuovo metodo di pagamento
+    /// Add a new payment method
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(PaymentMethodDto), StatusCodes.Status201Created)]
@@ -88,14 +88,14 @@ public class PaymentMethodsController : ControllerBase
             return Forbid();
         }
 
-        // Validazione carta di credito (basic)
+        // Credit card validation (basic)
         var cleanCardNumber = request.CardNumber.Replace(" ", "").Replace("-", "");
         if (cleanCardNumber.Length < 13 || cleanCardNumber.Length > 19)
         {
-            return BadRequest(new { message = "Numero carta non valido" });
+            return BadRequest(new { message = "Invalid card number" });
         }
 
-        // Se è default, rimuovi default dagli altri
+        // If this is the default, clear the default flag on the others
         if (request.IsDefault)
         {
             await RemoveDefaultFlag(userId);
@@ -117,7 +117,7 @@ public class PaymentMethodsController : ControllerBase
         _context.PaymentMethods.Add(paymentMethod);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Metodo di pagamento creato per utente {UserId}", userId);
+        _logger.LogInformation("Payment method created for user {UserId}", userId);
         return CreatedAtAction(
             nameof(GetPaymentMethod),
             new { userId, paymentMethodId = paymentMethod.Id },
@@ -125,7 +125,7 @@ public class PaymentMethodsController : ControllerBase
     }
 
     /// <summary>
-    /// Elimina metodo di pagamento
+    /// Delete payment method
     /// </summary>
     [HttpDelete("{paymentMethodId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -148,13 +148,13 @@ public class PaymentMethodsController : ControllerBase
         _context.PaymentMethods.Remove(method);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Metodo di pagamento {PaymentMethodId} eliminato per utente {UserId}", 
+        _logger.LogInformation("Payment method {PaymentMethodId} deleted for user {UserId}",
             paymentMethodId, userId);
         return NoContent();
     }
 
     /// <summary>
-    /// Imposta metodo di pagamento come default
+    /// Set payment method as default
     /// </summary>
     [HttpPost("{paymentMethodId:guid}/set-default")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -178,7 +178,7 @@ public class PaymentMethodsController : ControllerBase
         method.IsDefault = true;
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "Metodo di pagamento impostato come default" });
+        return Ok(new { message = "Payment method set as default" });
     }
 
     private async Task<bool> CanAccessUser(Guid userId)

@@ -146,6 +146,18 @@
             }
         },
         {
+            "name": "AgentService (Python)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": ["main:app", "--host", "127.0.0.1", "--port", "8100"],
+            "console": "integratedTerminal",
+            "python": "E:/conda/envs/ai-engineer-course/python.exe",
+            "cwd": "${workspaceFolder}/src/AgentService",
+            "env": { "PYTHONNOUSERSITE": "1" },
+            "justMyCode": true
+        },
+        {
             "name": "UserService",
             "type": "coreclr",
             "request": "launch",
@@ -234,6 +246,15 @@
     ],
     "compounds": [
         {
+            "name": "Start Agent + Chatbot + Gateway",
+            "configurations": [
+                "AgentService (Python)",
+                "ChatbotService",
+                "GatewayBff"
+            ],
+            "stopAll": true
+        },
+        {
             "name": "Start All Microservices",
             "configurations": [
                 "OrderService",
@@ -251,11 +272,12 @@
             "name": "Start All (Backend + Frontend)",
             "configurations": [
                 "OrderService",
-                "InventoryService", 
+                "InventoryService",
                 "NotificationService",
                 "PaymentService",
                 "ProductService",
                 "ChatbotService",
+                "AgentService (Python)",
                 "UserService",
                 "CustomerService",
                 "GatewayBff",

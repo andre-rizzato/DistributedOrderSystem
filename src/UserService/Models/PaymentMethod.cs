@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace UserService.Models;
 
 /// <summary>
-/// Metodo di pagamento salvato (carta di credito criptata)
+/// Saved payment method (encrypted credit card)
 /// </summary>
 public class PaymentMethod
 {
@@ -16,7 +16,7 @@ public class PaymentMethod
     [MaxLength(100)]
     public string CardHolderName { get; set; } = string.Empty;
     
-    // Ultimi 4 numeri della carta (in chiaro)
+    // Last 4 digits of the card (plaintext)
     [Required]
     [MaxLength(4)]
     public string Last4Digits { get; set; } = string.Empty;
@@ -28,7 +28,7 @@ public class PaymentMethod
     public int ExpiryMonth { get; set; }
     public int ExpiryYear { get; set; }
     
-    // Token criptato (mai salvare il numero completo!)
+    // Encrypted token (never store the full card number!)
     [Required]
     public string EncryptedToken { get; set; } = string.Empty;
     
@@ -38,7 +38,7 @@ public class PaymentMethod
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     
-    // Relazioni
+    // Relationships
     public virtual ApplicationUser User { get; set; } = null!;
 }
 

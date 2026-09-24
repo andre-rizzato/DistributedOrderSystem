@@ -7,7 +7,7 @@ using NotificationService.Services;
 namespace NotificationService.Controllers;
 
 /// <summary>
-/// Controller per gestire l'invio di notifiche SMS
+/// Controller for handling SMS notification sending
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -24,11 +24,11 @@ public class SmsController : ControllerBase
     }
 
     /// <summary>
-    /// Invia SMS singolo
+    /// Sends a single SMS
     /// </summary>
-    /// <param name="request">Dati SMS da inviare</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'invio</returns>
+    /// <param name="request">SMS data to send</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send result</returns>
     [HttpPost("send")]
     [ProducesResponseType(typeof(NotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -43,7 +43,7 @@ public class SmsController : ControllerBase
             }
 
             var result = await _smsService.SendSmsAsync(request, cancellationToken);
-            
+
             if (result.Success)
             {
                 return Ok(result);
@@ -60,22 +60,22 @@ public class SmsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio SMS a {PhoneNumber}", request.PhoneNumber);
+            _logger.LogError(ex, "Error sending SMS to {PhoneNumber}", request.PhoneNumber);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio dell'SMS",
+                Detail = "An error occurred while sending the SMS",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Invia SMS multipli
+    /// Sends multiple SMS messages
     /// </summary>
-    /// <param name="requests">Lista di SMS da inviare</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultati degli invii</returns>
+    /// <param name="requests">List of SMS messages to send</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send results</returns>
     [HttpPost("send-bulk")]
     [ProducesResponseType(typeof(BulkNotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -86,12 +86,12 @@ public class SmsController : ControllerBase
         {
             if (!ModelState.IsValid || !requests.Any())
             {
-                return BadRequest("Lista richieste non valida o vuota");
+                return BadRequest("Request list is invalid or empty");
             }
 
-            if (requests.Count > 100) // Limite di sicurezza
+            if (requests.Count > 100) // Safety limit
             {
-                return BadRequest("Massimo 100 SMS per richiesta bulk");
+                return BadRequest("Maximum 100 SMS messages per bulk request");
             }
 
             var result = await _smsService.SendBulkSmsAsync(requests, cancellationToken);
@@ -99,22 +99,22 @@ public class SmsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio bulk SMS per {Count} richieste", requests?.Count ?? 0);
+            _logger.LogError(ex, "Error sending bulk SMS for {Count} requests", requests?.Count ?? 0);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio bulk degli SMS",
+                Detail = "An error occurred while sending the bulk SMS",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Verifica lo stato di un SMS
+    /// Checks the status of an SMS
     /// </summary>
-    /// <param name="messageId">ID esterno del messaggio</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Stato del messaggio</returns>
+    /// <param name="messageId">External message ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Message status</returns>
     [HttpGet("status/{messageId}")]
     [ProducesResponseType(typeof(NotificationStatusResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 404)]
@@ -125,11 +125,11 @@ public class SmsController : ControllerBase
         {
             if (string.IsNullOrWhiteSpace(messageId))
             {
-                return BadRequest("Message ID è richiesto");
+                return BadRequest("Message ID is required");
             }
 
             var result = await _smsService.GetSmsStatusAsync(messageId, cancellationToken);
-            
+
             if (result.Success)
             {
                 return Ok(result);
@@ -146,43 +146,43 @@ public class SmsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero stato SMS {MessageId}", messageId);
+            _logger.LogError(ex, "Error retrieving status for SMS {MessageId}", messageId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante il recupero dello stato",
+                Detail = "An error occurred while retrieving the status",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Valida un numero di telefono
+    /// Validates a phone number
     /// </summary>
-    /// <param name="phoneNumber">Numero di telefono da validare</param>
-    /// <returns>Risultato della validazione</returns>
+    /// <param name="phoneNumber">Phone number to validate</param>
+    /// <returns>Validation result</returns>
     [HttpGet("validate")]
     [ProducesResponseType(typeof(object), 200)]
     public ActionResult ValidatePhoneNumber([FromQuery] string phoneNumber)
     {
         if (string.IsNullOrWhiteSpace(phoneNumber))
         {
-            return BadRequest("Phone number è richiesto");
+            return BadRequest("Phone number is required");
         }
 
         var isValid = _smsService.ValidatePhoneNumber(phoneNumber);
-        
+
         return Ok(new
         {
             phoneNumber,
             isValid,
-            message = isValid ? "Numero valido" : "Numero non valido. Formato richiesto: +[codice paese][numero]"
+            message = isValid ? "Valid number" : "Invalid number. Required format: +[country code][number]"
         });
     }
 }
 
 /// <summary>
-/// Controller per gestire l'invio di email
+/// Controller for handling email sending
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -199,11 +199,11 @@ public class EmailController : ControllerBase
     }
 
     /// <summary>
-    /// Invia email singola
+    /// Sends a single email
     /// </summary>
-    /// <param name="request">Dati email da inviare</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'invio</returns>
+    /// <param name="request">Email data to send</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send result</returns>
     [HttpPost("send")]
     [ProducesResponseType(typeof(NotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -218,7 +218,7 @@ public class EmailController : ControllerBase
             }
 
             var result = await _emailService.SendEmailAsync(request, cancellationToken);
-            
+
             if (result.Success)
             {
                 return Ok(result);
@@ -235,22 +235,22 @@ public class EmailController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio email a {Email}", request.To);
+            _logger.LogError(ex, "Error sending email to {Email}", request.To);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio dell'email",
+                Detail = "An error occurred while sending the email",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Invia email multiple
+    /// Sends multiple emails
     /// </summary>
-    /// <param name="requests">Lista di email da inviare</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultati degli invii</returns>
+    /// <param name="requests">List of emails to send</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send results</returns>
     [HttpPost("send-bulk")]
     [ProducesResponseType(typeof(BulkNotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -261,12 +261,12 @@ public class EmailController : ControllerBase
         {
             if (!ModelState.IsValid || !requests.Any())
             {
-                return BadRequest("Lista richieste non valida o vuota");
+                return BadRequest("Request list is invalid or empty");
             }
 
-            if (requests.Count > 50) // Limite di sicurezza per email
+            if (requests.Count > 50) // Safety limit for email
             {
-                return BadRequest("Massimo 50 email per richiesta bulk");
+                return BadRequest("Maximum 50 emails per bulk request");
             }
 
             var result = await _emailService.SendBulkEmailAsync(requests, cancellationToken);
@@ -274,29 +274,29 @@ public class EmailController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio bulk email per {Count} richieste", requests?.Count ?? 0);
+            _logger.LogError(ex, "Error sending bulk email for {Count} requests", requests?.Count ?? 0);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio bulk delle email",
+                Detail = "An error occurred while sending the bulk email",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Invia email con allegati
+    /// Sends an email with attachments
     /// </summary>
-    /// <param name="request">Dati email</param>
-    /// <param name="attachments">Allegati</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'invio</returns>
+    /// <param name="request">Email data</param>
+    /// <param name="attachments">Attachments</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send result</returns>
     [HttpPost("send-with-attachments")]
     [ProducesResponseType(typeof(NotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
     [ProducesResponseType(typeof(ProblemDetails), 500)]
     public async Task<ActionResult<NotificationResponse>> SendEmailWithAttachments(
-        [FromBody] SendEmailWithAttachmentsRequest request, 
+        [FromBody] SendEmailWithAttachmentsRequest request,
         CancellationToken cancellationToken)
     {
         try
@@ -306,7 +306,7 @@ public class EmailController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            // Converti base64 attachments
+            // Convert base64 attachments
             var attachments = request.Attachments?.Select(a => new NotificationService.Services.EmailAttachment
             {
                 FileName = a.FileName,
@@ -317,7 +317,7 @@ public class EmailController : ControllerBase
             }).ToList() ?? new List<NotificationService.Services.EmailAttachment>();
 
             var result = await _emailService.SendEmailWithAttachmentsAsync(request.EmailRequest, attachments, cancellationToken);
-            
+
             if (result.Success)
             {
                 return Ok(result);
@@ -334,43 +334,43 @@ public class EmailController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio email con allegati a {Email}", request.EmailRequest?.To);
+            _logger.LogError(ex, "Error sending email with attachments to {Email}", request.EmailRequest?.To);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio dell'email con allegati",
+                Detail = "An error occurred while sending the email with attachments",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Valida un indirizzo email
+    /// Validates an email address
     /// </summary>
-    /// <param name="email">Indirizzo email da validare</param>
-    /// <returns>Risultato della validazione</returns>
+    /// <param name="email">Email address to validate</param>
+    /// <returns>Validation result</returns>
     [HttpGet("validate")]
     [ProducesResponseType(typeof(object), 200)]
     public ActionResult ValidateEmail([FromQuery] string email)
     {
         if (string.IsNullOrWhiteSpace(email))
         {
-            return BadRequest("Email è richiesta");
+            return BadRequest("Email is required");
         }
 
         var isValid = _emailService.ValidateEmail(email);
-        
+
         return Ok(new
         {
             email,
             isValid,
-            message = isValid ? "Email valida" : "Indirizzo email non valido"
+            message = isValid ? "Valid email" : "Invalid email address"
         });
     }
 }
 
 /// <summary>
-/// DTO per email con allegati
+/// DTO for email with attachments
 /// </summary>
 public class SendEmailWithAttachmentsRequest
 {
@@ -379,7 +379,7 @@ public class SendEmailWithAttachmentsRequest
 }
 
 /// <summary>
-/// DTO per allegato email
+/// DTO for an email attachment
 /// </summary>
 public class EmailAttachmentDto
 {

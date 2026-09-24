@@ -50,7 +50,7 @@ public class AuthenticationService : IAuthenticationService
             return new AuthResponse
             {
                 Success = false,
-                ErrorMessage = "Credenziali non valide"
+                ErrorMessage = "Invalid credentials"
             };
         }
         catch (Exception ex)
@@ -59,7 +59,7 @@ public class AuthenticationService : IAuthenticationService
             return new AuthResponse
             {
                 Success = false,
-                ErrorMessage = "Errore durante l'autenticazione"
+                ErrorMessage = "Error during authentication"
             };
         }
     }
@@ -73,7 +73,7 @@ public class AuthenticationService : IAuthenticationService
         return new AuthResponse
         {
             Success = false,
-            ErrorMessage = "Refresh token non implementato"
+            ErrorMessage = "Refresh token not implemented"
         };
     }
 

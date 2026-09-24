@@ -1,9 +1,9 @@
 namespace ProductService.Application.DTOs;
 
 /// <summary>
-/// DTO di lettura per le query sui prodotti.
-/// Separato dal modello di scrittura (Product entity) — questo è il cuore di CQRS.
-/// Le Query restituiscono DTO read-only, i Command operano sulle entità di dominio.
+/// Read DTO for product queries.
+/// Separate from the write model (Product entity) — this is the heart of CQRS.
+/// Queries return read-only DTOs, Commands operate on domain entities.
 /// </summary>
 public record ProductDto(
     Guid Id,

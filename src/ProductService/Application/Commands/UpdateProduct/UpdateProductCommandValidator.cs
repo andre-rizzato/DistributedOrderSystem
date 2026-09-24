@@ -3,24 +3,24 @@ namespace ProductService.Application.Commands.UpdateProduct;
 using FluentValidation;
 
 /// <summary>
-/// Validatore FluentValidation per UpdateProductCommand.
+/// FluentValidation validator for UpdateProductCommand.
 /// </summary>
 public class UpdateProductCommandValidator : AbstractValidator<UpdateProductCommand>
 {
     public UpdateProductCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("L'ID del prodotto è obbligatorio.");
+            .NotEmpty().WithMessage("Product ID is required.");
 
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("Il nome del prodotto è obbligatorio.")
-            .MaximumLength(200).WithMessage("Il nome del prodotto non può superare i 200 caratteri.");
+            .NotEmpty().WithMessage("Product name is required.")
+            .MaximumLength(200).WithMessage("Product name cannot exceed 200 characters.");
 
         RuleFor(x => x.Price)
-            .GreaterThan(0).WithMessage("Il prezzo deve essere maggiore di zero.");
+            .GreaterThan(0).WithMessage("Price must be greater than zero.");
 
         RuleFor(x => x.Description)
-            .MaximumLength(500).WithMessage("La descrizione non può superare i 500 caratteri.")
+            .MaximumLength(500).WithMessage("Description cannot exceed 500 characters.")
             .When(x => x.Description is not null);
     }
 }

@@ -3,9 +3,9 @@ namespace ProductService.Domain.Interfaces;
 using ProductService.Domain.Entities;
 
 /// <summary>
-/// Contratto del Repository definito nel Domain layer.
-/// L'Infrastructure layer fornisce l'implementazione concreta (Dependency Inversion Principle).
-/// Questo è un pilastro della Clean Architecture: le dipendenze puntano verso l'interno.
+/// Repository contract defined in the Domain layer.
+/// The Infrastructure layer provides the concrete implementation (Dependency Inversion Principle).
+/// This is a pillar of Clean Architecture: dependencies point inward.
 /// </summary>
 public interface IProductRepository
 {

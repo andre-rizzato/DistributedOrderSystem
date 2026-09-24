@@ -1,7 +1,7 @@
 /**
- * Interfaccia InventoryItem
+ * InventoryItem interface
  *
- * Rappresenta un elemento dell'inventario nel sistema.
+ * Represents an inventory item in the system.
  */
 export interface InventoryItem {
   productId: number;
@@ -10,15 +10,15 @@ export interface InventoryItem {
 }
 
 /**
- * Interfaccia per la richiesta di aggiustamento inventario
+ * Interface for the inventory adjustment request
  */
 export interface AdjustInventoryRequest {
   productId: number;
-  delta: number;  // Può essere positivo (aggiunge) o negativo (rimuove)
+  delta: number;  // Can be positive (adds) or negative (removes)
 }
 
 /**
- * Interfaccia per la richiesta di impostazione inventario
+ * Interface for the inventory set request
  */
 export interface SetInventoryRequest {
   productId: number;

@@ -3,237 +3,237 @@ using System.ComponentModel.DataAnnotations;
 namespace CustomerWebsite.Models;
 
 /// <summary>
-/// Modello per l'autenticazione dell'utente
+/// Model for user authentication
 /// </summary>
 public class LoginModel
 {
-    [Required(ErrorMessage = "Email richiesta")]
-    [EmailAddress(ErrorMessage = "Formato email non valido")]
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email format")]
     [Display(Name = "Email")]
     public string Email { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Password richiesta")]
+
+    [Required(ErrorMessage = "Password is required")]
     [DataType(DataType.Password)]
     [Display(Name = "Password")]
     public string Password { get; set; } = string.Empty;
-    
-    [Display(Name = "Ricordami")]
+
+    [Display(Name = "Remember me")]
     public bool RememberMe { get; set; }
-    
+
     public string? ReturnUrl { get; set; }
 }
 
 /// <summary>
-/// Modello per la registrazione dell'utente
+/// Model for user registration
 /// </summary>
 public class RegisterModel
 {
-    [Required(ErrorMessage = "Nome richiesto")]
-    [StringLength(50, ErrorMessage = "Il nome non può superare i 50 caratteri")]
-    [Display(Name = "Nome")]
+    [Required(ErrorMessage = "First name is required")]
+    [StringLength(50, ErrorMessage = "First name cannot exceed 50 characters")]
+    [Display(Name = "First Name")]
     public string FirstName { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Cognome richiesto")]
-    [StringLength(50, ErrorMessage = "Il cognome non può superare i 50 caratteri")]
-    [Display(Name = "Cognome")]
+
+    [Required(ErrorMessage = "Last name is required")]
+    [StringLength(50, ErrorMessage = "Last name cannot exceed 50 characters")]
+    [Display(Name = "Last Name")]
     public string LastName { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Email richiesta")]
-    [EmailAddress(ErrorMessage = "Formato email non valido")]
+
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email format")]
     [Display(Name = "Email")]
     public string Email { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Password richiesta")]
-    [StringLength(100, ErrorMessage = "La password deve essere di almeno {2} caratteri", MinimumLength = 8)]
+
+    [Required(ErrorMessage = "Password is required")]
+    [StringLength(100, ErrorMessage = "Password must be at least {2} characters long", MinimumLength = 8)]
     [DataType(DataType.Password)]
     [Display(Name = "Password")]
     public string Password { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Conferma password richiesta")]
+
+    [Required(ErrorMessage = "Password confirmation is required")]
     [DataType(DataType.Password)]
-    [Display(Name = "Conferma Password")]
-    [Compare("Password", ErrorMessage = "Le password non corrispondono")]
+    [Display(Name = "Confirm Password")]
+    [Compare("Password", ErrorMessage = "Passwords do not match")]
     public string ConfirmPassword { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Accettazione termini richiesta")]
-    [Display(Name = "Accetto i Termini e Condizioni")]
+
+    [Required(ErrorMessage = "You must accept the terms")]
+    [Display(Name = "I accept the Terms and Conditions")]
     public bool AcceptTerms { get; set; }
-    
-    [Display(Name = "Iscriviti alla newsletter")]
+
+    [Display(Name = "Subscribe to the newsletter")]
     public bool SubscribeToNewsletter { get; set; }
 }
 
 /// <summary>
-/// Modello del profilo utente
+/// User profile model
 /// </summary>
 public class UserProfileModel
 {
     public Guid UserId { get; set; }
-    
-    [Required(ErrorMessage = "Nome richiesto")]
+
+    [Required(ErrorMessage = "First name is required")]
     [StringLength(50)]
-    [Display(Name = "Nome")]
+    [Display(Name = "First Name")]
     public string FirstName { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Cognome richiesto")]
+
+    [Required(ErrorMessage = "Last name is required")]
     [StringLength(50)]
-    [Display(Name = "Cognome")]
+    [Display(Name = "Last Name")]
     public string LastName { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Email richiesta")]
+
+    [Required(ErrorMessage = "Email is required")]
     [EmailAddress]
     [Display(Name = "Email")]
     public string Email { get; set; } = string.Empty;
-    
+
     [Phone]
-    [Display(Name = "Telefono")]
+    [Display(Name = "Phone")]
     public string? PhoneNumber { get; set; }
-    
+
     [DataType(DataType.Date)]
-    [Display(Name = "Data di Nascita")]
+    [Display(Name = "Date of Birth")]
     public DateTime? DateOfBirth { get; set; }
-    
-    [Display(Name = "Genere")]
+
+    [Display(Name = "Gender")]
     public string? Gender { get; set; }
-    
+
     public List<AddressModel> Addresses { get; set; } = new();
     public List<PaymentMethodModel> PaymentMethods { get; set; } = new();
-    
-    [Display(Name = "Preferenze di Comunicazione")]
+
+    [Display(Name = "Communication Preferences")]
     public CommunicationPreferencesModel CommunicationPreferences { get; set; } = new();
-    
+
     public string FullName => $"{FirstName} {LastName}";
 }
 
 /// <summary>
-/// Modello dell'indirizzo
+/// Address model
 /// </summary>
 public class AddressModel
 {
     public Guid AddressId { get; set; }
-    
-    [Required(ErrorMessage = "Nome richiesto")]
-    [Display(Name = "Nome Completo")]
+
+    [Required(ErrorMessage = "Name is required")]
+    [Display(Name = "Full Name")]
     public string FullName { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Indirizzo richiesto")]
-    [Display(Name = "Indirizzo")]
+
+    [Required(ErrorMessage = "Address is required")]
+    [Display(Name = "Address")]
     public string Street { get; set; } = string.Empty;
-    
-    [Display(Name = "Appartamento/Scala")]
+
+    [Display(Name = "Apartment/Suite")]
     public string? Apartment { get; set; }
-    
-    [Required(ErrorMessage = "Città richiesta")]
-    [Display(Name = "Città")]
+
+    [Required(ErrorMessage = "City is required")]
+    [Display(Name = "City")]
     public string City { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Provincia richiesta")]
-    [Display(Name = "Provincia")]
+
+    [Required(ErrorMessage = "State/Province is required")]
+    [Display(Name = "State/Province")]
     public string State { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "CAP richiesto")]
-    [RegularExpression(@"^\d{5}$", ErrorMessage = "CAP non valido")]
-    [Display(Name = "CAP")]
+
+    [Required(ErrorMessage = "Postal code is required")]
+    [RegularExpression(@"^\d{5}$", ErrorMessage = "Invalid postal code")]
+    [Display(Name = "Postal Code")]
     public string PostalCode { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Paese richiesto")]
-    [Display(Name = "Paese")]
-    public string Country { get; set; } = "Italia";
-    
+
+    [Required(ErrorMessage = "Country is required")]
+    [Display(Name = "Country")]
+    public string Country { get; set; } = "Italy";
+
     [Phone]
-    [Display(Name = "Telefono")]
+    [Display(Name = "Phone")]
     public string? PhoneNumber { get; set; }
-    
-    [Display(Name = "Indirizzo Principale")]
+
+    [Display(Name = "Default Address")]
     public bool IsDefault { get; set; }
-    
-    [Display(Name = "Tipo Indirizzo")]
+
+    [Display(Name = "Address Type")]
     public AddressType Type { get; set; } = AddressType.Home;
-    
+
     public string FormattedAddress => $"{Street}, {City}, {State} {PostalCode}, {Country}";
 }
 
 /// <summary>
-/// Tipi di indirizzo
+/// Address types
 /// </summary>
 public enum AddressType
 {
-    [Display(Name = "Casa")]
+    [Display(Name = "Home")]
     Home,
-    
-    [Display(Name = "Ufficio")]
+
+    [Display(Name = "Office")]
     Office,
-    
-    [Display(Name = "Altro")]
+
+    [Display(Name = "Other")]
     Other
 }
 
 /// <summary>
-/// Modello del metodo di pagamento
+/// Payment method model
 /// </summary>
 public class PaymentMethodModel
 {
     public Guid PaymentMethodId { get; set; }
-    
-    [Display(Name = "Tipo")]
+
+    [Display(Name = "Type")]
     public PaymentType Type { get; set; }
-    
-    [Display(Name = "Nome Carta")]
+
+    [Display(Name = "Cardholder Name")]
     public string? CardHolderName { get; set; }
-    
-    [Display(Name = "Ultime 4 cifre")]
+
+    [Display(Name = "Last 4 digits")]
     public string? Last4Digits { get; set; }
-    
-    [Display(Name = "Scadenza")]
+
+    [Display(Name = "Expiry")]
     public string? ExpiryDate { get; set; }
-    
-    [Display(Name = "Tipo Carta")]
+
+    [Display(Name = "Card Type")]
     public string? CardBrand { get; set; }
-    
-    [Display(Name = "Metodo Principale")]
+
+    [Display(Name = "Default Method")]
     public bool IsDefault { get; set; }
-    
-    [Display(Name = "Nome Visualizzato")]
-    public string DisplayName => Type == PaymentType.CreditCard ? 
-        $"{CardBrand} terminante con {Last4Digits}" : 
+
+    [Display(Name = "Display Name")]
+    public string DisplayName => Type == PaymentType.CreditCard ?
+        $"{CardBrand} ending in {Last4Digits}" :
         Type.ToString();
 }
 
 /// <summary>
-/// Tipi di pagamento
+/// Payment types
 /// </summary>
 public enum PaymentType
 {
-    [Display(Name = "Carta di Credito")]
+    [Display(Name = "Credit Card")]
     CreditCard,
-    
+
     [Display(Name = "PayPal")]
     PayPal,
-    
-    [Display(Name = "Bonifico Bancario")]
+
+    [Display(Name = "Bank Transfer")]
     BankTransfer,
-    
-    [Display(Name = "Contrassegno")]
+
+    [Display(Name = "Cash on Delivery")]
     CashOnDelivery
 }
 
 /// <summary>
-/// Modello delle preferenze di comunicazione
+/// Communication preferences model
 /// </summary>
 public class CommunicationPreferencesModel
 {
     [Display(Name = "Newsletter")]
     public bool Newsletter { get; set; } = true;
-    
-    [Display(Name = "Offerte Speciali")]
+
+    [Display(Name = "Special Offers")]
     public bool SpecialOffers { get; set; } = true;
-    
-    [Display(Name = "Aggiornamenti Ordini")]
+
+    [Display(Name = "Order Updates")]
     public bool OrderUpdates { get; set; } = true;
-    
-    [Display(Name = "Notifiche SMS")]
+
+    [Display(Name = "SMS Notifications")]
     public bool SmsNotifications { get; set; } = false;
-    
-    [Display(Name = "Notifiche Push")]
+
+    [Display(Name = "Push Notifications")]
     public bool PushNotifications { get; set; } = true;
 }

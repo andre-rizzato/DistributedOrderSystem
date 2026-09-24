@@ -7,8 +7,8 @@ using ProductService.Domain.Entities;
 using ProductService.Domain.Interfaces;
 
 /// <summary>
-/// Handler per CreateProductCommand.
-/// Ogni Command ha il proprio Handler dedicato (Single Responsibility Principle).
+/// Handler for CreateProductCommand.
+/// Each Command has its own dedicated Handler (Single Responsibility Principle).
 /// </summary>
 public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, ProductDto>
 {
@@ -39,7 +39,7 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
         await _repository.AddAsync(product, ct);
         await _cache.SetProductAsync(product, ct);
 
-        _logger.LogInformation("Prodotto creato: {ProductId} - {ProductName}", product.Id, product.Name);
+        _logger.LogInformation("Product created: {ProductId} - {ProductName}", product.Id, product.Name);
 
         return new ProductDto(product.Id, product.Name, product.Price, product.Description, product.IsActive);
     }

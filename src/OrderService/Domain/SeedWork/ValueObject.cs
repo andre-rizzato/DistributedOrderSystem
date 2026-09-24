@@ -1,9 +1,9 @@
 namespace OrderService.Domain.SeedWork;
 
 /// <summary>
-/// Classe base per i Value Object.
-/// L'uguaglianza è basata sui valori strutturali, non sull'identità.
-/// I Value Object sono immutabili.
+/// Base class for Value Objects.
+/// Equality is based on structural values, not identity.
+/// Value Objects are immutable.
 /// </summary>
 public abstract class ValueObject
 {

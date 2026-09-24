@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -239,83 +239,83 @@
     <div class="demo-container">
         <div class="header">
             <h1 class="title">🤖 Distributed Chat Widget</h1>
-            <p class="subtitle">Widget di chat personalizzabile per sistema distribuito con supporto BFF e routing diretto</p>
-            
+            <p class="subtitle">Customizable chat widget for a distributed system with BFF support and direct routing</p>
+
             <div class="status-indicator">
                 <div class="status-dot"></div>
-                Chat Widget attivo e configurato
+                Chat Widget active and configured
             </div>
         </div>
 
         <div class="config-panel">
-            <h3 class="config-title">⚙️ Configurazione Widget</h3>
-            
+            <h3 class="config-title">⚙️ Widget Configuration</h3>
+
             <div class="config-grid">
                 <div class="config-item">
-                    <label class="config-label">Modalità Routing</label>
+                    <label class="config-label">Routing Mode</label>
                     <select id="routingMode" class="config-select">
                         <option value="true">BFF Routing (DistributedOrderSystem)</option>
                         <option value="false">Direct Service (External)</option>
                     </select>
                 </div>
-                
+
                 <div class="config-item">
-                    <label class="config-label">Tema</label>
+                    <label class="config-label">Theme</label>
                     <select id="theme" class="config-select">
-                        <option value="light">Chiaro</option>
-                        <option value="dark">Scuro</option>
-                        <option value="auto">Automatico</option>
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="auto">Automatic</option>
                     </select>
                 </div>
-                
+
                 <div class="config-item">
-                    <label class="config-label">Posizione</label>
+                    <label class="config-label">Position</label>
                     <select id="position" class="config-select">
-                        <option value="bottom-right">Basso a destra</option>
-                        <option value="bottom-left">Basso a sinistra</option>
-                        <option value="top-right">Alto a destra</option>
-                        <option value="top-left">Alto a sinistra</option>
+                        <option value="bottom-right">Bottom right</option>
+                        <option value="bottom-left">Bottom left</option>
+                        <option value="top-right">Top right</option>
+                        <option value="top-left">Top left</option>
                     </select>
                 </div>
-                
+
                 <div class="config-item">
-                    <label class="config-label">Colore Primario</label>
+                    <label class="config-label">Primary Color</label>
                     <input type="color" id="primaryColor" class="config-input" value="#4299e1">
                 </div>
-                
+
                 <div class="config-item">
-                    <label class="config-label">Nome Bot</label>
-                    <input type="text" id="botName" class="config-input" value="Assistente AI" placeholder="Nome del bot">
+                    <label class="config-label">Bot Name</label>
+                    <input type="text" id="botName" class="config-input" value="AI Assistant" placeholder="Bot name">
                 </div>
-                
+
                 <div class="config-item">
-                    <label class="config-label">Messaggio di Benvenuto</label>
-                    <input type="text" id="welcomeMessage" class="config-input" value="Ciao! Come posso aiutarti oggi?" placeholder="Messaggio iniziale">
+                    <label class="config-label">Welcome Message</label>
+                    <input type="text" id="welcomeMessage" class="config-input" value="Hi! How can I help you today?" placeholder="Initial message">
                 </div>
             </div>
-            
+
             <div class="config-checkbox">
                 <input type="checkbox" id="autoOpen">
-                <label for="autoOpen">Apri automaticamente</label>
+                <label for="autoOpen">Open automatically</label>
             </div>
-            
+
             <div class="config-checkbox">
                 <input type="checkbox" id="soundNotifications">
-                <label for="soundNotifications">Notifiche audio</label>
+                <label for="soundNotifications">Sound notifications</label>
             </div>
-            
+
             <div class="actions">
-                <button class="btn btn-primary" onclick="applyConfig()">🔄 Applica Configurazione</button>
-                <button class="btn btn-secondary" onclick="openChat()">💬 Apri Chat</button>
+                <button class="btn btn-primary" onclick="applyConfig()">🔄 Apply Configuration</button>
+                <button class="btn btn-secondary" onclick="openChat()">💬 Open Chat</button>
                 <button class="btn btn-secondary" onclick="resetWidget()">🔨 Reset Widget</button>
-                <button class="btn btn-secondary" onclick="testMessage()">🧪 Test Messaggio</button>
+                <button class="btn btn-secondary" onclick="testMessage()">🧪 Test Message</button>
             </div>
         </div>
 
         <div class="preview-section">
-            <h3 class="config-title">👁️ Anteprima</h3>
+            <h3 class="config-title">👁️ Preview</h3>
             <div class="preview-content">
-                Il widget apparirà nell'angolo selezionato della pagina
+                The widget will appear in the selected corner of the page
             </div>
         </div>
 
@@ -327,7 +327,7 @@
                     </svg>
                 </div>
                 <h4 class="feature-title">Dual Routing</h4>
-                <p class="feature-description">Supporta sia BFF routing per DistributedOrderSystem che comunicazione diretta con ChatbotService per progetti esterni.</p>
+                <p class="feature-description">Supports both BFF routing for DistributedOrderSystem and direct communication with ChatbotService for external projects.</p>
             </div>
             
             <div class="feature-card">
@@ -336,8 +336,8 @@
                         <path d="M7 10l5 5 5-5z"/>
                     </svg>
                 </div>
-                <h4 class="feature-title">Personalizzabile</h4>
-                <p class="feature-description">Temi, colori, posizione e comportamento completamente configurabili per adattarsi al design del tuo sito.</p>
+                <h4 class="feature-title">Customizable</h4>
+                <p class="feature-description">Themes, colors, position, and behavior are fully configurable to match your site's design.</p>
             </div>
             
             <div class="feature-card">
@@ -347,7 +347,7 @@
                     </svg>
                 </div>
                 <h4 class="feature-title">Responsive</h4>
-                <p class="feature-description">Ottimizzato per dispositivi mobili con layout adattivo che si espande a schermo intero sui telefoni.</p>
+                <p class="feature-description">Optimized for mobile devices with an adaptive layout that expands to full screen on phones.</p>
             </div>
             
             <div class="feature-card">
@@ -357,24 +357,24 @@
                     </svg>
                 </div>
                 <h4 class="feature-title">AI Powered</h4>
-                <p class="feature-description">Integrato con Microsoft DialoGPT-small per conversazioni naturali e intelligenti con supporto GPU.</p>
+                <p class="feature-description">Integrated with Microsoft DialoGPT-small for natural, smart conversations with GPU support.</p>
             </div>
         </div>
 
         <div class="code-section">
-            <h3 class="code-title">💻 Integrazione nel tuo sito</h3>
-            
+            <h3 class="code-title">💻 Integration into your site</h3>
+
             <div class="info-box">
-                <div class="info-title">📋 Modalità di utilizzo</div>
-                <p><strong>BFF Routing:</strong> Per integrazione in DistributedOrderSystem tramite GatewayBff</p>
-                <p><strong>Direct Service:</strong> Per progetti esterni con comunicazione diretta al ChatbotService</p>
+                <div class="info-title">📋 Usage modes</div>
+                <p><strong>BFF Routing:</strong> For integration into DistributedOrderSystem via GatewayBff</p>
+                <p><strong>Direct Service:</strong> For external projects with direct communication to ChatbotService</p>
             </div>
-            
+
             <div class="code-block" id="integrationCode">
-&lt;!-- Includi il widget nel tuo HTML --&gt;
+&lt;!-- Include the widget in your HTML --&gt;
 &lt;script src="/api/chatwidget/chat-widget.min.js"&gt;&lt;/script&gt;
 &lt;script&gt;
-  // Configurazione per BFF routing
+  // Configuration for BFF routing
   window.chatWidgetConfig = {
     useBffRouting: true,
     bffBaseUrl: '/api/gateway/chat',
@@ -382,17 +382,17 @@
     primaryColor: '#4299e1',
     position: 'bottom-right',
     autoOpen: false,
-    botName: 'Assistente AI',
-    welcomeMessage: 'Ciao! Come posso aiutarti oggi?'
+    botName: 'AI Assistant',
+    welcomeMessage: 'Hi! How can I help you today?'
   };
-  
-  // Il widget si inizializza automaticamente
+
+  // The widget initializes itself automatically
 &lt;/script&gt;
             </div>
-            
-            <h4 class="code-title">🔧 Inizializzazione programmatica</h4>
+
+            <h4 class="code-title">🔧 Programmatic initialization</h4>
             <div class="code-block">
-// Per controllo avanzato
+// For advanced control
 const widget = new DistributedChatWidget({
   useBffRouting: false, // Direct mode
   chatbotServiceUrl: 'https://your-service.com/api/chat',
@@ -409,12 +409,12 @@ widget.updateConfig({ theme: 'light' });
         </div>
 
         <div class="info-box">
-            <div class="info-title">🚀 Prossimi passi</div>
+            <div class="info-title">🚀 Next steps</div>
             <ul>
-                <li>Modifica la configurazione sopra per vedere i cambiamenti in tempo reale</li>
-                <li>Testa il widget cliccando sul pulsante di chat che appare</li>
-                <li>Integra il codice nel tuo progetto usando uno dei due metodi</li>
-                <li>Personalizza ulteriormente il CSS per le tue esigenze specifiche</li>
+                <li>Change the configuration above to see the changes in real time</li>
+                <li>Test the widget by clicking the chat button that appears</li>
+                <li>Integrate the code into your project using one of the two methods</li>
+                <li>Further customize the CSS for your specific needs</li>
             </ul>
         </div>
     </div>
@@ -488,8 +488,8 @@ widget.updateConfig({ theme: 'light' });
             document.getElementById('position').value = 'bottom-right';
             document.getElementById('autoOpen').checked = false;
             document.getElementById('soundNotifications').checked = false;
-            document.getElementById('botName').value = 'Assistente AI';
-            document.getElementById('welcomeMessage').value = 'Ciao! Come posso aiutarti oggi?';
+            document.getElementById('botName').value = 'AI Assistant';
+            document.getElementById('welcomeMessage').value = 'Hi! How can I help you today?';
             
             initWidget();
             updateIntegrationCode();
@@ -499,10 +499,10 @@ widget.updateConfig({ theme: 'light' });
             if (currentWidget) {
                 currentWidget.show();
                 setTimeout(() => {
-                    currentWidget.addBotMessage("🧪 Questo è un messaggio di test! Il widget sta funzionando correttamente.");
+                    currentWidget.addBotMessage("🧪 This is a test message! The widget is working correctly.");
                 }, 500);
             } else {
-                alert('Inizializza prima il widget!');
+                alert('Initialize the widget first!');
             }
         }
 
@@ -514,7 +514,7 @@ widget.updateConfig({ theme: 'light' });
             const botName = document.getElementById('botName').value;
             const welcomeMessage = document.getElementById('welcomeMessage').value;
             
-            const code = `&lt;!-- Includi il widget nel tuo HTML --&gt;
+            const code = `&lt;!-- Include the widget in your HTML --&gt;
 &lt;script src="${useBff ? '/api/chatwidget/' : 'https://your-chatbot-service.com/api/chatwidget/'}chat-widget.min.js"&gt;&lt;/script&gt;
 &lt;script&gt;
   window.chatWidgetConfig = {

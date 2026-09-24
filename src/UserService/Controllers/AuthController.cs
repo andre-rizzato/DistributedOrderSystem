@@ -34,7 +34,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Registrazione nuovo utente
+    /// Register a new user
     /// </summary>
     [HttpPost("register")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
@@ -44,7 +44,7 @@ public class AuthController : ControllerBase
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser != null)
         {
-            return BadRequest(new { message = "Email già registrata" });
+            return BadRequest(new { message = "Email already registered" });
         }
 
         var user = new ApplicationUser
@@ -58,28 +58,28 @@ public class AuthController : ControllerBase
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
-        
+
         if (!result.Succeeded)
         {
             return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
         }
 
-        // Assegna ruolo default
+        // Assign default role
         await _userManager.AddToRoleAsync(user, "Customer");
 
-        // Invia email di verifica
+        // Send verification email
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var verificationUrl = $"{Request.Scheme}://{Request.Host}/api/auth/verify-email?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
         await _communicationService.SendEmailVerificationAsync(user.Email, verificationUrl);
         await _communicationService.SendWelcomeEmailAsync(user.Email, user.FirstName!);
 
-        // Genera tokens
+        // Generate tokens
         var roles = await _userManager.GetRolesAsync(user);
         var accessToken = _tokenService.GenerateAccessToken(user, roles);
         var refreshToken = _tokenService.GenerateRefreshToken(user.Id, GetIpAddress());
         await _tokenService.SaveRefreshTokenAsync(refreshToken);
 
-        _logger.LogInformation("Nuovo utente registrato: {Email}", user.Email);
+        _logger.LogInformation("New user registered: {Email}", user.Email);
 
         var response = new AuthResponse(
             user.Id,
@@ -95,7 +95,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Login con email e password
+    /// Login with email and password
     /// </summary>
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
@@ -105,30 +105,30 @@ public class AuthController : ControllerBase
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null || !user.IsActive)
         {
-            return Unauthorized(new { message = "Email o password non validi" });
+            return Unauthorized(new { message = "Invalid email or password" });
         }
 
         var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
-        
+
         if (!result.Succeeded)
         {
             if (result.IsLockedOut)
-                return Unauthorized(new { message = "Account bloccato temporaneamente" });
-            
-            return Unauthorized(new { message = "Email o password non validi" });
+                return Unauthorized(new { message = "Account temporarily locked" });
+
+            return Unauthorized(new { message = "Invalid email or password" });
         }
 
-        // Aggiorna ultimo login
+        // Update last login
         user.LastLoginAt = DateTime.UtcNow;
         await _userManager.UpdateAsync(user);
 
-        // Genera tokens
+        // Generate tokens
         var roles = await _userManager.GetRolesAsync(user);
         var accessToken = _tokenService.GenerateAccessToken(user, roles);
         var refreshToken = _tokenService.GenerateRefreshToken(user.Id, GetIpAddress());
         await _tokenService.SaveRefreshTokenAsync(refreshToken);
 
-        _logger.LogInformation("Utente autenticato: {Email}", user.Email);
+        _logger.LogInformation("User authenticated: {Email}", user.Email);
 
         return Ok(new AuthResponse(
             user.Id,
@@ -142,15 +142,15 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Login con Google o Facebook
+    /// Login with Google or Facebook
     /// </summary>
     [HttpPost("social-login")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<AuthResponse>> SocialLogin([FromBody] SocialLoginRequest request)
     {
-        // TODO: Validare il token con Google/Facebook API
-        // Per ora, accetta qualsiasi token (implementare validazione in produzione!)
+        // TODO: Validate the token with the Google/Facebook API
+        // For now, accept any token (implement real validation in production!)
 
         ApplicationUser? user = null;
 
@@ -163,11 +163,11 @@ public class AuthController : ControllerBase
             user = await _userManager.Users.FirstOrDefaultAsync(u => u.FacebookId == request.Token);
         }
 
-        // Se l'utente non esiste, crealo
+        // If the user doesn't exist yet, create it
         if (user == null && !string.IsNullOrEmpty(request.Email))
         {
             user = await _userManager.FindByEmailAsync(request.Email);
-            
+
             if (user == null)
             {
                 user = new ApplicationUser
@@ -176,7 +176,7 @@ public class AuthController : ControllerBase
                     Email = request.Email,
                     FirstName = request.FirstName,
                     LastName = request.LastName,
-                    EmailConfirmed = true // Social login implica email verificata
+                    EmailConfirmed = true // Social login implies a verified email
                 };
 
                 if (request.Provider.Equals("Google", StringComparison.OrdinalIgnoreCase))
@@ -195,7 +195,7 @@ public class AuthController : ControllerBase
             }
             else
             {
-                // Associa social ID all'utente esistente
+                // Link the social ID to the existing user
                 if (request.Provider.Equals("Google", StringComparison.OrdinalIgnoreCase))
                     user.GoogleId = request.Token;
                 else if (request.Provider.Equals("Facebook", StringComparison.OrdinalIgnoreCase))
@@ -207,20 +207,20 @@ public class AuthController : ControllerBase
 
         if (user == null)
         {
-            return BadRequest(new { message = "Impossibile autenticare con social login" });
+            return BadRequest(new { message = "Unable to authenticate with social login" });
         }
 
-        // Aggiorna ultimo login
+        // Update last login
         user.LastLoginAt = DateTime.UtcNow;
         await _userManager.UpdateAsync(user);
 
-        // Genera tokens
+        // Generate tokens
         var roles = await _userManager.GetRolesAsync(user);
         var accessToken = _tokenService.GenerateAccessToken(user, roles);
         var refreshToken = _tokenService.GenerateRefreshToken(user.Id, GetIpAddress());
         await _tokenService.SaveRefreshTokenAsync(refreshToken);
 
-        _logger.LogInformation("Utente autenticato con {Provider}: {Email}", request.Provider, user.Email);
+        _logger.LogInformation("User authenticated with {Provider}: {Email}", request.Provider, user.Email);
 
         return Ok(new AuthResponse(
             user.Id,
@@ -242,22 +242,22 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
     {
         var refreshToken = await _tokenService.GetRefreshTokenAsync(request.RefreshToken);
-        
+
         if (refreshToken == null || !refreshToken.IsActive)
         {
-            return Unauthorized(new { message = "Token non valido" });
+            return Unauthorized(new { message = "Invalid token" });
         }
 
         var user = await _userManager.FindByIdAsync(refreshToken.UserId.ToString());
         if (user == null || !user.IsActive)
         {
-            return Unauthorized(new { message = "Utente non trovato" });
+            return Unauthorized(new { message = "User not found" });
         }
 
-        // Revoca il vecchio token
+        // Revoke the old token
         await _tokenService.RevokeRefreshTokenAsync(request.RefreshToken, GetIpAddress());
 
-        // Genera nuovi tokens
+        // Generate new tokens
         var roles = await _userManager.GetRolesAsync(user);
         var newAccessToken = _tokenService.GenerateAccessToken(user, roles);
         var newRefreshToken = _tokenService.GenerateRefreshToken(user.Id, GetIpAddress());
@@ -275,7 +275,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Logout (revoca refresh token)
+    /// Logout (revokes refresh token)
     /// </summary>
     [Authorize]
     [HttpPost("logout")]
@@ -283,12 +283,12 @@ public class AuthController : ControllerBase
     public async Task<ActionResult> Logout([FromBody] RefreshTokenRequest request)
     {
         await _tokenService.RevokeRefreshTokenAsync(request.RefreshToken, GetIpAddress());
-        _logger.LogInformation("Utente disconnesso");
+        _logger.LogInformation("User logged out");
         return NoContent();
     }
 
     /// <summary>
-    /// Verifica email
+    /// Verify email
     /// </summary>
     [HttpGet("verify-email")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -298,45 +298,45 @@ public class AuthController : ControllerBase
         var user = await _userManager.FindByEmailAsync(email);
         if (user == null)
         {
-            return BadRequest(new { message = "Utente non trovato" });
+            return BadRequest(new { message = "User not found" });
         }
 
         var result = await _userManager.ConfirmEmailAsync(user, token);
         if (!result.Succeeded)
         {
-            return BadRequest(new { message = "Token non valido" });
+            return BadRequest(new { message = "Invalid token" });
         }
 
-        _logger.LogInformation("Email verificata per utente: {Email}", email);
-        return Ok(new { message = "Email verificata con successo" });
+        _logger.LogInformation("Email verified for user: {Email}", email);
+        return Ok(new { message = "Email verified successfully" });
     }
 
     /// <summary>
-    /// Richiedi reset password
+    /// Request password reset
     /// </summary>
     [HttpPost("forgot-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        
-        // Non rivelare se l'email existe o no (sicurezza)
+
+        // Don't reveal whether the email exists or not (security)
         if (user == null)
         {
-            return Ok(new { message = "Se l'email esiste, riceverai un link per resettare la password" });
+            return Ok(new { message = "If the email exists, you'll receive a link to reset your password" });
         }
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var resetUrl = $"{Request.Scheme}://{Request.Host}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email!)}";
-        
+
         await _communicationService.SendPasswordResetAsync(user.Email!, resetUrl);
 
-        _logger.LogInformation("Richiesta reset password per: {Email}", request.Email);
-        return Ok(new { message = "Se l'email esiste, riceverai un link per resettare la password" });
+        _logger.LogInformation("Password reset requested for: {Email}", request.Email);
+        return Ok(new { message = "If the email exists, you'll receive a link to reset your password" });
     }
 
     /// <summary>
-    /// Reset password con token
+    /// Reset password with token
     /// </summary>
     [HttpPost("reset-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -346,7 +346,7 @@ public class AuthController : ControllerBase
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user == null)
         {
-            return BadRequest(new { message = "Utente non trovato" });
+            return BadRequest(new { message = "User not found" });
         }
 
         var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
@@ -357,12 +357,12 @@ public class AuthController : ControllerBase
 
         await _communicationService.SendPasswordChangedNotificationAsync(user.Email!);
 
-        _logger.LogInformation("Password resettata per utente: {Email}", request.Email);
-        return Ok(new { message = "Password resettata con successo" });
+        _logger.LogInformation("Password reset for user: {Email}", request.Email);
+        return Ok(new { message = "Password reset successfully" });
     }
 
     /// <summary>
-    /// Cambia password (autenticato)
+    /// Change password (authenticated)
     /// </summary>
     [Authorize]
     [HttpPost("change-password")]
@@ -372,7 +372,7 @@ public class AuthController : ControllerBase
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         var user = await _userManager.FindByIdAsync(userId!);
-        
+
         if (user == null)
         {
             return Unauthorized();
@@ -384,20 +384,20 @@ public class AuthController : ControllerBase
             return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
         }
 
-        // Revoca tutti i refresh token esistenti
+        // Revoke all existing refresh tokens
         await _tokenService.RevokeAllUserTokensAsync(user.Id);
 
         await _communicationService.SendPasswordChangedNotificationAsync(user.Email!);
 
-        _logger.LogInformation("Password cambiata per utente: {Email}", user.Email);
-        return Ok(new { message = "Password cambiata con successo" });
+        _logger.LogInformation("Password changed for user: {Email}", user.Email);
+        return Ok(new { message = "Password changed successfully" });
     }
 
     [ApiExplorerSettings(IgnoreApi = true)]
     [HttpGet("profile/{userId}")]
     public ActionResult GetProfile(Guid userId)
     {
-        // Endpoint dummy per CreatedAtAction
+        // Dummy endpoint for CreatedAtAction
         return Ok();
     }
 

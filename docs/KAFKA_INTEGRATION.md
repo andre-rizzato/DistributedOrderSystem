@@ -1,6 +1,6 @@
 # Kafka Integration for Asynchronous Inventory Updates
 
-> Updated to match the real code. The previous version of this document had `OrderCreatedEvent.OrderId`/`OrderItemEvent.ProductId` typed as `int`, `Acks.Leader` on the producer, a single-listener Kafka config, and log lines that don't exist anywhere in the codebase (they're actually logged in Italian — see the [Observability](#observability) section). Every discrepancy below was checked against the source directly.
+> Updated to match the real code. The previous version of this document had `OrderCreatedEvent.OrderId`/`OrderItemEvent.ProductId` typed as `int`, `Acks.Leader` on the producer, and a single-listener Kafka config. Every discrepancy below was checked against the source directly. Note: as of 2026-09-24 all log messages across the codebase were translated from Italian to English — the log lines quoted in the [Observability](#observability) section below are current.
 
 ## Overview
 Kafka-based event-driven architecture that asynchronously updates inventory when orders are created. This keeps OrderService and InventoryService loosely coupled while still reaching eventual consistency.
@@ -193,23 +193,23 @@ kafka:
 
 ## Observability
 
-⚠️ **The actual log messages are mostly in Italian, not English.** If you're grepping logs or writing alerting rules against the English phrases historically documented here, they won't match anything. Verified directly from source:
+All log messages across the codebase are in English as of 2026-09-24. Verified directly from source:
 
 | Component | Real log message (verbatim) | Level |
 |---|---|---|
-| InventoryService, consumer constructor | `"Kafka consumer initialized for topic {Topic} with group {GroupId} at {BootstrapServers}"` | Info — **this one is in English** |
-| InventoryService, consume loop start | `"Avvio consumer Kafka per topic: {Topic}"` | Info |
-| InventoryService, message received | `"Ricevuto messaggio dalla partizione {Partition} all'offset {Offset}"` | Info |
-| InventoryService, processing event | `"Elaborazione OrderCreatedEvent per Ordine {OrderId} con {ItemCount} articoli"` | Info |
-| InventoryService, stock reduced | `"Ridotto inventario per Prodotto {ProductId} di {Quantity} unità (Ordine {OrderId})"` | Info |
-| InventoryService, insufficient stock | `"Impossibile ridurre inventario per Prodotto {ProductId} ... - inventario insufficiente o prodotto non trovato"` | Warning |
-| InventoryService, all items done | `"Completati aggiornamenti inventario per Ordine {OrderId}"` | Info |
-| InventoryService, offset committed | `"Messaggio elaborato e confermato con successo all'offset {Offset}"` | Info |
-| InventoryService, consume/process error | `"Errore durante il consumo del messaggio: {Error}"` / `"Errore durante l'elaborazione del messaggio"` | Error |
-| OrderService, producer init | `"Producer Kafka inizializzato per topic {Topic} su {BootstrapServers}"` | Info |
-| OrderService, publish success | `"Pubblicato evento OrderCreated per Ordine {OrderId} partizione {Partition} offset {Offset}"` | Info |
-| OrderService, publish failure | `"Impossibile pubblicare evento OrderCreated per Ordine {OrderId}: {Error}"` | Error |
-| OrderService (Application layer), publish success/failure | `"Pubblicato evento OrderCreated per Ordine {OrderId}"` / `"Impossibile pubblicare evento OrderCreated per Ordine {OrderId}"` | Info / Error |
+| InventoryService, consumer constructor | `"Kafka consumer initialized for topic {Topic} with group {GroupId} at {BootstrapServers}"` | Info |
+| InventoryService, consume loop start | `"Starting Kafka consumer for topic: {Topic}"` | Info |
+| InventoryService, message received | `"Received message from partition {Partition} at offset {Offset}"` | Info |
+| InventoryService, processing event | `"Processing OrderCreatedEvent for Order {OrderId} with {ItemCount} items"` | Info |
+| InventoryService, stock reduced | `"Reduced inventory for Product {ProductId} by {Quantity} units (Order {OrderId})"` | Info |
+| InventoryService, insufficient stock | `"Unable to reduce inventory for Product {ProductId} ... - insufficient inventory or product not found"` | Warning |
+| InventoryService, all items done | `"Completed inventory updates for Order {OrderId}"` | Info |
+| InventoryService, offset committed | `"Message processed and successfully committed at offset {Offset}"` | Info |
+| InventoryService, consume/process error | `"Error consuming message: {Error}"` / `"Error processing message"` | Error |
+| OrderService, producer init | `"Kafka producer initialized for topic {Topic} at {BootstrapServers}"` | Info |
+| OrderService, publish success | `"Published OrderCreated event for Order {OrderId} partition {Partition} offset {Offset}"` | Info |
+| OrderService, publish failure | `"Unable to publish OrderCreated event for Order {OrderId}: {Error}"` | Error |
+| OrderService, repository persist | `"Order {OrderId} persisted with {ItemCount} items"` | Info |
 
 ## Testing the Integration
 

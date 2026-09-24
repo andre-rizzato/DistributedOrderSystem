@@ -5,7 +5,7 @@ using CustomerWebsite.Services;
 namespace CustomerWebsite.Controllers;
 
 /// <summary>
-/// Controller per la gestione del carrello della spesa
+/// Controller for managing the shopping cart
 /// </summary>
 public class CartController : Controller
 {
@@ -24,7 +24,7 @@ public class CartController : Controller
     }
 
     /// <summary>
-    /// Visualizza il carrello della spesa
+    /// Displays the shopping cart
     /// </summary>
     public async Task<IActionResult> Index()
     {
@@ -32,8 +32,8 @@ public class CartController : Controller
         {
             var sessionId = HttpContext.Session.Id;
             var cart = await _cartService.GetCartAsync(sessionId);
-            
-            // Aggiungi prodotti raccomandati basati sul contenuto del carrello
+
+            // Add recommended products based on the cart's contents
             if (cart.Items.Any())
             {
                 var firstProductId = cart.Items.First().Product.ProductId;
@@ -48,13 +48,13 @@ public class CartController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il caricamento del carrello");
+            _logger.LogError(ex, "Error loading the cart");
             return View(new ShoppingCartModel());
         }
     }
 
     /// <summary>
-    /// Aggiunge un elemento al carrello
+    /// Adds an item to the cart
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> AddItem([FromBody] AddToCartModel model)
@@ -73,27 +73,27 @@ public class CartController : Controller
             {
                 var cartItemCount = await _cartService.GetCartItemCountAsync(sessionId);
                 var cartTotal = await _cartService.GetCartTotalAsync(sessionId);
-                
-                return Json(new 
-                { 
-                    success = true, 
+
+                return Json(new
+                {
+                    success = true,
                     cartItemCount = cartItemCount,
                     cartTotal = cartTotal,
-                    message = "Prodotto aggiunto al carrello"
+                    message = "Product added to cart"
                 });
             }
 
-            return Json(new { success = false, message = "Errore durante l'aggiunta al carrello" });
+            return Json(new { success = false, message = "Error adding to cart" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiunta al carrello");
-            return Json(new { success = false, message = "Errore interno del server" });
+            _logger.LogError(ex, "Error adding to cart");
+            return Json(new { success = false, message = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Aggiorna la quantità di un elemento del carrello
+    /// Updates the quantity of a cart item
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> UpdateQuantity([FromBody] UpdateCartItemModel model)
@@ -112,9 +112,9 @@ public class CartController : Controller
             {
                 var cart = await _cartService.GetCartAsync(sessionId);
                 var updatedItem = cart.Items.FirstOrDefault(i => i.CartItemId == model.CartItemId);
-                
-                return Json(new 
-                { 
+
+                return Json(new
+                {
                     success = true,
                     itemTotal = updatedItem?.TotalPrice ?? 0,
                     cartSubtotal = cart.Subtotal,
@@ -123,17 +123,17 @@ public class CartController : Controller
                 });
             }
 
-            return Json(new { success = false, message = "Errore durante l'aggiornamento" });
+            return Json(new { success = false, message = "Error updating the item" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiornamento della quantità");
-            return Json(new { success = false, message = "Errore interno del server" });
+            _logger.LogError(ex, "Error updating the quantity");
+            return Json(new { success = false, message = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Rimuove un elemento dal carrello
+    /// Removes an item from the cart
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> RemoveItem(Guid cartItemId)
@@ -146,28 +146,28 @@ public class CartController : Controller
             if (success)
             {
                 var cart = await _cartService.GetCartAsync(sessionId);
-                
-                return Json(new 
-                { 
+
+                return Json(new
+                {
                     success = true,
                     cartSubtotal = cart.Subtotal,
                     cartTotal = cart.Total,
                     cartItemCount = cart.TotalItems,
-                    message = "Prodotto rimosso dal carrello"
+                    message = "Product removed from cart"
                 });
             }
 
-            return Json(new { success = false, message = "Errore durante la rimozione" });
+            return Json(new { success = false, message = "Error removing the item" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la rimozione dal carrello");
-            return Json(new { success = false, message = "Errore interno del server" });
+            _logger.LogError(ex, "Error removing item from cart");
+            return Json(new { success = false, message = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Svuota il carrello
+    /// Empties the cart
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> Clear()
@@ -179,20 +179,20 @@ public class CartController : Controller
 
             if (success)
             {
-                return Json(new { success = true, message = "Carrello svuotato" });
+                return Json(new { success = true, message = "Cart emptied" });
             }
 
-            return Json(new { success = false, message = "Errore durante lo svuotamento del carrello" });
+            return Json(new { success = false, message = "Error emptying the cart" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante lo svuotamento del carrello");
-            return Json(new { success = false, message = "Errore interno del server" });
+            _logger.LogError(ex, "Error emptying the cart");
+            return Json(new { success = false, message = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Ottiene il numero di elementi nel carrello (per AJAX)
+    /// Gets the number of items in the cart (for AJAX)
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetCartCount()
@@ -205,13 +205,13 @@ public class CartController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero del conteggio del carrello");
+            _logger.LogError(ex, "Error retrieving the cart count");
             return Json(new { count = 0 });
         }
     }
 
     /// <summary>
-    /// Ottiene un riepilogo del carrello (per la mini-cart)
+    /// Gets a cart summary (for the mini-cart)
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetCartSummary()
@@ -220,7 +220,7 @@ public class CartController : Controller
         {
             var sessionId = HttpContext.Session.Id;
             var cart = await _cartService.GetCartAsync(sessionId);
-            
+
             var summary = new
             {
                 itemCount = cart.TotalItems,
@@ -235,18 +235,18 @@ public class CartController : Controller
                     image = item.Product.Images.FirstOrDefault()?.Url ?? "/images/no-image.png"
                 }).ToList()
             };
-            
+
             return Json(summary);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero del riepilogo del carrello");
+            _logger.LogError(ex, "Error retrieving the cart summary");
             return Json(new { itemCount = 0, subtotal = 0, total = 0, items = new List<object>() });
         }
     }
 
     /// <summary>
-    /// Procede al checkout
+    /// Proceeds to checkout
     /// </summary>
     public async Task<IActionResult> Checkout()
     {
@@ -257,37 +257,37 @@ public class CartController : Controller
 
             if (!cart.Items.Any())
             {
-                TempData["ErrorMessage"] = "Il tuo carrello è vuoto.";
+                TempData["ErrorMessage"] = "Your cart is empty.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Reindirizza al controller Checkout
+            // Redirect to the Checkout controller
             return RedirectToAction("Index", "Checkout");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'avvio del checkout");
-            TempData["ErrorMessage"] = "Si è verificato un errore. Riprova.";
+            _logger.LogError(ex, "Error starting checkout");
+            TempData["ErrorMessage"] = "An error occurred. Please try again.";
             return RedirectToAction(nameof(Index));
         }
     }
 
     /// <summary>
-    /// Salva il carrello per dopo (utenti registrati)
+    /// Saves the cart for later (registered users)
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> SaveForLater()
     {
         try
         {
-            // Implementazione per utenti registrati
-            // Per ora ritorna solo un messaggio di successo
-            return Json(new { success = true, message = "Carrello salvato per dopo" });
+            // Implementation for registered users
+            // For now, just return a success message
+            return Json(new { success = true, message = "Cart saved for later" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il salvataggio del carrello");
-            return Json(new { success = false, message = "Errore interno del server" });
+            _logger.LogError(ex, "Error saving the cart");
+            return Json(new { success = false, message = "Internal server error" });
         }
     }
 }

@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 namespace NotificationService.Services.Implementations;
 
 /// <summary>
-/// Implementazione del servizio Email usando MailKit
+/// Email service implementation using MailKit
 /// </summary>
 public class MailKitEmailService : IEmailService
 {
@@ -30,17 +30,17 @@ public class MailKitEmailService : IEmailService
     {
         try
         {
-            // Valida email
+            // Validate email
             if (!ValidateEmail(request.To))
             {
-                _logger.LogWarning("Indirizzo email non valido: {Email}", request.To);
-                return NotificationResponse.CreateError("Indirizzo email non valido");
+                _logger.LogWarning("Invalid email address: {Email}", request.To);
+                return NotificationResponse.CreateError("Invalid email address");
             }
 
             var message = CreateMimeMessage(request);
             var messageId = await SendMimeMessageAsync(message, cancellationToken);
 
-            _logger.LogInformation("Email inviata con successo a {Email}. MessageId: {MessageId}", request.To, messageId);
+            _logger.LogInformation("Email sent successfully to {Email}. MessageId: {MessageId}", request.To, messageId);
 
             return new NotificationResponse
             {
@@ -52,8 +52,8 @@ public class MailKitEmailService : IEmailService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio email a {Email}", request.To);
-            return NotificationResponse.CreateError($"Errore invio email: {ex.Message}");
+            _logger.LogError(ex, "Error sending email to {Email}", request.To);
+            return NotificationResponse.CreateError($"Email send error: {ex.Message}");
         }
     }
 
@@ -65,7 +65,7 @@ public class MailKitEmailService : IEmailService
             TotalRequests = requests.Count
         };
 
-        // Usa un pool di connessioni SMTP per performance migliori
+        // Use an SMTP connection pool for better performance
         using var client = new SmtpClient();
         await ConnectToSmtpAsync(client, cancellationToken);
 
@@ -82,7 +82,7 @@ public class MailKitEmailService : IEmailService
                         {
                             Recipient = request.To,
                             Success = false,
-                            Error = "Indirizzo email non valido"
+                            Error = "Invalid email address"
                         });
                         continue;
                     }
@@ -101,7 +101,7 @@ public class MailKitEmailService : IEmailService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Errore durante invio email bulk a {Email}", request.To);
+                    _logger.LogError(ex, "Error sending bulk email to {Email}", request.To);
                     response.FailureCount++;
                     response.Results.Add(new BulkNotificationResult
                     {
@@ -128,13 +128,13 @@ public class MailKitEmailService : IEmailService
         {
             if (!ValidateEmail(request.To))
             {
-                return NotificationResponse.CreateError("Indirizzo email non valido");
+                return NotificationResponse.CreateError("Invalid email address");
             }
 
             var message = CreateMimeMessage(request, attachments);
             var messageId = await SendMimeMessageAsync(message, cancellationToken);
 
-            _logger.LogInformation("Email con allegati inviata a {Email}. Allegati: {AttachmentCount}", request.To, attachments.Count);
+            _logger.LogInformation("Email with attachments sent to {Email}. Attachments: {AttachmentCount}", request.To, attachments.Count);
 
             return new NotificationResponse
             {
@@ -146,8 +146,8 @@ public class MailKitEmailService : IEmailService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio email con allegati a {Email}", request.To);
-            return NotificationResponse.CreateError($"Errore invio email con allegati: {ex.Message}");
+            _logger.LogError(ex, "Error sending email with attachments to {Email}", request.To);
+            return NotificationResponse.CreateError($"Error sending email with attachments: {ex.Message}");
         }
     }
 
@@ -169,19 +169,19 @@ public class MailKitEmailService : IEmailService
     }
 
     /// <summary>
-    /// Crea MimeMessage dalla richiesta
+    /// Builds a MimeMessage from the request
     /// </summary>
     private MimeMessage CreateMimeMessage(SendEmailRequest request, List<EmailAttachment>? attachments = null)
     {
         var message = new MimeMessage();
-        
-        // Mittente
+
+        // Sender
         message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromEmail));
-        
-        // Destinatario
+
+        // Recipient
         message.To.Add(MailboxAddress.Parse(request.To));
-        
-        // CC e BCC
+
+        // CC and BCC
         if (request.Cc?.Any() == true)
         {
             foreach (var cc in request.Cc)
@@ -190,7 +190,7 @@ public class MailKitEmailService : IEmailService
                     message.Cc.Add(MailboxAddress.Parse(cc));
             }
         }
-        
+
         if (request.Bcc?.Any() == true)
         {
             foreach (var bcc in request.Bcc)
@@ -200,56 +200,56 @@ public class MailKitEmailService : IEmailService
             }
         }
 
-        // Oggetto
+        // Subject
         message.Subject = request.Subject;
 
-        // Corpo del messaggio
+        // Message body
         var bodyBuilder = new BodyBuilder();
-        
+
         if (!string.IsNullOrEmpty(request.HtmlContent))
         {
             bodyBuilder.HtmlBody = request.HtmlContent;
-            bodyBuilder.TextBody = request.Content; // Fallback testo
+            bodyBuilder.TextBody = request.Content; // Text fallback
         }
         else
         {
             bodyBuilder.TextBody = request.Content;
         }
 
-        // Allegati
+        // Attachments
         if (attachments?.Any() == true)
         {
             foreach (var attachment in attachments)
             {
                 if (attachment.IsInline)
                 {
-                    // Allegato inline (per immagini nell'HTML)
+                    // Inline attachment (for images in the HTML)
                     var inline = bodyBuilder.LinkedResources.Add(attachment.FileName, attachment.Content);
                     inline.ContentId = attachment.ContentId ?? attachment.FileName;
                 }
                 else
                 {
-                    // Allegato normale
+                    // Regular attachment
                     bodyBuilder.Attachments.Add(attachment.FileName, attachment.Content, ContentType.Parse(attachment.ContentType));
                 }
             }
         }
 
         message.Body = bodyBuilder.ToMessageBody();
-        
-        // Header personalizzati - removed as Metadata property doesn't exist
+
+        // Custom headers - removed as Metadata property doesn't exist
 
         return message;
     }
 
     /// <summary>
-    /// Invia MimeMessage
+    /// Sends a MimeMessage
     /// </summary>
     private async Task<string> SendMimeMessageAsync(MimeMessage message, CancellationToken cancellationToken)
     {
         using var client = new SmtpClient();
         await ConnectToSmtpAsync(client, cancellationToken);
-        
+
         try
         {
             var messageId = await client.SendAsync(message, cancellationToken);
@@ -262,12 +262,12 @@ public class MailKitEmailService : IEmailService
     }
 
     /// <summary>
-    /// Connette al server SMTP
+    /// Connects to the SMTP server
     /// </summary>
     private async Task ConnectToSmtpAsync(SmtpClient client, CancellationToken cancellationToken)
     {
         await client.ConnectAsync(_settings.Host, _settings.Port, _settings.UseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls, cancellationToken);
-        
+
         if (!string.IsNullOrEmpty(_settings.Username))
         {
             await client.AuthenticateAsync(_settings.Username, _settings.Password, cancellationToken);
@@ -276,12 +276,12 @@ public class MailKitEmailService : IEmailService
 }
 
 /// <summary>
-/// Implementazione mock del servizio Email per testing
+/// Mock implementation of the Email service for testing
 /// </summary>
 public class MockEmailService : IEmailService
 {
     private readonly ILogger<MockEmailService> _logger;
-    
+
     public MockEmailService(ILogger<MockEmailService> logger)
     {
         _logger = logger;
@@ -292,12 +292,12 @@ public class MockEmailService : IEmailService
     {
         if (!ValidateEmail(request.To))
         {
-            return Task.FromResult(NotificationResponse.CreateError("Indirizzo email non valido"));
+            return Task.FromResult(NotificationResponse.CreateError("Invalid email address"));
         }
 
         var messageId = Guid.NewGuid().ToString();
-        
-        _logger.LogInformation("EMAIL MOCK inviata a {Email}\nOggetto: {Subject}\nContenuto: {Content}", 
+
+        _logger.LogInformation("MOCK EMAIL sent to {Email}\nSubject: {Subject}\nContent: {Content}",
             request.To, request.Subject, request.Content);
 
         return Task.FromResult(new NotificationResponse
@@ -352,12 +352,12 @@ public class MockEmailService : IEmailService
     {
         if (!ValidateEmail(request.To))
         {
-            return Task.FromResult(NotificationResponse.CreateError("Indirizzo email non valido"));
+            return Task.FromResult(NotificationResponse.CreateError("Invalid email address"));
         }
 
         var messageId = Guid.NewGuid().ToString();
-        
-        _logger.LogInformation("EMAIL MOCK con allegati inviata a {Email}\nOggetto: {Subject}\nAllegati: {AttachmentCount}", 
+
+        _logger.LogInformation("MOCK EMAIL with attachments sent to {Email}\nSubject: {Subject}\nAttachments: {AttachmentCount}",
             request.To, request.Subject, attachments.Count);
 
         return Task.FromResult(new NotificationResponse

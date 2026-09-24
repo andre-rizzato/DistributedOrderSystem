@@ -1,43 +1,43 @@
-﻿@{
-    // Impostazione del titolo della pagina per SEO e browser tab
-    ViewData["Title"] = "ShopVerse - La Tua Piattaforma E-commerce di Fiducia";
+@{
+    // Set the page title for SEO and the browser tab
+    ViewData["Title"] = "ShopVerse - Your Trusted E-commerce Platform";
 }
 @model HomePageViewModel
 
 <div class="homepage-container">
-    <!-- Sezione hero principale con messaggio di benvenuto e call-to-action accattivante -->
+    <!-- Main hero section with a welcome message and an eye-catching call-to-action -->
     <div class="hero-section">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6">
-                    <!-- Titolo principale con gradient text e design moderno -->
-                    <h1 class="display-4 fw-bold mb-4">Benvenuto su ShopVerse</h1>
-                    <!-- Sottotitolo esplicativo dei vantaggi della piattaforma -->
-                    <p class="lead mb-4">Il tuo universo shopping personale! Migliaia di prodotti, spedizione veloce, prezzi imbattibili. Scopri un modo nuovo di fare acquisti online!</p>
-                    <!-- Call-to-action button per iniziare lo shopping -->
+                    <!-- Main title with gradient text and modern design -->
+                    <h1 class="display-4 fw-bold mb-4">Welcome to ShopVerse</h1>
+                    <!-- Subtitle explaining the platform's advantages -->
+                    <p class="lead mb-4">Your personal shopping universe! Thousands of products, fast shipping, unbeatable prices. Discover a new way to shop online!</p>
+                    <!-- Call-to-action button to start shopping -->
                     <a href="#featured-products" class="btn btn-light btn-lg">
-                        <i class="fas fa-rocket"></i> Esplora ShopVerse
+                        <i class="fas fa-rocket"></i> Explore ShopVerse
                     </a>
                 </div>
                 <div class="col-lg-6 text-center">
-                    <!-- Immagine hero rappresentativa della piattaforma e-commerce -->
-                    <img src="https://i0.wp.com/programmaus.unionesarda.it/wp-content/uploads/2024/08/placeholder-2-1.png?ssl=1" 
-                         alt="ShopVerse - La tua piattaforma e-commerce" class="img-fluid rounded" />
+                    <!-- Hero image representing the e-commerce platform -->
+                    <img src="https://i0.wp.com/programmaus.unionesarda.it/wp-content/uploads/2024/08/placeholder-2-1.png?ssl=1"
+                         alt="ShopVerse - Your e-commerce platform" class="img-fluid rounded" />
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Barra di ricerca principale centralizzata per l'esperienza utente ottimale -->
+    <!-- Main centered search bar for an optimal user experience -->
     <div class="main-search-container">
         <div class="search-wrapper">
-            <!-- Form di ricerca con gestione categorie e termine di ricerca -->
+            <!-- Search form handling categories and search term -->
             <form asp-controller="Home" asp-action="Search" method="get" class="search-form">
                 <div class="search-input-group">
-                    <!-- Selettore categoria per filtrare la ricerca -->
+                    <!-- Category selector for filtering the search -->
                     <select name="Category" class="category-selector">
-                        <option value="">Tutte le categorie</option>
-                        <!-- Le categorie vengono caricate dinamicamente dai servizi backend -->
+                        <option value="">All categories</option>
+                        <!-- Categories are loaded dynamically from backend services -->
                         @if(Model?.Categories != null)
                         {
                             @foreach(var category in Model.Categories.Take(10))
@@ -46,9 +46,9 @@
                             }
                         }
                     </select>
-                    <!-- Campo di input principale con autocomplete per migliorare UX -->
-                    <input type="text" name="SearchTerm" placeholder="Cerca su ShopVerse - prodotti, marche e molto altro..." class="search-input" autocomplete="off" />
-                    <!-- Bottone di ricerca con icona intuitiva -->
+                    <!-- Main search input with autocomplete to improve UX -->
+                    <input type="text" name="SearchTerm" placeholder="Search ShopVerse - products, brands and more..." class="search-input" autocomplete="off" />
+                    <!-- Search button with an intuitive icon -->
                     <button type="submit" class="search-button">
                         <i class="fas fa-search"></i>
                     </button>
@@ -62,112 +62,112 @@
         <div class="container">
             <div class="row mb-5">
                 <div class="col-12 text-center">
-                    <h2 class="display-5 fw-bold mb-3">Acquista per categoria</h2>
-                    <p class="lead text-muted">Scopri i nostri prodotti organizzati per categoria</p>
+                    <h2 class="display-5 fw-bold mb-3">Shop by Category</h2>
+                    <p class="lead text-muted">Discover our products organized by category</p>
                 </div>
             </div>
-            
+
             <div class="row g-4">
-                <!-- Elettronica -->
+                <!-- Electronics -->
                 <div class="col-lg-3 col-md-6">
                     <a href="/Product/Search?category=electronics" class="category-card text-decoration-none">
                         <div class="text-center">
                             <div class="category-icon">
                                 <i class="fas fa-laptop"></i>
                             </div>
-                            <h5 class="mt-3 mb-2">Elettronica</h5>
-                            <p class="text-muted small">Smartphone, computer, TV</p>
+                            <h5 class="mt-3 mb-2">Electronics</h5>
+                            <p class="text-muted small">Smartphones, computers, TVs</p>
                         </div>
                     </a>
                 </div>
-                
-                <!-- Moda -->
+
+                <!-- Fashion -->
                 <div class="col-lg-3 col-md-6">
                     <a href="/Product/Search?category=fashion" class="category-card text-decoration-none">
                         <div class="text-center">
                             <div class="category-icon">
                                 <i class="fas fa-tshirt"></i>
                             </div>
-                            <h5 class="mt-3 mb-2">Moda</h5>
-                            <p class="text-muted small">Abbigliamento, scarpe, borse</p>
+                            <h5 class="mt-3 mb-2">Fashion</h5>
+                            <p class="text-muted small">Clothing, shoes, bags</p>
                         </div>
                     </a>
                 </div>
-                
-                <!-- Casa e Cucina -->
+
+                <!-- Home & Kitchen -->
                 <div class="col-lg-3 col-md-6">
                     <a href="/Product/Search?category=home" class="category-card text-decoration-none">
                         <div class="text-center">
                             <div class="category-icon">
                                 <i class="fas fa-home"></i>
                             </div>
-                            <h5 class="mt-3 mb-2">Casa e Cucina</h5>
-                            <p class="text-muted small">Mobili, elettrodomestici</p>
+                            <h5 class="mt-3 mb-2">Home & Kitchen</h5>
+                            <p class="text-muted small">Furniture, appliances</p>
                         </div>
                     </a>
                 </div>
-                
-                <!-- Libri -->
+
+                <!-- Books -->
                 <div class="col-lg-3 col-md-6">
                     <a href="/Product/Search?category=books" class="category-card text-decoration-none">
                         <div class="text-center">
                             <div class="category-icon">
                                 <i class="fas fa-book"></i>
                             </div>
-                            <h5 class="mt-3 mb-2">Libri</h5>
-                            <p class="text-muted small">Narrativa, saggistica, guide</p>
+                            <h5 class="mt-3 mb-2">Books</h5>
+                            <p class="text-muted small">Fiction, non-fiction, guides</p>
                         </div>
                     </a>
                 </div>
-                
-                <!-- Sport e tempo libero -->
+
+                <!-- Sports & Leisure -->
                 <div class="col-lg-3 col-md-6">
                     <a href="/Product/Search?category=sports" class="category-card text-decoration-none">
                         <div class="text-center">
                             <div class="category-icon">
                                 <i class="fas fa-football-ball"></i>
                             </div>
-                            <h5 class="mt-3 mb-2">Sport</h5>
-                            <p class="text-muted small">Attrezzature, abbigliamento</p>
+                            <h5 class="mt-3 mb-2">Sports</h5>
+                            <p class="text-muted small">Equipment, apparel</p>
                         </div>
                     </a>
                 </div>
-                
-                <!-- Giocattoli -->
+
+                <!-- Toys -->
                 <div class="col-lg-3 col-md-6">
                     <a href="/Product/Search?category=toys" class="category-card text-decoration-none">
                         <div class="text-center">
                             <div class="category-icon">
                                 <i class="fas fa-gamepad"></i>
                             </div>
-                            <h5 class="mt-3 mb-2">Giocattoli</h5>
-                            <p class="text-muted small">Bambini, videogames</p>
+                            <h5 class="mt-3 mb-2">Toys</h5>
+                            <p class="text-muted small">Kids, video games</p>
                         </div>
                     </a>
                 </div>
-                
-                <!-- Auto e Moto -->
+
+                <!-- Auto & Motorcycle -->
                 <div class="col-lg-3 col-md-6">
                     <a href="/Product/Search?category=automotive" class="category-card text-decoration-none">
                         <div class="text-center">
                             <div class="category-icon">
                                 <i class="fas fa-car"></i>
                             </div>
-                            <h5 class="mt-3 mb-2">Auto e Moto</h5>
-                            <p class="text-muted small">Ricambi, accessori</p>
+                            <h5 class="mt-3 mb-2">Auto & Motorcycle</h5>
+                            <p class="text-muted small">Parts, accessories</p>
                         </div>
                     </a>
                 </div>
-                
-                <!-- Salute e Bellezza -->
+
+                <!-- Health & Beauty -->
                 <div class="col-lg-3 col-md-6">
                     <a href="/Product/Search?category=beauty" class="category-card text-decoration-none">
                         <div class="text-center">
                             <div class="category-icon">
                                 <i class="fas fa-heart"></i>
                             </div>
-                            <h5 class="mt-3 mb-2">Salute e Bellezza</h5>
-                            <p class="text-muted small">Cosmetici, benessere</p>
+                            <h5 class="mt-3 mb-2">Health & Beauty</h5>
+                            <p class="text-muted small">Cosmetics, wellness</p>
                         </div>
                     </a>
                 </div>
@@ -180,21 +180,21 @@
         <div class="container">
             <div class="row mb-5">
                 <div class="col-12 text-center">
-                    <h2 class="display-5 fw-bold mb-3">Prodotti in evidenza</h2>
-                    <p class="lead text-muted">I migliori prodotti selezionati per te</p>
+                    <h2 class="display-5 fw-bold mb-3">Featured Products</h2>
+                    <p class="lead text-muted">The best products picked for you</p>
                 </div>
             </div>
-            
+
             <div class="row g-4">
-                @* Rendering dinamico dei prodotti dal database usando ViewComponent con Tag Helper *@
+                @* Dynamic rendering of products from the database via ViewComponent with a Tag Helper *@
                 @{
-                    var productsToDisplay = (Model?.FeaturedProducts != null && Model.FeaturedProducts.Any()) 
-                        ? Model.FeaturedProducts 
+                    var productsToDisplay = (Model?.FeaturedProducts != null && Model.FeaturedProducts.Any())
+                        ? Model.FeaturedProducts
                         : new List<ProductDisplayModel>
                     {
                         new ProductDisplayModel { ProductId = Guid.NewGuid(), Name = "Apple iPhone 15 Pro 128GB", Price = 1229.00m, DiscountPrice = 1044.65m, AverageRating = 5.0, ReviewCount = 1234, QuantityAvailable = 10, IsBestseller = true, FreeShipping = true },
                         new ProductDisplayModel { ProductId = Guid.NewGuid(), Name = "Apple MacBook Air M2 13\"", Price = 1349.00m, AverageRating = 5.0, ReviewCount = 856, QuantityAvailable = 5, FreeShipping = true, IsPrimeEligible = true },
-                        new ProductDisplayModel { ProductId = Guid.NewGuid(), Name = "Apple AirPods Pro 2ª gen", Price = 299.00m, DiscountPrice = 239.20m, AverageRating = 4.5, ReviewCount = 2341, QuantityAvailable = 15, FreeShipping = true },
+                        new ProductDisplayModel { ProductId = Guid.NewGuid(), Name = "Apple AirPods Pro 2nd gen", Price = 299.00m, DiscountPrice = 239.20m, AverageRating = 4.5, ReviewCount = 2341, QuantityAvailable = 15, FreeShipping = true },
                         new ProductDisplayModel { ProductId = Guid.NewGuid(), Name = "Apple iPad Air 11\" M2", Price = 699.00m, AverageRating = 5.0, ReviewCount = 967, QuantityAvailable = 8, FreeShipping = true },
                         new ProductDisplayModel { ProductId = Guid.NewGuid(), Name = "Apple Watch Series 9 45mm", Price = 459.00m, AverageRating = 5.0, ReviewCount = 1523, QuantityAvailable = 12, FreeShipping = true, IsPrimeEligible = true },
                         new ProductDisplayModel { ProductId = Guid.NewGuid(), Name = "Canon EOS R6 Mark II", Price = 2799.00m, DiscountPrice = 2519.10m, AverageRating = 4.5, ReviewCount = 423, QuantityAvailable = 3, IsBestseller = true },
@@ -202,56 +202,56 @@
                         new ProductDisplayModel { ProductId = Guid.NewGuid(), Name = "Nintendo Switch OLED", Price = 349.99m, DiscountPrice = 262.49m, AverageRating = 5.0, ReviewCount = 5632, QuantityAvailable = 25, FreeShipping = true, IsPrimeEligible = true }
                     };
                 }
-                
+
                 @foreach(var product in productsToDisplay)
                 {
                     <vc:product-card product="@product"></vc:product-card>
                 }
-                
+
                 @if(Model?.FeaturedProducts == null || !Model.FeaturedProducts.Any())
                 {
-                    @* Nota: Visualizzazione prodotti di esempio - backend non disponibile *@
+                    @* Note: showing sample products - backend unavailable *@
                 }
             </div>
         </div>
     </section>
 
-    <!-- Banner promozionale con design accattivante e call-to-action efficaci -->
+    <!-- Promotional banner with eye-catching design and effective calls-to-action -->
     <section class="promo-banner">
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8 text-center">
-                    <!-- Titolo promozionale con icona dinamica -->
-                    <h3><i class="fas fa-bolt"></i> Offerte Esclusive ShopVerse</h3>
-                    <!-- Descrizione dei benefici per incentivare l'azione -->
-                    <p class="mb-4">Spedizione gratuita sopra i 29€ e fino al 60% di sconto sui prodotti selezionati! Solo per oggi!</p>
-                    <!-- Button call-to-action con link alle offerte speciali -->
+                    <!-- Promotional title with dynamic icon -->
+                    <h3><i class="fas fa-bolt"></i> Exclusive ShopVerse Deals</h3>
+                    <!-- Benefits description to drive the call to action -->
+                    <p class="mb-4">Free shipping on orders over €29 and up to 60% off selected products! Today only!</p>
+                    <!-- Call-to-action button linking to special offers -->
                     <a href="/Product/Search?featured=true" class="btn btn-light btn-lg">
-                        <i class="fas fa-fire"></i> Scopri le Super Offerte
+                        <i class="fas fa-fire"></i> Discover the Super Deals
                     </a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Messaggio di benvenuto quando i servizi backend non sono attivi -->
+    <!-- Welcome message shown when the backend services are not running -->
     @if(Model?.FeaturedProducts == null || !Model.FeaturedProducts.Any())
     {
         <div class="welcome-message">
-            <!-- Titolo di benvenuto principale -->
-            <h2>Benvenuto su ShopVerse</h2>
-            <!-- Descrizione dello stato del sistema -->
-            <p>La piattaforma è in fase di configurazione. I servizi backend non sono ancora attivi.</p>
-            <!-- Istruzioni per l'amministratore del sistema -->
-            <p>Per utilizzare tutte le funzionalità avanzate, avvia i microservizi:</p>
-            <!-- Lista dei servizi necessari per il funzionamento completo -->
+            <!-- Main welcome title -->
+            <h2>Welcome to ShopVerse</h2>
+            <!-- System status description -->
+            <p>The platform is being configured. The backend services are not running yet.</p>
+            <!-- Instructions for the system administrator -->
+            <p>To use all the advanced features, start the microservices:</p>
+            <!-- List of services required for full functionality -->
             <ul>
-                <li><strong>ProductService</strong> - Gestione catalogo prodotti</li>
-                <li><strong>OrderService</strong> - Elaborazione ordini</li>
-                <li><strong>InventoryService</strong> - Gestione inventario</li>
-                <li><strong>PaymentService</strong> - Processamento pagamenti</li>
-                <li><strong>NotificationService</strong> - Sistema notifiche</li>
-                <li><strong>ChatbotService</strong> - Assistenza clienti AI</li>
+                <li><strong>ProductService</strong> - Product catalog management</li>
+                <li><strong>OrderService</strong> - Order processing</li>
+                <li><strong>InventoryService</strong> - Inventory management</li>
+                <li><strong>PaymentService</strong> - Payment processing</li>
+                <li><strong>NotificationService</strong> - Notification system</li>
+                <li><strong>ChatbotService</strong> - AI customer support</li>
             </ul>
         </div>
     }
@@ -259,7 +259,7 @@
 
 @section Scripts {
     <script>
-        // Funzione per aggiungere prodotto al carrello
+        // Function to add a product to the cart
         function addToCart(productId, quantity = 1) {
             fetch('/Cart/AddItem', {
                 method: 'POST',
@@ -275,22 +275,22 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Aggiorna il contatore del carrello
+                    // Update the cart counter
                     updateCartCount(data.cartItemCount);
-                    
-                    // Mostra messaggio di successo
-                    showNotification('Prodotto aggiunto al carrello!', 'success');
+
+                    // Show a success message
+                    showNotification('Product added to cart!', 'success');
                 } else {
-                    showNotification(data.message || 'Errore durante l\'aggiunta al carrello', 'error');
+                    showNotification(data.message || 'Error adding item to cart', 'error');
                 }
             })
             .catch(error => {
-                console.error('Errore:', error);
-                showNotification('Errore durante l\'aggiunta al carrello', 'error');
+                console.error('Error:', error);
+                showNotification('Error adding item to cart', 'error');
             });
         }
 
-        // Funzione per aggiornare il contatore del carrello
+        // Function to update the cart counter
         function updateCartCount(count) {
             const cartCounter = document.querySelector('.cart-count');
             if (cartCounter) {
@@ -299,9 +299,9 @@
             }
         }
 
-        // Funzione per mostrare notifiche
+        // Function to show notifications
         function showNotification(message, type = 'info') {
-            // Implementazione semplice di notifica
+            // Simple notification implementation
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.textContent = message;
@@ -316,16 +316,16 @@
                 z-index: 10000;
                 box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             `;
-            
+
             document.body.appendChild(notification);
-            
-            // Rimuovi dopo 3 secondi
+
+            // Remove after 3 seconds
             setTimeout(() => {
                 notification.remove();
             }, 3000);
         }
 
-        // Autocomplete per la ricerca
+        // Autocomplete for the search box
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.querySelector('.search-input');
             if (searchInput) {
@@ -333,14 +333,14 @@
                 searchInput.addEventListener('input', function() {
                     clearTimeout(timeout);
                     const term = this.value;
-                    
+
                     if (term.length >= 2) {
                         timeout = setTimeout(() => {
                             fetch(`/Home/Autocomplete?term=${encodeURIComponent(term)}`)
                                 .then(response => response.json())
                                 .then(data => {
-                                    // Implementa qui la logica per mostrare i suggerimenti
-                                    console.log('Suggerimenti:', data);
+                                    // Implement suggestion rendering here
+                                    console.log('Suggestions:', data);
                                 });
                         }, 300);
                     }

@@ -12,11 +12,11 @@ using ProductService.Application.DTOs;
 namespace ProductService.Controllers;
 
 /// <summary>
-/// Controller thin per i prodotti — Clean Architecture + Full CQRS.
-/// OGNI operazione passa attraverso MediatR (Send) come Command o Query.
-/// Il controller non contiene logica di business: solo mapping HTTP → CQRS.
-/// 
-/// Pipeline MediatR:
+/// Thin controller for products — Clean Architecture + Full CQRS.
+/// EVERY operation goes through MediatR (Send) as a Command or Query.
+/// The controller contains no business logic: just HTTP → CQRS mapping.
+///
+/// MediatR pipeline:
 ///   Request → ValidationBehavior → LoggingBehavior → Handler → Response
 /// </summary>
 [ApiController]

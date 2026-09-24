@@ -6,8 +6,8 @@ using OrderService.Domain.Interfaces;
 using OrderService.Infrastructure.Data;
 
 /// <summary>
-/// Implementazione del Repository per l'aggregato Order.
-/// Risiede nell'Infrastructure layer e implementa l'interfaccia definita nel Domain layer.
+/// Repository implementation for the Order aggregate.
+/// Lives in the Infrastructure layer and implements the interface defined in the Domain layer.
 /// </summary>
 public class OrderRepository : IOrderRepository
 {
@@ -41,7 +41,7 @@ public class OrderRepository : IOrderRepository
         await _context.SaveChangesAsync(ct);
 
         _logger.LogInformation(
-            "Ordine {OrderId} persistito con {ItemCount} articoli",
+            "Order {OrderId} persisted with {ItemCount} items",
             order.Id, order.Items.Count);
 
         return order;

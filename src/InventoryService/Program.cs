@@ -30,21 +30,21 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
     return ConnectionMultiplexer.Connect(conn);
 });
 
-// Registra IDatabase da IConnectionMultiplexer
+// Register IDatabase from IConnectionMultiplexer
 builder.Services.AddSingleton<IDatabase>(provider =>
 {
     var connectionMultiplexer = provider.GetRequiredService<IConnectionMultiplexer>();
     return connectionMultiplexer.GetDatabase();
 });
 
-// Configurazione
+// Configuration
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
 
 // Dependency Injection
 builder.Services.AddSingleton<IInventoryCache, RedisInventoryCache>();
 builder.Services.AddScoped<IInventoryWorkerService, InventoryWorkerService>();
 
-// Consumer Kafka (Servizio in Background)
+// Kafka Consumer (Background Service)
 builder.Services.AddHostedService<OrderCreatedConsumer>();
 
 builder.Services.AddControllers();
@@ -54,21 +54,21 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Assicura che il database sia creato e aggiornato
+// Make sure the database is created and up to date
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<InventoryContext>();
     context.Database.EnsureCreated();
 }
 
-// Configura middleware Scalar (solo in sviluppo)
+// Configure Scalar middleware (development only)
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
 
-// Disabilita il reindirizzamento HTTPS in sviluppo per consentire chiamate HTTP tra servizi
+// Disable HTTPS redirection in development to allow HTTP calls between services
 
 if (!app.Environment.IsDevelopment())
 {

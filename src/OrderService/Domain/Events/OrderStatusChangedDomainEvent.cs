@@ -3,7 +3,7 @@ namespace OrderService.Domain.Events;
 using OrderService.Domain.SeedWork;
 
 /// <summary>
-/// Evento di dominio sollevato quando lo stato di un ordine cambia.
+/// Domain event raised when an order's status changes.
 /// </summary>
 public record OrderStatusChangedDomainEvent(int OrderId, string OldStatus, string NewStatus) : IDomainEvent
 {

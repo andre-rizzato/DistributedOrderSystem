@@ -7,8 +7,8 @@ using OrderService.Domain.Exceptions;
 
 /// <summary>
 /// Order Aggregate Root.
-/// Incapsula tutte le regole di business relative agli ordini.
-/// L'accesso alle entità figlie (OrderItem) avviene solo attraverso l'aggregato.
+/// Encapsulates all business rules related to orders.
+/// Access to child entities (OrderItem) happens only through the aggregate.
 /// </summary>
 public class Order : AggregateRoot
 {
@@ -19,16 +19,16 @@ public class Order : AggregateRoot
     private readonly List<OrderItem> _items = new();
 
     /// <summary>
-    /// Collezione di righe d'ordine (accesso in sola lettura dall'esterno).
+    /// Collection of order lines (read-only access from the outside).
     /// </summary>
     public IReadOnlyList<OrderItem> Items => _items.AsReadOnly();
 
-    // Costruttore privato richiesto da EF Core per la materializzazione
+    // Private constructor required by EF Core for materialization
     private Order() { }
 
     /// <summary>
-    /// Factory method: crea un nuovo ordine e solleva OrderCreatedDomainEvent.
-    /// Incapsula la logica di creazione garantendo che l'aggregato sia sempre in uno stato valido.
+    /// Factory method: creates a new order and raises OrderCreatedDomainEvent.
+    /// Encapsulates the creation logic, guaranteeing the aggregate is always in a valid state.
     /// </summary>
     public static Order Create(IEnumerable<(Guid productId, int quantity, decimal unitPrice)> items)
     {
@@ -44,7 +44,7 @@ public class Order : AggregateRoot
         }
 
         if (order._items.Count == 0)
-            throw new OrderDomainException("Un ordine deve contenere almeno un articolo.");
+            throw new OrderDomainException("An order must contain at least one item.");
 
         order.RecalculateTotal();
         order.AddDomainEvent(new OrderCreatedDomainEvent(order.CreatedAt, order.Total.Amount));
@@ -53,20 +53,20 @@ public class Order : AggregateRoot
     }
 
     /// <summary>
-    /// Aggiunge una riga d'ordine. Consentito solo quando l'ordine è in stato Pending.
+    /// Adds an order line. Only allowed while the order is in the Pending state.
     /// </summary>
     private void AddItem(Guid productId, int quantity, Money unitPrice)
     {
         if (Status != OrderStatus.Pending)
-            throw new OrderDomainException("Non è possibile aggiungere articoli a un ordine non in stato Pending.");
+            throw new OrderDomainException("Cannot add items to an order that is not in the Pending state.");
 
         var item = new OrderItem(productId, quantity, unitPrice);
         _items.Add(item);
     }
 
     /// <summary>
-    /// Cambia lo stato dell'ordine, applicando le regole di transizione.
-    /// Solleva OrderStatusChangedDomainEvent.
+    /// Changes the order's status, applying the transition rules.
+    /// Raises OrderStatusChangedDomainEvent.
     /// </summary>
     public void ChangeStatus(string newStatus)
     {
@@ -76,7 +76,7 @@ public class Order : AggregateRoot
     }
 
     /// <summary>
-    /// Ricalcola il totale dell'ordine dalla somma dei subtotali delle righe.
+    /// Recalculates the order total from the sum of the line subtotals.
     /// </summary>
     private void RecalculateTotal()
     {

@@ -6,8 +6,8 @@ using ProductService.Application.DTOs;
 using ProductService.Domain.Interfaces;
 
 /// <summary>
-/// Handler per GetProductByIdQuery.
-/// Implementa il pattern cache-aside: controlla prima la cache, poi il database.
+/// Handler for GetProductByIdQuery.
+/// Implements the cache-aside pattern: checks the cache first, then the database.
 /// </summary>
 public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, ProductDto?>
 {

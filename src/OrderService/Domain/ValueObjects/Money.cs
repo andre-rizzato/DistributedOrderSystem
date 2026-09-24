@@ -4,8 +4,8 @@ using OrderService.Domain.SeedWork;
 using OrderService.Domain.Exceptions;
 
 /// <summary>
-/// Value Object che rappresenta un importo monetario.
-/// Invariante: l'importo non può essere negativo.
+/// Value Object representing a monetary amount.
+/// Invariant: the amount cannot be negative.
 /// </summary>
 public class Money : ValueObject
 {
@@ -14,7 +14,7 @@ public class Money : ValueObject
     public Money(decimal amount)
     {
         if (amount < 0)
-            throw new OrderDomainException("L'importo monetario non può essere negativo.");
+            throw new OrderDomainException("The monetary amount cannot be negative.");
         Amount = amount;
     }
 

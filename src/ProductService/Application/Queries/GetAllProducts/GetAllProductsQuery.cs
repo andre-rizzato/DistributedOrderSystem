@@ -4,7 +4,7 @@ using MediatR;
 using ProductService.Application.DTOs;
 
 /// <summary>
-/// CQRS Query: recupera tutti i prodotti.
-/// Le Query rappresentano richieste di lettura (read-side) e restituiscono DTO, non entità.
+/// CQRS Query: retrieves all products.
+/// Queries represent read-side requests and return DTOs, not entities.
 /// </summary>
 public record GetAllProductsQuery : IRequest<IEnumerable<ProductDto>>;

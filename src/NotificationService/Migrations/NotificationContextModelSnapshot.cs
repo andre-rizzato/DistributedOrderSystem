@@ -260,69 +260,69 @@ namespace NotificationService.Migrations
                         new
                         {
                             Id = 1L,
-                            ContentTemplate = "Ciao {customerName},\\n\\nGrazie per il tuo ordine #{orderId}!\\n\\nDettagli ordine:\\n{orderDetails}\\n\\nTotale: {total}\\n\\nGrazie per averci scelto!\\n\\n{companyName}",
+                            ContentTemplate = "Hello {customerName},\\n\\nThank you for your order #{orderId}!\\n\\nOrder details:\\n{orderDetails}\\n\\nTotal: {total}\\n\\nThank you for choosing us!\\n\\n{companyName}",
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Conferma ordine effettuato",
-                            HtmlTemplate = "<h2>Conferma ordine #{orderId}</h2><p>Ciao <strong>{customerName}</strong>,</p><p>Grazie per il tuo ordine!</p><div>{orderDetails}</div><p><strong>Totale: {total}</strong></p>",
+                            Description = "Order confirmation",
+                            HtmlTemplate = "<h2>Order confirmation #{orderId}</h2><p>Hello <strong>{customerName}</strong>,</p><p>Thank you for your order!</p><div>{orderDetails}</div><p><strong>Total: {total}</strong></p>",
                             IsActive = true,
                             Name = "order_confirmation",
-                            SubjectTemplate = "Conferma ordine #{orderId} - {companyName}",
+                            SubjectTemplate = "Order confirmation #{orderId} - {companyName}",
                             Type = 1,
                             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Variables = "{\"orderId\": \"ID ordine\", \"customerName\": \"Nome cliente\", \"orderDetails\": \"Dettagli ordine\", \"total\": \"Totale ordine\", \"companyName\": \"Nome azienda\"}"
+                            Variables = "{\"orderId\": \"Order ID\", \"customerName\": \"Customer name\", \"orderDetails\": \"Order details\", \"total\": \"Order total\", \"companyName\": \"Company name\"}"
                         },
                         new
                         {
                             Id = 2L,
-                            ContentTemplate = "Ciao {customerName}! Il tuo ordine #{orderId} è stato spedito. Tracking: {trackingNumber}. Consegna prevista: {deliveryDate}",
+                            ContentTemplate = "Hello {customerName}! Your order #{orderId} has been shipped. Tracking: {trackingNumber}. Estimated delivery: {deliveryDate}",
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Notifica spedizione ordine",
+                            Description = "Order shipped notification",
                             IsActive = true,
                             Name = "order_shipped",
-                            SubjectTemplate = "Ordine #{orderId} spedito",
+                            SubjectTemplate = "Order #{orderId} shipped",
                             Type = 2,
                             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Variables = "{\"orderId\": \"ID ordine\", \"customerName\": \"Nome cliente\", \"trackingNumber\": \"Codice tracking\", \"deliveryDate\": \"Data consegna\"}"
+                            Variables = "{\"orderId\": \"Order ID\", \"customerName\": \"Customer name\", \"trackingNumber\": \"Tracking number\", \"deliveryDate\": \"Delivery date\"}"
                         },
                         new
                         {
                             Id = 3L,
-                            ContentTemplate = "Ciao {customerName},\\n\\nIl pagamento per l'ordine #{orderId} scadrà il {dueDate}.\\n\\nImporto: {amount}\\n\\nEffettua il pagamento entro la scadenza per evitare interruzioni del servizio.\\n\\nGrazie!",
+                            ContentTemplate = "Hello {customerName},\\n\\nThe payment for order #{orderId} is due on {dueDate}.\\n\\nAmount: {amount}\\n\\nPlease make the payment before the due date to avoid service interruptions.\\n\\nThank you!",
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Promemoria pagamento in scadenza",
-                            HtmlTemplate = "<h3>Promemoria Pagamento</h3><p>Ciao {customerName},</p><p>Il pagamento per l'ordine <strong>#{orderId}</strong> scadrà il <strong>{dueDate}</strong>.</p><p>Importo: <strong>{amount}</strong></p><p>Ti preghiamo di effettuare il pagamento entro la scadenza.</p>",
+                            Description = "Payment due reminder",
+                            HtmlTemplate = "<h3>Payment Reminder</h3><p>Hello {customerName},</p><p>The payment for order <strong>#{orderId}</strong> is due on <strong>{dueDate}</strong>.</p><p>Amount: <strong>{amount}</strong></p><p>Please make the payment before the due date.</p>",
                             IsActive = true,
                             Name = "payment_reminder",
-                            SubjectTemplate = "Promemoria pagamento - Ordine #{orderId}",
+                            SubjectTemplate = "Payment reminder - Order #{orderId}",
                             Type = 1,
                             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Variables = "{\"orderId\": \"ID ordine\", \"customerName\": \"Nome cliente\", \"dueDate\": \"Data scadenza\", \"amount\": \"Importo da pagare\"}"
+                            Variables = "{\"orderId\": \"Order ID\", \"customerName\": \"Customer name\", \"dueDate\": \"Due date\", \"amount\": \"Amount due\"}"
                         },
                         new
                         {
                             Id = 4L,
-                            ContentTemplate = "Ciao {userName}! Benvenuto in {appName}. Scopri tutte le funzionalità della nostra app e inizia subito a fare shopping!",
+                            ContentTemplate = "Hello {userName}! Welcome to {appName}. Discover all our app's features and start shopping right away!",
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Messaggio di benvenuto nuovo utente",
+                            Description = "New user welcome message",
                             IsActive = true,
                             Name = "welcome_user",
-                            SubjectTemplate = "Benvenuto in {appName}!",
+                            SubjectTemplate = "Welcome to {appName}!",
                             Type = 3,
                             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Variables = "{\"userName\": \"Nome utente\", \"appName\": \"Nome applicazione\"}"
+                            Variables = "{\"userName\": \"User name\", \"appName\": \"Application name\"}"
                         },
                         new
                         {
                             Id = 5L,
-                            ContentTemplate = "Attenzione: il sistema sarà in manutenzione il {maintenanceDate} dalle {startTime} alle {endTime}. Alcune funzionalità potrebbero non essere disponibili.",
+                            ContentTemplate = "Attention: the system will be under maintenance on {maintenanceDate} from {startTime} to {endTime}. Some features may be unavailable.",
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Notifica manutenzione sistema",
+                            Description = "System maintenance notification",
                             IsActive = true,
                             Name = "system_maintenance",
-                            SubjectTemplate = "Manutenzione programmata sistema",
+                            SubjectTemplate = "Scheduled system maintenance",
                             Type = 4,
                             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Variables = "{\"maintenanceDate\": \"Data manutenzione\", \"startTime\": \"Ora inizio\", \"endTime\": \"Ora fine\"}"
+                            Variables = "{\"maintenanceDate\": \"Maintenance date\", \"startTime\": \"Start time\", \"endTime\": \"End time\"}"
                         });
                 });
 

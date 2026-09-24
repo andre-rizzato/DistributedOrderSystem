@@ -5,8 +5,8 @@ using Shared.Messages;
 using System.Text.Json;
 
 /// <summary>
-/// Implementazione del produttore Kafka per eventi di integrazione.
-/// Risiede nell'Infrastructure layer.
+/// Kafka producer implementation for integration events.
+/// Lives in the Infrastructure layer.
 /// </summary>
 public class OrderEventProducer : IOrderEventProducer, IDisposable
 {
@@ -36,7 +36,7 @@ public class OrderEventProducer : IOrderEventProducer, IDisposable
         _producer = new ProducerBuilder<string, string>(config).Build();
 
         _logger.LogInformation(
-            "Producer Kafka inizializzato per topic {Topic} su {BootstrapServers}",
+            "Kafka producer initialized for topic {Topic} at {BootstrapServers}",
             _topic, bootstrapServers);
     }
 
@@ -57,13 +57,13 @@ public class OrderEventProducer : IOrderEventProducer, IDisposable
             var result = await _producer.ProduceAsync(_topic, message, ct);
 
             _logger.LogInformation(
-                "Pubblicato evento OrderCreated per Ordine {OrderId} partizione {Partition} offset {Offset}",
+                "Published OrderCreated event for Order {OrderId} partition {Partition} offset {Offset}",
                 orderEvent.OrderId, result.Partition.Value, result.Offset.Value);
         }
         catch (ProduceException<string, string> ex)
         {
             _logger.LogError(ex,
-                "Impossibile pubblicare evento OrderCreated per Ordine {OrderId}: {Error}",
+                "Unable to publish OrderCreated event for Order {OrderId}: {Error}",
                 orderEvent.OrderId, ex.Error.Reason);
             throw;
         }
@@ -78,7 +78,7 @@ public class OrderEventProducer : IOrderEventProducer, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante rilascio producer Kafka");
+            _logger.LogError(ex, "Error releasing the Kafka producer");
         }
     }
 }

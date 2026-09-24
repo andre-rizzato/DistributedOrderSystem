@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace CustomerWebsite.Models;
 
 /// <summary>
-/// Modello dell'ordine per il checkout
+/// Order model for checkout
 /// </summary>
 public class OrderModel
 {
@@ -11,41 +11,41 @@ public class OrderModel
     public string OrderNumber { get; set; } = string.Empty;
     public DateTime OrderDate { get; set; }
     public OrderStatus Status { get; set; }
-    
-    // Informazioni cliente
+
+    // Customer information
     public Guid CustomerId { get; set; }
     public string CustomerName { get; set; } = string.Empty;
     public string CustomerEmail { get; set; } = string.Empty;
-    
-    // Indirizzi
+
+    // Addresses
     public AddressModel ShippingAddress { get; set; } = new();
     public AddressModel BillingAddress { get; set; } = new();
     public bool UseSameAddressForBilling { get; set; } = true;
-    
-    // Elementi dell'ordine
+
+    // Order items
     public List<OrderItemModel> Items { get; set; } = new();
-    
-    // Informazioni di pagamento
+
+    // Payment information
     public PaymentMethodModel PaymentMethod { get; set; } = new();
-    
-    // Spedizione
+
+    // Shipping
     public ShippingOptionModel ShippingOption { get; set; } = new();
-    
-    // Totali
+
+    // Totals
     public decimal Subtotal => Items.Sum(item => item.TotalPrice);
     public decimal ShippingCost { get; set; }
     public decimal TaxAmount { get; set; }
     public decimal DiscountAmount { get; set; }
     public decimal Total { get; set; }
-    
-    // Informazioni aggiuntive
+
+    // Additional information
     public string? PromoCode { get; set; }
     public string? OrderNotes { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
 }
 
 /// <summary>
-/// Modello degli elementi dell'ordine
+/// Order item model
 /// </summary>
 public class OrderItemModel
 {
@@ -63,77 +63,77 @@ public class OrderItemModel
 }
 
 /// <summary>
-/// Stati dell'ordine
+/// Order statuses
 /// </summary>
 public enum OrderStatus
 {
-    [Display(Name = "In Attesa")]
+    [Display(Name = "Pending")]
     Pending,
-    
-    [Display(Name = "Confermato")]
+
+    [Display(Name = "Confirmed")]
     Confirmed,
-    
-    [Display(Name = "In Elaborazione")]
+
+    [Display(Name = "Processing")]
     Processing,
-    
-    [Display(Name = "Spedito")]
+
+    [Display(Name = "Shipped")]
     Shipped,
-    
-    [Display(Name = "Consegnato")]
+
+    [Display(Name = "Delivered")]
     Delivered,
-    
-    [Display(Name = "Annullato")]
+
+    [Display(Name = "Cancelled")]
     Cancelled,
-    
-    [Display(Name = "Restituito")]
+
+    [Display(Name = "Returned")]
     Returned
 }
 
 /// <summary>
-/// Modello del checkout
+/// Checkout model
 /// </summary>
 public class CheckoutModel
 {
-    // Step 1: Revisione carrello
+    // Step 1: Cart review
     public ShoppingCartModel Cart { get; set; } = new();
-    
-    // Step 2: Indirizzo di spedizione
-    [Required(ErrorMessage = "Indirizzo di spedizione richiesto")]
+
+    // Step 2: Shipping address
+    [Required(ErrorMessage = "Shipping address is required")]
     public AddressModel ShippingAddress { get; set; } = new();
-    
-    // Step 3: Indirizzo di fatturazione
+
+    // Step 3: Billing address
     public AddressModel? BillingAddress { get; set; }
     public bool UseSameAddressForBilling { get; set; } = true;
-    
-    // Step 4: Metodo di spedizione
-    [Required(ErrorMessage = "Metodo di spedizione richiesto")]
+
+    // Step 4: Shipping method
+    [Required(ErrorMessage = "Shipping method is required")]
     public ShippingOptionModel SelectedShippingOption { get; set; } = new();
     public List<ShippingOptionModel> AvailableShippingOptions { get; set; } = new();
-    
-    // Step 5: Metodo di pagamento
-    [Required(ErrorMessage = "Metodo di pagamento richiesto")]
+
+    // Step 5: Payment method
+    [Required(ErrorMessage = "Payment method is required")]
     public PaymentMethodModel PaymentMethod { get; set; } = new();
-    
-    // Codici promozionali
+
+    // Promo codes
     public string? PromoCode { get; set; }
     public decimal DiscountAmount { get; set; }
-    
-    // Note ordine
-    [StringLength(500, ErrorMessage = "Le note non possono superare i 500 caratteri")]
+
+    // Order notes
+    [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters")]
     public string? OrderNotes { get; set; }
-    
-    // Totali
+
+    // Totals
     public decimal Subtotal => Cart.Subtotal;
     public decimal ShippingCost => SelectedShippingOption.Cost;
     public decimal TaxAmount { get; set; }
     public decimal Total => Subtotal + ShippingCost + TaxAmount - DiscountAmount;
-    
-    // Step corrente nel processo di checkout
+
+    // Current step in the checkout process
     public CheckoutStep CurrentStep { get; set; } = CheckoutStep.ReviewCart;
 }
 
 /// <summary>
-/// Passi del checkout
+/// Checkout steps
 /// </summary>
 public enum CheckoutStep
 {
@@ -147,40 +147,40 @@ public enum CheckoutStep
 }
 
 /// <summary>
-/// Modello delle opzioni di spedizione
+/// Shipping options model
 /// </summary>
 public class ShippingOptionModel
 {
     public Guid ShippingOptionId { get; set; }
-    
-    [Display(Name = "Nome")]
+
+    [Display(Name = "Name")]
     public string Name { get; set; } = string.Empty;
-    
-    [Display(Name = "Descrizione")]
+
+    [Display(Name = "Description")]
     public string Description { get; set; } = string.Empty;
-    
-    [Display(Name = "Costo")]
+
+    [Display(Name = "Cost")]
     [DataType(DataType.Currency)]
     public decimal Cost { get; set; }
-    
-    [Display(Name = "Giorni di Consegna")]
+
+    [Display(Name = "Delivery Days")]
     public int DeliveryDays { get; set; }
-    
-    [Display(Name = "Data Consegna Stimata")]
+
+    [Display(Name = "Estimated Delivery Date")]
     public DateTime EstimatedDeliveryDate => DateTime.Now.AddDays(DeliveryDays);
-    
-    [Display(Name = "Spedizione Express")]
+
+    [Display(Name = "Express Shipping")]
     public bool IsExpress { get; set; }
-    
-    [Display(Name = "Tracking Incluso")]
+
+    [Display(Name = "Tracking Included")]
     public bool IncludesTracking { get; set; }
-    
-    [Display(Name = "Assicurazione")]
+
+    [Display(Name = "Insurance")]
     public bool IncludesInsurance { get; set; }
 }
 
 /// <summary>
-/// Modello del riepilogo ordine
+/// Order summary model
 /// </summary>
 public class OrderSummaryModel
 {
@@ -191,14 +191,14 @@ public class OrderSummaryModel
 }
 
 /// <summary>
-/// Modello per l'applicazione del codice promozionale
+/// Model for applying a promo code
 /// </summary>
 public class PromoCodeModel
 {
-    [Required(ErrorMessage = "Codice promozionale richiesto")]
-    [Display(Name = "Codice Promozionale")]
+    [Required(ErrorMessage = "Promo code is required")]
+    [Display(Name = "Promo Code")]
     public string Code { get; set; } = string.Empty;
-    
+
     public bool IsValid { get; set; }
     public string? ErrorMessage { get; set; }
     public decimal DiscountAmount { get; set; }
@@ -206,7 +206,7 @@ public class PromoCodeModel
 }
 
 /// <summary>
-/// Modello per la cronologia degli ordini
+/// Model for order history
 /// </summary>
 public class OrderHistoryModel
 {
@@ -215,28 +215,28 @@ public class OrderHistoryModel
     public int CurrentPage { get; set; } = 1;
     public int PageSize { get; set; } = 10;
     public OrderHistoryFilter Filter { get; set; } = new();
-    
+
     public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
     public bool HasPreviousPage => CurrentPage > 1;
     public bool HasNextPage => CurrentPage < TotalPages;
 }
 
 /// <summary>
-/// Filtri per la cronologia ordini
+/// Filters for order history
 /// </summary>
 public class OrderHistoryFilter
 {
-    [Display(Name = "Stato Ordine")]
+    [Display(Name = "Order Status")]
     public OrderStatus? Status { get; set; }
-    
-    [Display(Name = "Data Da")]
+
+    [Display(Name = "From Date")]
     [DataType(DataType.Date)]
     public DateTime? StartDate { get; set; }
-    
-    [Display(Name = "Data A")]
+
+    [Display(Name = "To Date")]
     [DataType(DataType.Date)]
     public DateTime? EndDate { get; set; }
-    
-    [Display(Name = "Numero Ordine")]
+
+    [Display(Name = "Order Number")]
     public string? OrderNumber { get; set; }
 }

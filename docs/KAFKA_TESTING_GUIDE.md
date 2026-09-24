@@ -1,6 +1,6 @@
 # Quick Testing Guide - Kafka Integration
 
-> Updated to match the real code. Product/order ids are `Guid`, not `int`; infrastructure is PostgreSQL, not SQL Server; and — the biggest practical fix — most of the "watch for this log line" instructions below quoted English text that doesn't exist in the running services. `InventoryService`'s consumer and `OrderService`'s producer log almost everything in Italian. See `KAFKA_INTEGRATION.md`'s Observability section for the verbatim strings; this guide's log excerpts have been corrected to match.
+> Updated to match the real code. Product/order ids are `Guid`, not `int`; infrastructure is PostgreSQL, not SQL Server. Note: as of 2026-09-24 all log messages across the codebase were translated from Italian to English — see `KAFKA_INTEGRATION.md`'s Observability section for the verbatim strings; this guide's log excerpts reflect the current English text.
 
 ## Prerequisites
 ```bash
@@ -27,7 +27,7 @@ docker logs dos_kafka | tail -20
 cd src/OrderService
 dotnet run
 ```
-**Watch for**: `Producer Kafka inizializzato per topic order-created su localhost:29092` (Italian — this is the real message)
+**Watch for**: `Kafka producer initialized for topic order-created at localhost:29092`
 
 ### Terminal 2: InventoryService (Port 5051)
 ```bash
@@ -35,8 +35,8 @@ cd src/InventoryService
 dotnet run
 ```
 **Watch for**:
-- `Kafka consumer initialized for topic order-created with group inventory-service at localhost:29092` (this one really is in English)
-- `Avvio consumer Kafka per topic: order-created` (Italian — logged once the consume loop starts, ~2s after startup)
+- `Kafka consumer initialized for topic order-created with group inventory-service at localhost:29092`
+- `Starting Kafka consumer for topic: order-created` (logged once the consume loop starts, ~2s after startup)
 
 ### Terminal 3: GatewayBff (Port 5189)
 ```bash
@@ -106,20 +106,20 @@ GatewayBff's `CreateOrderCommandHandler` validates the product is active, checks
 
 ### 5. Verify Kafka Event Published
 
-**OrderService logs should show** (real message, Italian):
+**OrderService logs should show**:
 ```
-Pubblicato evento OrderCreated per Ordine 1 partizione 0 offset 0
+Published OrderCreated event for Order 1 partition 0 offset 0
 ```
 
 ### 6. Verify Inventory Updated
 
-**InventoryService logs should show** (real messages — mixed Italian, one English line):
+**InventoryService logs should show**:
 ```
-Ricevuto messaggio dalla partizione 0 all'offset 0
-Elaborazione OrderCreatedEvent per Ordine 1 con 1 articoli
-Ridotto inventario per Prodotto 3fa85f64-5717-4562-b3fc-2c963f66afa6 di 5 unità (Ordine 1)
-Completati aggiornamenti inventario per Ordine 1
-Messaggio elaborato e confermato con successo all'offset 0
+Received message from partition 0 at offset 0
+Processing OrderCreatedEvent for Order 1 with 1 items
+Reduced inventory for Product 3fa85f64-5717-4562-b3fc-2c963f66afa6 by 5 units (Order 1)
+Completed inventory updates for Order 1
+Message processed and successfully committed at offset 0
 ```
 
 **Check inventory**:
@@ -255,8 +255,8 @@ docker-compose up -d
 
 ## Success Criteria
 
-✅ OrderService logs show `Pubblicato evento OrderCreated per Ordine ...` (not an English "Published" line)
-✅ InventoryService logs show `Elaborazione OrderCreatedEvent per Ordine ...` and `Ridotto inventario per Prodotto ...`
+✅ OrderService logs show `Published OrderCreated event for Order ...`
+✅ InventoryService logs show `Processing OrderCreatedEvent for Order ...` and `Reduced inventory for Product ...`
 ✅ Inventory API returns updated quantities
 ✅ Consumer group lag is 0 (`kafka-consumer-groups --describe --group inventory-service`, or kafka-ui)
 ✅ No `❌ ERROR` lines in either service's logs
@@ -267,4 +267,4 @@ docker-compose up -d
 - Product/order/consumer-group ids throughout this guide use `Guid`s for products, `int` for order ids — don't mix these up when adapting curl commands.
 - Kafka event publishing is non-blocking: order creation succeeds even if Kafka is down (verified in `OrderApplicationService.CreateOrderAsync`).
 - Insufficient-stock is **not** retried by the consumer — it's a committed, logged warning, not a redelivery trigger. Only a technical exception (DB down, etc.) triggers redelivery.
-- If you're grepping logs for English text and finding nothing, that's very likely the Italian-logging issue described at the top of this document, not a broken consumer.
+- All log messages are in English (translated from Italian as of 2026-09-24) — if you're grepping and finding nothing, double-check the exact phrasing against the tables above rather than assuming a broken consumer.

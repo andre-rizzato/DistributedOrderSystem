@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace CustomerWebsite.Models;
 
 /// <summary>
-/// Modello del carrello della spesa
+/// Shopping cart model
 /// </summary>
 public class ShoppingCartModel
 {
@@ -19,16 +19,16 @@ public class ShoppingCartModel
 }
 
 /// <summary>
-/// Modello degli elementi del carrello
+/// Cart item model
 /// </summary>
 public class CartItemModel
 {
     public Guid CartItemId { get; set; }
     public ProductDisplayModel Product { get; set; } = new();
-    
-    [Range(1, 99, ErrorMessage = "La quantità deve essere tra 1 e 99")]
+
+    [Range(1, 99, ErrorMessage = "Quantity must be between 1 and 99")]
     public int Quantity { get; set; } = 1;
-    
+
     public decimal UnitPrice => Product.FinalPrice;
     public decimal TotalPrice => UnitPrice * Quantity;
     public DateTime AddedAt { get; set; }
@@ -36,33 +36,33 @@ public class CartItemModel
 }
 
 /// <summary>
-/// Modello per aggiungere al carrello
+/// Model for adding an item to the cart
 /// </summary>
 public class AddToCartModel
 {
-    [Required(ErrorMessage = "ID prodotto richiesto")]
+    [Required(ErrorMessage = "Product ID is required")]
     public Guid ProductId { get; set; }
-    
-    [Range(1, 99, ErrorMessage = "La quantità deve essere tra 1 e 99")]
+
+    [Range(1, 99, ErrorMessage = "Quantity must be between 1 and 99")]
     public int Quantity { get; set; } = 1;
-    
+
     public string? VariantId { get; set; }
 }
 
 /// <summary>
-/// Modello per aggiornare la quantità nel carrello
+/// Model for updating a cart item's quantity
 /// </summary>
 public class UpdateCartItemModel
 {
-    [Required(ErrorMessage = "ID elemento carrello richiesto")]
+    [Required(ErrorMessage = "Cart item ID is required")]
     public Guid CartItemId { get; set; }
-    
-    [Range(0, 99, ErrorMessage = "La quantità deve essere tra 0 e 99")]
+
+    [Range(0, 99, ErrorMessage = "Quantity must be between 0 and 99")]
     public int Quantity { get; set; }
 }
 
 /// <summary>
-/// Modello della wishlist
+/// Wishlist model
 /// </summary>
 public class WishlistModel
 {
@@ -71,7 +71,7 @@ public class WishlistModel
 }
 
 /// <summary>
-/// Modello degli elementi della wishlist
+/// Wishlist item model
 /// </summary>
 public class WishlistItemModel
 {
@@ -84,7 +84,7 @@ public class WishlistItemModel
 }
 
 /// <summary>
-/// Modello per il confronto prodotti
+/// Model for product comparison
 /// </summary>
 public class ProductComparisonModel
 {
@@ -95,23 +95,23 @@ public class ProductComparisonModel
 }
 
 /// <summary>
-/// Modello per le recensioni dei prodotti
+/// Model for product reviews
 /// </summary>
 public class ProductReviewModel
 {
     public Guid ReviewId { get; set; }
     public Guid ProductId { get; set; }
     public string CustomerName { get; set; } = string.Empty;
-    
-    [Range(1, 5, ErrorMessage = "Il rating deve essere tra 1 e 5")]
+
+    [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5")]
     public int Rating { get; set; }
-    
-    [StringLength(100, ErrorMessage = "Il titolo non può superare i 100 caratteri")]
+
+    [StringLength(100, ErrorMessage = "Title cannot exceed 100 characters")]
     public string Title { get; set; } = string.Empty;
-    
-    [StringLength(2000, ErrorMessage = "La recensione non può superare i 2000 caratteri")]
+
+    [StringLength(2000, ErrorMessage = "Review cannot exceed 2000 characters")]
     public string Content { get; set; } = string.Empty;
-    
+
     public DateTime CreatedAt { get; set; }
     public bool IsVerifiedPurchase { get; set; }
     public int HelpfulVotes { get; set; }
@@ -120,22 +120,22 @@ public class ProductReviewModel
 }
 
 /// <summary>
-/// Modello per aggiungere una recensione
+/// Model for adding a review
 /// </summary>
 public class AddReviewModel
 {
-    [Required(ErrorMessage = "ID prodotto richiesto")]
+    [Required(ErrorMessage = "Product ID is required")]
     public Guid ProductId { get; set; }
-    
-    [Required(ErrorMessage = "Rating richiesto")]
-    [Range(1, 5, ErrorMessage = "Il rating deve essere tra 1 e 5")]
+
+    [Required(ErrorMessage = "Rating is required")]
+    [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5")]
     public int Rating { get; set; }
-    
-    [Required(ErrorMessage = "Titolo richiesto")]
-    [StringLength(100, ErrorMessage = "Il titolo non può superare i 100 caratteri")]
+
+    [Required(ErrorMessage = "Title is required")]
+    [StringLength(100, ErrorMessage = "Title cannot exceed 100 characters")]
     public string Title { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Contenuto richiesto")]
-    [StringLength(2000, ErrorMessage = "La recensione non può superare i 2000 caratteri")]
+
+    [Required(ErrorMessage = "Content is required")]
+    [StringLength(2000, ErrorMessage = "Review cannot exceed 2000 characters")]
     public string Content { get; set; } = string.Empty;
 }

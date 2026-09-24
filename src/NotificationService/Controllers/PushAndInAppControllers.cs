@@ -7,8 +7,8 @@ using NotificationService.Services;
 namespace NotificationService.Controllers;
 
 /// <summary>
-/// Controller per gestire notifiche push e in-app
-/// Gestisce l'invio di notifiche push tramite Firebase FCM e notifiche real-time tramite SignalR
+/// Controller for handling push and in-app notifications.
+/// Manages sending push notifications via Firebase FCM and real-time notifications via SignalR.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -25,17 +25,17 @@ public class PushController : ControllerBase
     }
 
     /// <summary>
-    /// Invia notifica push singola a un dispositivo specifico
+    /// Sends a single push notification to a specific device
     /// </summary>
-    /// <param name="request">Dati della notifica push</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'invio</returns>
+    /// <param name="request">Push notification data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send result</returns>
     [HttpPost("send")]
     [ProducesResponseType(typeof(NotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
     [ProducesResponseType(typeof(ProblemDetails), 500)]
     public async Task<ActionResult<NotificationResponse>> SendPushNotification(
-        [FromBody] SendPushNotificationRequest request, 
+        [FromBody] SendPushNotificationRequest request,
         CancellationToken cancellationToken)
     {
         try
@@ -46,7 +46,7 @@ public class PushController : ControllerBase
             }
 
             var result = await _pushService.SendPushNotificationAsync(request, cancellationToken);
-            
+
             if (result.Success)
             {
                 return Ok(result);
@@ -63,29 +63,29 @@ public class PushController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica push a token {Token}", request.DeviceToken);
+            _logger.LogError(ex, "Error sending push notification to token {Token}", request.DeviceToken);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio della notifica push",
+                Detail = "An error occurred while sending the push notification",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Invia notifica push a tutti i dispositivi di un utente specifico
-    /// Recupera automaticamente tutti i token registrati per l'utente
+    /// Sends a push notification to all of a specific user's devices.
+    /// Automatically retrieves all tokens registered for the user.
     /// </summary>
-    /// <param name="request">Richiesta di invio all'utente</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'invio</returns>
+    /// <param name="request">Send-to-user request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send result</returns>
     [HttpPost("send-to-user")]
     [ProducesResponseType(typeof(NotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
     [ProducesResponseType(typeof(ProblemDetails), 500)]
     public async Task<ActionResult<NotificationResponse>> SendToUser(
-        [FromBody] SendPushToUserRequest request, 
+        [FromBody] SendPushToUserRequest request,
         CancellationToken cancellationToken)
     {
         try
@@ -96,12 +96,12 @@ public class PushController : ControllerBase
             }
 
             var result = await _pushService.SendToUserAsync(
-                request.UserId, 
-                request.Title, 
-                request.Body, 
-                request.Data, 
+                request.UserId,
+                request.Title,
+                request.Body,
+                request.Data,
                 cancellationToken);
-            
+
             if (result.Success)
             {
                 return Ok(result);
@@ -118,29 +118,29 @@ public class PushController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica push all'utente {UserId}", request.UserId);
+            _logger.LogError(ex, "Error sending push notification to user {UserId}", request.UserId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio della notifica all'utente",
+                Detail = "An error occurred while sending the notification to the user",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Invia notifica push a un topic Firebase
-    /// Utile per notifiche broadcast a gruppi di utenti iscritti
+    /// Sends a push notification to a Firebase topic.
+    /// Useful for broadcast notifications to groups of subscribed users.
     /// </summary>
-    /// <param name="request">Richiesta di invio al topic</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'invio</returns>
+    /// <param name="request">Send-to-topic request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send result</returns>
     [HttpPost("send-to-topic")]
     [ProducesResponseType(typeof(NotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
     [ProducesResponseType(typeof(ProblemDetails), 500)]
     public async Task<ActionResult<NotificationResponse>> SendToTopic(
-        [FromBody] SendPushToTopicRequest request, 
+        [FromBody] SendPushToTopicRequest request,
         CancellationToken cancellationToken)
     {
         try
@@ -151,12 +151,12 @@ public class PushController : ControllerBase
             }
 
             var result = await _pushService.SendToTopicAsync(
-                request.Topic, 
-                request.Title, 
-                request.Body, 
-                request.Data, 
+                request.Topic,
+                request.Title,
+                request.Body,
+                request.Data,
                 cancellationToken);
-            
+
             if (result.Success)
             {
                 return Ok(result);
@@ -173,29 +173,29 @@ public class PushController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica push al topic {Topic}", request.Topic);
+            _logger.LogError(ex, "Error sending push notification to topic {Topic}", request.Topic);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio della notifica al topic",
+                Detail = "An error occurred while sending the notification to the topic",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Registra un token dispositivo per un utente
-    /// Necessario per poter inviare notifiche push all'utente
+    /// Registers a device token for a user.
+    /// Required in order to send push notifications to the user.
     /// </summary>
-    /// <param name="request">Dati registrazione token</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato della registrazione</returns>
+    /// <param name="request">Token registration data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Registration result</returns>
     [HttpPost("register-token")]
     [ProducesResponseType(typeof(object), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
     [ProducesResponseType(typeof(ProblemDetails), 500)]
     public async Task<ActionResult> RegisterDeviceToken(
-        [FromBody] RegisterDeviceTokenRequest request, 
+        [FromBody] RegisterDeviceTokenRequest request,
         CancellationToken cancellationToken)
     {
         try
@@ -206,17 +206,17 @@ public class PushController : ControllerBase
             }
 
             var success = await _pushService.RegisterDeviceTokenAsync(
-                request.UserId, 
-                request.DeviceToken, 
-                request.Platform, 
+                request.UserId,
+                request.DeviceToken,
+                request.Platform,
                 cancellationToken);
-            
+
             if (success)
             {
                 return Ok(new
                 {
                     success = true,
-                    message = "Token dispositivo registrato con successo",
+                    message = "Device token registered successfully",
                     userId = request.UserId,
                     platform = request.Platform
                 });
@@ -226,18 +226,18 @@ public class PushController : ControllerBase
                 return BadRequest(new ProblemDetails
                 {
                     Title = "Token registration failed",
-                    Detail = "Non è stato possibile registrare il token dispositivo",
+                    Detail = "Unable to register the device token",
                     Status = 400
                 });
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la registrazione token per utente {UserId}", request.UserId);
+            _logger.LogError(ex, "Error registering token for user {UserId}", request.UserId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante la registrazione del token",
+                Detail = "An error occurred while registering the token",
                 Status = 500
             });
         }
@@ -245,7 +245,7 @@ public class PushController : ControllerBase
 }
 
 /// <summary>
-/// Controller per gestire notifiche in-app real-time tramite SignalR
+/// Controller for handling real-time in-app notifications via SignalR
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -264,12 +264,12 @@ public class InAppNotificationController : ControllerBase
     }
 
     /// <summary>
-    /// Invia notifica in-app a un utente specifico
-    /// La notifica viene salvata nel database e inviata in real-time se l'utente è connesso
+    /// Sends an in-app notification to a specific user.
+    /// The notification is saved to the database and sent in real time if the user is connected.
     /// </summary>
-    /// <param name="request">Dati della notifica in-app</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'invio</returns>
+    /// <param name="request">In-app notification data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send result</returns>
     [HttpPost("send")]
     [ProducesResponseType(typeof(NotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -286,7 +286,7 @@ public class InAppNotificationController : ControllerBase
             }
 
             var result = await _inAppService.SendInAppNotificationAsync(request, cancellationToken);
-            
+
             if (result.Success)
             {
                 return Ok(result);
@@ -303,24 +303,24 @@ public class InAppNotificationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica in-app all'utente {UserId}", request.UserId);
+            _logger.LogError(ex, "Error sending in-app notification to user {UserId}", request.UserId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio della notifica in-app",
+                Detail = "An error occurred while sending the in-app notification",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Ottieni le notifiche non lette per un utente
-    /// Restituisce le notifiche in-app non ancora lette con paginazione
+    /// Gets the unread notifications for a user.
+    /// Returns in-app notifications not yet read, with pagination.
     /// </summary>
-    /// <param name="userId">ID dell'utente</param>
-    /// <param name="limit">Numero massimo di notifiche da restituire</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Lista delle notifiche non lette</returns>
+    /// <param name="userId">User ID</param>
+    /// <param name="limit">Maximum number of notifications to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of unread notifications</returns>
     [HttpGet("unread/{userId}")]
     [ProducesResponseType(typeof(List<Notification>), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -334,12 +334,12 @@ public class InAppNotificationController : ControllerBase
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
-                return BadRequest("User ID è richiesto");
+                return BadRequest("User ID is required");
             }
 
             if (limit <= 0 || limit > 100)
             {
-                return BadRequest("Limit deve essere tra 1 e 100");
+                return BadRequest("Limit must be between 1 and 100");
             }
 
             var notifications = await _inAppService.GetUnreadNotificationsAsync(userId, limit, cancellationToken);
@@ -347,24 +347,24 @@ public class InAppNotificationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero notifiche non lette per utente {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving unread notifications for user {UserId}", userId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante il recupero delle notifiche",
+                Detail = "An error occurred while retrieving notifications",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Marca una notifica come letta
-    /// Aggiorna lo stato della notifica e invia conferma real-time all'utente
+    /// Marks a notification as read.
+    /// Updates the notification status and sends a real-time confirmation to the user.
     /// </summary>
-    /// <param name="notificationId">ID della notifica</param>
-    /// <param name="userId">ID dell'utente</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'operazione</returns>
+    /// <param name="notificationId">Notification ID</param>
+    /// <param name="userId">User ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Operation result</returns>
     [HttpPost("{notificationId}/mark-read")]
     [ProducesResponseType(typeof(object), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -383,13 +383,13 @@ public class InAppNotificationController : ControllerBase
             }
 
             var success = await _inAppService.MarkAsReadAsync(notificationId, request.UserId, cancellationToken);
-            
+
             if (success)
             {
                 return Ok(new
                 {
                     success = true,
-                    message = "Notifica marcata come letta",
+                    message = "Notification marked as read",
                     notificationId,
                     timestamp = DateTime.UtcNow
                 });
@@ -399,31 +399,31 @@ public class InAppNotificationController : ControllerBase
                 return NotFound(new ProblemDetails
                 {
                     Title = "Notification not found",
-                    Detail = "Notifica non trovata o non appartiene all'utente",
+                    Detail = "Notification not found or does not belong to the user",
                     Status = 404
                 });
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la marcatura notifica {NotificationId} per utente {UserId}", 
+            _logger.LogError(ex, "Error marking notification {NotificationId} for user {UserId}",
                 notificationId, request.UserId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante la marcatura della notifica",
+                Detail = "An error occurred while marking the notification",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Marca tutte le notifiche come lette per un utente
-    /// Aggiorna tutte le notifiche non lette dell'utente
+    /// Marks all notifications as read for a user.
+    /// Updates all of the user's unread notifications.
     /// </summary>
-    /// <param name="userId">ID dell'utente</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Numero di notifiche aggiornate</returns>
+    /// <param name="userId">User ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Number of notifications updated</returns>
     [HttpPost("mark-all-read/{userId}")]
     [ProducesResponseType(typeof(object), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -436,15 +436,15 @@ public class InAppNotificationController : ControllerBase
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
-                return BadRequest("User ID è richiesto");
+                return BadRequest("User ID is required");
             }
 
             var count = await _inAppService.MarkAllAsReadAsync(userId, cancellationToken);
-            
+
             return Ok(new
             {
                 success = true,
-                message = $"{count} notifiche marcate come lette",
+                message = $"{count} notifications marked as read",
                 count,
                 userId,
                 timestamp = DateTime.UtcNow
@@ -452,75 +452,75 @@ public class InAppNotificationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la marcatura di tutte le notifiche per utente {UserId}", userId);
+            _logger.LogError(ex, "Error marking all notifications as read for user {UserId}", userId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante la marcatura delle notifiche",
+                Detail = "An error occurred while marking the notifications",
                 Status = 500
             });
         }
     }
 }
 
-// DTO aggiuntivi per i controller Push e InApp
+// Additional DTOs for the Push and InApp controllers
 
 /// <summary>
-/// Richiesta per invio push a utente
+/// Request to send a push notification to a user
 /// </summary>
 public class SendPushToUserRequest
 {
-    /// <summary>ID dell'utente destinatario</summary>
+    /// <summary>Recipient user ID</summary>
     public string UserId { get; set; } = string.Empty;
-    
-    /// <summary>Titolo della notifica</summary>
+
+    /// <summary>Notification title</summary>
     public string Title { get; set; } = string.Empty;
-    
-    /// <summary>Corpo del messaggio</summary>
+
+    /// <summary>Message body</summary>
     public string Body { get; set; } = string.Empty;
-    
-    /// <summary>Dati aggiuntivi opzionali</summary>
+
+    /// <summary>Optional additional data</summary>
     public Dictionary<string, string>? Data { get; set; }
 }
 
 /// <summary>
-/// Richiesta per invio push a topic
+/// Request to send a push notification to a topic
 /// </summary>
 public class SendPushToTopicRequest
 {
-    /// <summary>Nome del topic Firebase</summary>
+    /// <summary>Firebase topic name</summary>
     public string Topic { get; set; } = string.Empty;
-    
-    /// <summary>Titolo della notifica</summary>
+
+    /// <summary>Notification title</summary>
     public string Title { get; set; } = string.Empty;
-    
-    /// <summary>Corpo del messaggio</summary>
+
+    /// <summary>Message body</summary>
     public string Body { get; set; } = string.Empty;
-    
-    /// <summary>Dati aggiuntivi opzionali</summary>
+
+    /// <summary>Optional additional data</summary>
     public Dictionary<string, string>? Data { get; set; }
 }
 
 /// <summary>
-/// Richiesta per registrazione token dispositivo
+/// Request to register a device token
 /// </summary>
 public class RegisterDeviceTokenRequest
 {
-    /// <summary>ID dell'utente</summary>
+    /// <summary>User ID</summary>
     public string UserId { get; set; } = string.Empty;
-    
-    /// <summary>Token del dispositivo Firebase</summary>
+
+    /// <summary>Firebase device token</summary>
     public string DeviceToken { get; set; } = string.Empty;
-    
-    /// <summary>Piattaforma del dispositivo (iOS, Android)</summary>
+
+    /// <summary>Device platform (iOS, Android)</summary>
     public string Platform { get; set; } = string.Empty;
 }
 
 /// <summary>
-/// Richiesta per marcare notifica come letta
+/// Request to mark a notification as read
 /// </summary>
 public class MarkAsReadRequest
 {
-    /// <summary>ID dell'utente</summary>
+    /// <summary>User ID</summary>
     public string UserId { get; set; } = string.Empty;
 }

@@ -6,35 +6,35 @@ import { routes } from './app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 
 /**
- * Configurazione principale dell'applicazione Angular
+ * Main Angular application configuration
  *
- * Questo file configura tutti i provider globali dell'applicazione.
- * I provider sono servizi e funzionalità che Angular rende disponibili
- * in tutta l'applicazione attraverso il sistema di Dependency Injection.
+ * This file configures all of the application's global providers.
+ * Providers are services and features that Angular makes available
+ * throughout the application via the Dependency Injection system.
  *
- * Provider configurati:
+ * Configured providers:
  *
  * 1. provideBrowserGlobalErrorListeners()
- *    - Fornisce listener globali per gestire errori non catturati
- *    - Migliora la gestione degli errori a livello di applicazione
+ *    - Provides global listeners to handle uncaught errors
+ *    - Improves application-level error handling
  *
  * 2. provideZoneChangeDetection({ eventCoalescing: true })
- *    - Configura il sistema di change detection di Angular
- *    - eventCoalescing: raggruppa più eventi per migliorare le performance
+ *    - Configures Angular's change detection system
+ *    - eventCoalescing: batches multiple events to improve performance
  *
  * 3. provideRouter(routes)
- *    - Configura il router dell'applicazione con le routes definite
- *    - Abilita la navigazione tra le pagine (SPA)
+ *    - Configures the application router with the defined routes
+ *    - Enables navigation between pages (SPA)
  *
  * 4. provideClientHydration(withEventReplay())
- *    - Abilita l'hydration per il rendering server-side (SSR)
- *    - withEventReplay: rigioca gli eventi utente dopo l'hydration
- *    - Migliora l'esperienza utente durante il caricamento iniziale
+ *    - Enables hydration for server-side rendering (SSR)
+ *    - withEventReplay: replays user events after hydration
+ *    - Improves the user experience during initial load
  *
  * 5. provideHttpClient(withFetch())
- *    - Configura l'HttpClient per effettuare richieste HTTP
- *    - withFetch: usa l'API Fetch del browser invece di XMLHttpRequest
- *    - Necessario per comunicare con il backend (ProductService)
+ *    - Configures HttpClient for making HTTP requests
+ *    - withFetch: uses the browser's Fetch API instead of XMLHttpRequest
+ *    - Required to communicate with the backend (ProductService)
  */
 export const appConfig: ApplicationConfig = {
   providers: [

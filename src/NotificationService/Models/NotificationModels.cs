@@ -1,8 +1,8 @@
 namespace NotificationService.Models;
 
 /// <summary>
-/// Tipi di notifica supportati dal sistema
-/// Ogni tipo corrisponde a un canale di comunicazione specifico
+/// Notification types supported by the system.
+/// Each type corresponds to a specific communication channel.
 /// </summary>
 public enum NotificationType
 {
@@ -14,8 +14,8 @@ public enum NotificationType
 }
 
 /// <summary>
-/// Priorità delle notifiche per determinare l'ordine di elaborazione
-/// Le notifiche ad alta priorità vengono elaborate per prime
+/// Notification priority, used to determine processing order.
+/// High-priority notifications are processed first.
 /// </summary>
 public enum NotificationPriority
 {
@@ -26,7 +26,7 @@ public enum NotificationPriority
 }
 
 /// <summary>
-/// Stati delle notifiche
+/// Notification statuses.
 /// </summary>
 public enum NotificationStatus
 {
@@ -39,244 +39,244 @@ public enum NotificationStatus
 }
 
 /// <summary>
-/// Entità principale per le notifiche - rappresenta una singola notifica
-/// nel sistema con tutti i metadati necessari per il tracking e l'audit
+/// Main notification entity - represents a single notification
+/// in the system with all the metadata needed for tracking and audit.
 /// </summary>
 public class Notification
 {
     public long Id { get; set; }
-    
+
     /// <summary>
-    /// Tipo di notifica (SMS, Email, Push, etc.)
+    /// Notification type (SMS, Email, Push, etc.)
     /// </summary>
     public NotificationType Type { get; set; }
-    
+
     /// <summary>
-    /// Destinatario della notifica
+    /// Notification recipient
     /// </summary>
     public required string Recipient { get; set; }
-    
+
     /// <summary>
-    /// Oggetto/Titolo della notifica
+    /// Notification subject/title
     /// </summary>
     public required string Subject { get; set; }
-    
+
     /// <summary>
-    /// Contenuto della notifica
+    /// Notification content
     /// </summary>
     public required string Content { get; set; }
-    
+
     /// <summary>
-    /// Contenuto HTML (per email)
+    /// HTML content (for email)
     /// </summary>
     public string? HtmlContent { get; set; }
-    
+
     /// <summary>
-    /// Priorità della notifica
+    /// Notification priority
     /// </summary>
     public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
-    
+
     /// <summary>
-    /// Stato attuale della notifica
+    /// Current notification status
     /// </summary>
     public NotificationStatus Status { get; set; } = NotificationStatus.Pending;
-    
+
     /// <summary>
-    /// ID dell'utente che ha generato la notifica
+    /// ID of the user that generated the notification
     /// </summary>
     public string? UserId { get; set; }
-    
+
     /// <summary>
-    /// Canale o servizio di origine
+    /// Originating channel or service
     /// </summary>
     public string? Source { get; set; }
-    
+
     /// <summary>
-    /// Riferimenti per tracking (order ID, product ID, etc.)
+    /// References for tracking (order ID, product ID, etc.)
     /// </summary>
     public string? ReferenceId { get; set; }
-    
+
     /// <summary>
-    /// Tipo di riferimento (order, product, user, etc.)
+    /// Reference type (order, product, user, etc.)
     /// </summary>
     public string? ReferenceType { get; set; }
-    
+
     /// <summary>
-    /// Metadati aggiuntivi in formato JSON
+    /// Additional metadata in JSON format
     /// </summary>
     public string? Metadata { get; set; }
-    
+
     /// <summary>
-    /// Quando inviare la notifica (per notifiche schedulate)
+    /// When to send the notification (for scheduled notifications)
     /// </summary>
     public DateTime? ScheduledAt { get; set; }
-    
+
     /// <summary>
-    /// Quando la notifica è stata inviata
+    /// When the notification was sent
     /// </summary>
     public DateTime? SentAt { get; set; }
-    
+
     /// <summary>
-    /// Quando la notifica è stata consegnata/letta
+    /// When the notification was delivered/read
     /// </summary>
     public DateTime? DeliveredAt { get; set; }
-    
+
     /// <summary>
-    /// Data di creazione
+    /// Creation date
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     /// <summary>
-    /// Numero di tentativi di invio
+    /// Number of send attempts
     /// </summary>
     public int RetryCount { get; set; } = 0;
-    
+
     /// <summary>
-    /// Ultimo messaggio di errore
+    /// Last error message
     /// </summary>
     public string? ErrorMessage { get; set; }
-    
+
     /// <summary>
-    /// ID esterno del provider (Twilio SID, etc.)
+    /// External provider ID (Twilio SID, etc.)
     /// </summary>
     public string? ExternalId { get; set; }
 }
 
 /// <summary>
-/// Template per notifiche ricorrenti
+/// Template for recurring notifications
 /// </summary>
 public class NotificationTemplate
 {
     public long Id { get; set; }
-    
+
     /// <summary>
-    /// Nome univoco del template
+    /// Unique template name
     /// </summary>
     public required string Name { get; set; }
-    
+
     /// <summary>
-    /// Descrizione del template
+    /// Template description
     /// </summary>
     public string? Description { get; set; }
-    
+
     /// <summary>
-    /// Tipo di notifica
+    /// Notification type
     /// </summary>
     public NotificationType Type { get; set; }
-    
+
     /// <summary>
-    /// Template del soggetto con placeholder
+    /// Subject template with placeholders
     /// </summary>
     public required string SubjectTemplate { get; set; }
-    
+
     /// <summary>
-    /// Template del contenuto con placeholder
+    /// Content template with placeholders
     /// </summary>
     public required string ContentTemplate { get; set; }
-    
+
     /// <summary>
-    /// Template HTML per email
+    /// HTML template for email
     /// </summary>
     public string? HtmlTemplate { get; set; }
-    
+
     /// <summary>
-    /// Variabili disponibili nel template
+    /// Variables available in the template
     /// </summary>
     public string? Variables { get; set; }
-    
+
     /// <summary>
-    /// Template attivo
+    /// Whether the template is active
     /// </summary>
     public bool IsActive { get; set; } = true;
-    
+
     /// <summary>
-    /// Data di creazione
+    /// Creation date
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     /// <summary>
-    /// Ultima modifica
+    /// Last modified date
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
-/// Preferenze di notifica per utente
+/// Per-user notification preferences
 /// </summary>
 public class NotificationPreference
 {
     public long Id { get; set; }
-    
+
     /// <summary>
-    /// ID dell'utente
+    /// User ID
     /// </summary>
     public required string UserId { get; set; }
-    
+
     /// <summary>
-    /// Tipo di notifica
+    /// Notification type
     /// </summary>
     public NotificationType Type { get; set; }
-    
+
     /// <summary>
-    /// Categoria di notifica (ordini, marketing, sistema, etc.)
+    /// Notification category (orders, marketing, system, etc.)
     /// </summary>
     public required string Category { get; set; }
-    
+
     /// <summary>
-    /// Se l'utente ha abilitato questo tipo di notifica
+    /// Whether the user has enabled this notification type
     /// </summary>
     public bool IsEnabled { get; set; } = true;
-    
+
     /// <summary>
-    /// Canale preferito per questa categoria
+    /// Preferred channel for this category
     /// </summary>
     public string? PreferredChannel { get; set; }
-    
+
     /// <summary>
-    /// Data di creazione
+    /// Creation date
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     /// <summary>
-    /// Ultima modifica
+    /// Last modified date
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
-/// Log di invio notifiche per audit
+/// Notification send log for audit purposes
 /// </summary>
 public class NotificationLog
 {
     public long Id { get; set; }
-    
+
     /// <summary>
-    /// Riferimento alla notifica
+    /// Reference to the notification
     /// </summary>
     public long NotificationId { get; set; }
-    
+
     /// <summary>
-    /// Navigazione alla notifica
+    /// Navigation property to the notification
     /// </summary>
     public Notification? Notification { get; set; }
-    
+
     /// <summary>
-    /// Azione eseguita (sent, failed, retry, etc.)
+    /// Action performed (sent, failed, retry, etc.)
     /// </summary>
     public required string Action { get; set; }
-    
+
     /// <summary>
-    /// Dettagli dell'azione
+    /// Action details
     /// </summary>
     public string? Details { get; set; }
-    
+
     /// <summary>
-    /// Provider utilizzato (twilio, smtp, firebase, etc.)
+    /// Provider used (twilio, smtp, firebase, etc.)
     /// </summary>
     public string? Provider { get; set; }
-    
+
     /// <summary>
-    /// Timestamp dell'azione
+    /// Timestamp of the action
     /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }

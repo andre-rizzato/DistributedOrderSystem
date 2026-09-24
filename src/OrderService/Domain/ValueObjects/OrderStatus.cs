@@ -4,20 +4,20 @@ using OrderService.Domain.SeedWork;
 using OrderService.Domain.Exceptions;
 
 /// <summary>
-/// Value Object che rappresenta lo stato di un ordine con transizioni valide.
-/// 
-/// Transizioni consentite:
+/// Value Object representing an order's status, with valid transitions.
+///
+/// Allowed transitions:
 ///   Pending   → Confirmed, Cancelled
 ///   Confirmed → Shipped, Cancelled
 ///   Shipped   → Delivered
-///   Delivered → (stato finale)
-///   Cancelled → (stato finale)
+///   Delivered → (final state)
+///   Cancelled → (final state)
 /// </summary>
 public class OrderStatus : ValueObject
 {
     public string Value { get; }
 
-    // Stati predefiniti
+    // Predefined states
     public static readonly OrderStatus Pending   = new("Pending");
     public static readonly OrderStatus Confirmed = new("Confirmed");
     public static readonly OrderStatus Shipped   = new("Shipped");
@@ -36,23 +36,23 @@ public class OrderStatus : ValueObject
     private OrderStatus(string value) => Value = value;
 
     /// <summary>
-    /// Crea un OrderStatus da una stringa, validandone il valore.
+    /// Creates an OrderStatus from a string, validating its value.
     /// </summary>
     public static OrderStatus From(string value)
     {
         if (!ValidTransitions.ContainsKey(value))
-            throw new OrderDomainException($"Stato ordine non valido: '{value}'.");
+            throw new OrderDomainException($"Invalid order status: '{value}'.");
         return new OrderStatus(value);
     }
 
     /// <summary>
-    /// Transiziona verso un nuovo stato, applicando le regole di business.
+    /// Transitions to a new status, enforcing the business rules.
     /// </summary>
     public OrderStatus TransitionTo(string newStatus)
     {
         if (!ValidTransitions.TryGetValue(Value, out var allowed) || !allowed.Contains(newStatus))
             throw new OrderDomainException(
-                $"Transizione non consentita da '{Value}' a '{newStatus}'.");
+                $"Transition not allowed from '{Value}' to '{newStatus}'.");
         return From(newStatus);
     }
 

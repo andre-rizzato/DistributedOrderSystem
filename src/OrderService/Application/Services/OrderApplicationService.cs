@@ -6,8 +6,8 @@ using OrderService.Infrastructure.Messaging;
 using Shared.Messages;
 
 /// <summary>
-/// Interfaccia del servizio applicativo per gli ordini.
-/// Orchestrita le operazioni di dominio e i side-effect infrastrutturali.
+/// Application service interface for orders.
+/// Orchestrates domain operations and infrastructure side effects.
 /// </summary>
 public interface IOrderApplicationService
 {
@@ -18,10 +18,10 @@ public interface IOrderApplicationService
 }
 
 /// <summary>
-/// Servizio applicativo per gli ordini.
-/// Si colloca tra i Controller (Presentation) e il Domain layer.
-/// Responsabilità: orchestrare il dominio, coordinare la persistenza e gli eventi di integrazione.
-/// NON contiene logica di business — quella risiede nel Domain layer (aggregati, value object, domain events).
+/// Application service for orders.
+/// Sits between the Controllers (Presentation) and the Domain layer.
+/// Responsibility: orchestrate the domain, coordinate persistence and integration events.
+/// Does NOT contain business logic — that lives in the Domain layer (aggregates, value objects, domain events).
 /// </summary>
 public class OrderApplicationService : IOrderApplicationService
 {
@@ -49,13 +49,13 @@ public class OrderApplicationService : IOrderApplicationService
         IEnumerable<(Guid productId, int quantity, decimal unitPrice)> items,
         CancellationToken ct)
     {
-        // Il Domain crea l'aggregato (con invarianti garantiti dal factory method)
+        // The Domain creates the aggregate (with invariants guaranteed by the factory method)
         var order = Order.Create(items);
 
-        // Persistenza tramite repository
+        // Persistence via repository
         var created = await _repository.AddAsync(order, ct);
 
-        // Pubblica evento di integrazione su Kafka (asincrono, fire-and-forget-safe)
+        // Publish integration event to Kafka (asynchronous, fire-and-forget-safe)
         try
         {
             var integrationEvent = new OrderCreatedEvent
@@ -70,12 +70,12 @@ public class OrderApplicationService : IOrderApplicationService
             };
 
             await _eventProducer.PublishOrderCreatedAsync(integrationEvent, ct);
-            _logger.LogInformation("Pubblicato evento OrderCreated per Ordine {OrderId}", created.Id);
+            _logger.LogInformation("Published OrderCreated event for Order {OrderId}", created.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Impossibile pubblicare evento OrderCreated per Ordine {OrderId}", created.Id);
-            // Non fallire la richiesta se la pubblicazione dell'evento fallisce
+            _logger.LogError(ex, "Failed to publish OrderCreated event for Order {OrderId}", created.Id);
+            // Do not fail the request if publishing the event fails
         }
 
         return created;
@@ -86,15 +86,15 @@ public class OrderApplicationService : IOrderApplicationService
         var order = await _repository.GetByIdAsync(orderId, ct);
         if (order is null)
         {
-            _logger.LogWarning("Ordine {OrderId} non trovato per aggiornamento stato", orderId);
+            _logger.LogWarning("Order {OrderId} not found for status update", orderId);
             return false;
         }
 
-        // Il Domain applica le regole di transizione degli stati
+        // The Domain applies the state transition rules
         order.ChangeStatus(newStatus);
 
         await _repository.UpdateAsync(order, ct);
-        _logger.LogInformation("Stato Ordine {OrderId} aggiornato a {Status}", orderId, newStatus);
+        _logger.LogInformation("Order {OrderId} status updated to {Status}", orderId, newStatus);
 
         return true;
     }

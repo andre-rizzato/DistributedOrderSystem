@@ -12,7 +12,7 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurazione servizi
+// Service configuration
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -23,18 +23,18 @@ builder.Services.AddControllers()
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-// Configurazione database
+// Database configuration
 builder.Services.AddDbContext<NotificationContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configurazione Redis
+// Redis configuration
 builder.Services.AddSingleton<IConnectionMultiplexer>(serviceProvider =>
 {
     var connectionString = builder.Configuration.GetConnectionString("Redis");
     return ConnectionMultiplexer.Connect(connectionString!);
 });
 
-// Configurazione Hangfire per job in background
+// Hangfire configuration for background jobs
 builder.Services.AddHangfire(configuration => configuration
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
@@ -44,11 +44,11 @@ builder.Services.AddHangfire(configuration => configuration
 
 builder.Services.AddHangfireServer();
 
-// Configurazione SignalR
+// SignalR configuration
 builder.Services.AddSignalR();
     // Note: AddStackExchangeRedis extension is not available, Redis can be configured separately
 
-// Configurazione settings
+// Settings configuration
 builder.Services.Configure<SmsSettings>(builder.Configuration.GetSection("Sms"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 builder.Services.Configure<PushNotificationSettings>(builder.Configuration.GetSection("PushNotification"));
@@ -56,23 +56,23 @@ builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redi
 builder.Services.Configure<TemplateSettings>(builder.Configuration.GetSection("Templates"));
 builder.Services.Configure<RateLimitSettings>(builder.Configuration.GetSection("RateLimit"));
 
-// Registrazione servizi notifica
+// Notification services registration
 if (builder.Environment.IsDevelopment())
 {
-    // Mock services per sviluppo
+    // Mock services for development
     builder.Services.AddScoped<ISmsService, MockSmsService>();
     builder.Services.AddScoped<IEmailService, MockEmailService>();
     builder.Services.AddScoped<IPushService, MockPushService>();
 }
 else
 {
-    // Servizi reali per produzione
+    // Real services for production
     builder.Services.AddScoped<ISmsService, TwilioSmsService>();
     builder.Services.AddScoped<IEmailService, MailKitEmailService>();
     builder.Services.AddScoped<IPushService, FirebasePushService>();
 }
 
-// Servizi sempre attivi
+// Always-active services
 builder.Services.AddScoped<IInAppNotificationService, SignalRInAppNotificationService>();
 builder.Services.AddScoped<INotificationTemplateService, NotificationTemplateService>();
 builder.Services.AddScoped<INotificationService, NotificationService.Services.Implementations.NotificationService>();
@@ -106,6 +106,17 @@ builder.Services.AddLogging(logging =>
 
 var app = builder.Build();
 
+// Automatic database migration in development.
+// Must happen before UseHangfireDashboard: Hangfire opens a connection
+// to the database as soon as the dashboard is configured, so the DB
+// must already exist at that point.
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<NotificationContext>();
+    context.Database.EnsureCreated();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -132,29 +143,21 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map controllers e hub SignalR
+// Map controllers and SignalR hub
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapHealthChecks("/health");
 
-// Migrazione database automatica in development
-if (app.Environment.IsDevelopment())
-{
-    using var scope = app.Services.CreateScope();
-    var context = scope.ServiceProvider.GetRequiredService<NotificationContext>();
-    context.Database.EnsureCreated();
-}
-
 app.Run();
 
 /// <summary>
-/// Filtro autorizzazione per Hangfire Dashboard
+/// Authorization filter for the Hangfire Dashboard
 /// </summary>
 public class HangfireAuthorizationFilter : Hangfire.Dashboard.IDashboardAuthorizationFilter
 {
     public bool Authorize(Hangfire.Dashboard.DashboardContext context)
     {
-        // In development, consenti accesso libero - sempre true per ora
+        // In development, allow free access - always true for now
         return true;
     }
 }

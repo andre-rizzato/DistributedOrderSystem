@@ -3,8 +3,8 @@ namespace OrderService.Infrastructure.Messaging;
 using Shared.Messages;
 
 /// <summary>
-/// Interfaccia per la pubblicazione di eventi di integrazione su Kafka.
-/// Definita nell'Application/Infrastructure layer (è un concern di integrazione, non di dominio).
+/// Interface for publishing integration events to Kafka.
+/// Defined in the Application/Infrastructure layer (it's an integration concern, not a domain one).
 /// </summary>
 public interface IOrderEventProducer
 {

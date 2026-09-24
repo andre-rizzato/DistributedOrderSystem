@@ -1,8 +1,8 @@
 namespace OrderService.Domain.SeedWork;
 
 /// <summary>
-/// Interfaccia marker per gli eventi di dominio.
-/// Ogni evento cattura qualcosa di significativo accaduto nel dominio.
+/// Marker interface for domain events.
+/// Each event captures something significant that happened in the domain.
 /// </summary>
 public interface IDomainEvent
 {

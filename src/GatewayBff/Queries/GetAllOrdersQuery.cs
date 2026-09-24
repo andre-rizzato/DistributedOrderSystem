@@ -20,8 +20,8 @@ public class GetAllOrdersQueryHandler : IRequestHandler<GetAllOrdersQuery, List<
 
     public async Task<List<OrderDto>> Handle(GetAllOrdersQuery request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Recupero di tutti gli ordini");
-        
+        _logger.LogInformation("Retrieving all orders");
+
         var response = await _httpClient.GetAsync("api/orders", cancellationToken);
         response.EnsureSuccessStatusCode();
         

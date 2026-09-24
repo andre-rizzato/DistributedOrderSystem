@@ -247,6 +247,96 @@
 			}
 		},
 		{
+			"label": "run GatewayBff",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"${workspaceFolder}/src/GatewayBff/GatewayBff.csproj"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"showReuseMessage": false
+			},
+			"isBackground": true,
+			"problemMatcher": [
+				{
+					"pattern": [
+						{
+							"regexp": "\\bNow listening on:\\s+(https?://\\S+)",
+							"file": 1,
+							"location": 2,
+							"message": 3
+						}
+					],
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": "^.*Now listening on.*",
+						"endsPattern": "^.*Application started\\. Press Ctrl\\+C to shut down\\.$"
+					}
+				}
+			],
+			"dependsOn": "build GatewayBff"
+		},
+		{
+			"label": "run AgentService",
+			"type": "shell",
+			"command": "E:/conda/envs/ai-engineer-course/python.exe",
+			"args": [
+				"-m",
+				"uvicorn",
+				"main:app",
+				"--reload",
+				"--port",
+				"8100"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/src/AgentService",
+				"env": { "PYTHONNOUSERSITE": "1" }
+			},
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"showReuseMessage": false
+			},
+			"isBackground": true,
+			"problemMatcher": [
+				{
+					"pattern": [
+						{
+							"regexp": ".",
+							"file": 1,
+							"location": 2,
+							"message": 3
+						}
+					],
+					"background": {
+						"activeOnStart": true,
+						"beginsPattern": "^.*(Uvicorn running|Will watch for changes).*$",
+						"endsPattern": "^.*Application startup complete\\.$"
+					}
+				}
+			]
+		},
+		{
+			"label": "Start Agent + Chatbot + Gateway",
+			"dependsOn": [
+				"run AgentService",
+				"run ChatbotService",
+				"run GatewayBff"
+			],
+			"dependsOrder": "parallel",
+			"problemMatcher": []
+		},
+		{
 			"label": "watch CustomerWebsite",
 			"type": "shell",
 			"command": "dotnet",

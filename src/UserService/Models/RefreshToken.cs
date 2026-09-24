@@ -1,7 +1,7 @@
 namespace UserService.Models;
 
 /// <summary>
-/// Token di refresh per mantenere l'utente autenticato
+/// Refresh token used to keep the user authenticated
 /// </summary>
 public class RefreshToken
 {

@@ -17,13 +17,13 @@ public class CartService : ICartService
 
     public async Task<Cart> GetCartAsync(string sessionId, CancellationToken ct = default)
     {
-        _logger.LogInformation("Recupero carrello per sessione {SessionId}", sessionId);
+        _logger.LogInformation("Retrieving cart for session {SessionId}", sessionId);
         return await _storage.GetCartAsync(sessionId, ct);
     }
 
     public async Task<CartItem> AddToCartAsync(string sessionId, Guid productId, int quantity, decimal unitPrice, CancellationToken ct = default)
     {
-        _logger.LogInformation("Aggiunta prodotto {ProductId} al carrello (Sessione: {SessionId})", productId, sessionId);
+        _logger.LogInformation("Adding product {ProductId} to cart (Session: {SessionId})", productId, sessionId);
         
         var cart = await _storage.GetCartAsync(sessionId, ct);
         
@@ -56,14 +56,14 @@ public class CartService : ICartService
 
     public async Task<CartItem?> UpdateCartItemAsync(string sessionId, Guid cartItemId, int quantity, CancellationToken ct = default)
     {
-        _logger.LogInformation("Aggiornamento item {CartItemId} del carrello (Sessione: {SessionId})", cartItemId, sessionId);
+        _logger.LogInformation("Updating item {CartItemId} in cart (Session: {SessionId})", cartItemId, sessionId);
         
         var cart = await _storage.GetCartAsync(sessionId, ct);
         var item = cart.Items.FirstOrDefault(i => i.Id == cartItemId);
         
         if (item == null)
         {
-            _logger.LogWarning("Item {CartItemId} non trovato nel carrello", cartItemId);
+            _logger.LogWarning("Item {CartItemId} not found in cart", cartItemId);
             return null;
         }
         
@@ -85,7 +85,7 @@ public class CartService : ICartService
 
     public async Task<bool> RemoveFromCartAsync(string sessionId, Guid cartItemId, CancellationToken ct = default)
     {
-        _logger.LogInformation("Rimozione item {CartItemId} dal carrello (Sessione: {SessionId})", cartItemId, sessionId);
+        _logger.LogInformation("Removing item {CartItemId} from cart (Session: {SessionId})", cartItemId, sessionId);
         
         var cart = await _storage.GetCartAsync(sessionId, ct);
         var item = cart.Items.FirstOrDefault(i => i.Id == cartItemId);
@@ -104,7 +104,7 @@ public class CartService : ICartService
 
     public async Task<bool> ClearCartAsync(string sessionId, CancellationToken ct = default)
     {
-        _logger.LogInformation("Svuotamento carrello (Sessione: {SessionId})", sessionId);
+        _logger.LogInformation("Clearing cart (Session: {SessionId})", sessionId);
         
         var cart = new Cart { SessionId = sessionId };
         await _storage.SaveCartAsync(cart, ct);

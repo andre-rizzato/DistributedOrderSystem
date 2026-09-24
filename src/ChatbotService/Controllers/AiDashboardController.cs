@@ -40,7 +40,7 @@ public class AiDashboardController : ControllerBase
     {
         var html = $@"
 <!DOCTYPE html>
-<html lang='it'>
+<html lang='en'>
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
@@ -140,32 +140,32 @@ public class AiDashboardController : ControllerBase
             <div class='col-md-8'>
                 <div class='card'>
                     <div class='card-header'>
-                        <h5 class='mb-0'><i class='fas fa-brain'></i> Stato del Modello AI</h5>
+                        <h5 class='mb-0'><i class='fas fa-brain'></i> AI Model Status</h5>
                     </div>
                     <div class='card-body'>
                         <div id='modelStatus' class='model-info'>
                             <div class='row'>
                                 <div class='col-md-6'>
-                                    <h6><i class='fas fa-microchip'></i> Modello Attivo</h6>
-                                    <p id='activeModel'>Caricamento...</p>
+                                    <h6><i class='fas fa-microchip'></i> Active Model</h6>
+                                    <p id='activeModel'>Loading...</p>
                                 </div>
                                 <div class='col-md-6'>
-                                    <h6><i class='fas fa-signal'></i> Stato</h6>
+                                    <h6><i class='fas fa-signal'></i> Status</h6>
                                     <div id='modelStatusIndicator'>
                                         <span class='status-indicator status-loading'>
-                                            <i class='fas fa-spinner fa-spin'></i> Verificando...
+                                            <i class='fas fa-spinner fa-spin'></i> Checking...
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             <div class='row mt-3'>
                                 <div class='col-md-6'>
-                                    <h6><i class='fas fa-memory'></i> Parametri</h6>
-                                    <p id='modelParams'>117M parametri</p>
+                                    <h6><i class='fas fa-memory'></i> Parameters</h6>
+                                    <p id='modelParams'>117M parameters</p>
                                 </div>
                                 <div class='col-md-6'>
-                                    <h6><i class='fas fa-language'></i> Linguaggio</h6>
-                                    <p>Italiano/Inglese</p>
+                                    <h6><i class='fas fa-language'></i> Language</h6>
+                                    <p>Italian/English</p>
                                 </div>
                             </div>
                         </div>
@@ -175,16 +175,16 @@ public class AiDashboardController : ControllerBase
             <div class='col-md-4'>
                 <div class='card'>
                     <div class='card-header'>
-                        <h5 class='mb-0'><i class='fas fa-chart-line'></i> Statistiche</h5>
+                        <h5 class='mb-0'><i class='fas fa-chart-line'></i> Statistics</h5>
                     </div>
                     <div class='card-body'>
                         <div class='metric-card mb-3'>
                             <h3 id='totalChats'>0</h3>
-                            <small>Chat Totali</small>
+                            <small>Total Chats</small>
                         </div>
                         <div class='metric-card'>
                             <h3 id='avgResponseTime'>0ms</h3>
-                            <small>Tempo Medio Risposta</small>
+                            <small>Average Response Time</small>
                         </div>
                     </div>
                 </div>
@@ -196,13 +196,13 @@ public class AiDashboardController : ControllerBase
             <div class='col-12'>
                 <div class='card'>
                     <div class='card-header'>
-                        <h5 class='mb-0'><i class='fas fa-tools'></i> Azioni Rapide</h5>
+                        <h5 class='mb-0'><i class='fas fa-tools'></i> Quick Actions</h5>
                     </div>
                     <div class='card-body'>
                         <div class='row'>
                             <div class='col-md-3'>
                                 <button class='btn btn-primary w-100 mb-2' onclick='downloadModel()'>
-                                    <i class='fas fa-download'></i> Download Modello
+                                    <i class='fas fa-download'></i> Download Model
                                 </button>
                             </div>
                             <div class='col-md-3'>
@@ -212,12 +212,12 @@ public class AiDashboardController : ControllerBase
                             </div>
                             <div class='col-md-3'>
                                 <button class='btn btn-info w-100 mb-2' onclick='testModel()'>
-                                    <i class='fas fa-vial'></i> Test Modello
+                                    <i class='fas fa-vial'></i> Test Model
                                 </button>
                             </div>
                             <div class='col-md-3'>
                                 <button class='btn btn-warning w-100 mb-2' onclick='viewLogs()'>
-                                    <i class='fas fa-file-alt'></i> Log Sistema
+                                    <i class='fas fa-file-alt'></i> System Logs
                                 </button>
                             </div>
                         </div>
@@ -231,18 +231,18 @@ public class AiDashboardController : ControllerBase
             <div class='col-md-8'>
                 <div class='card'>
                     <div class='card-header'>
-                        <h5 class='mb-0'><i class='fas fa-comments'></i> Test Chat Live</h5>
+                        <h5 class='mb-0'><i class='fas fa-comments'></i> Live Chat Test</h5>
                     </div>
                     <div class='card-body'>
                         <div id='chatPreview' class='chat-preview mb-3'>
                             <div class='message message-bot'>
-                                <strong>Bot:</strong> Ciao! Sono il tuo assistente AI. Prova a scrivermi qualcosa!
+                                <strong>Bot:</strong> Hi! I'm your AI assistant. Try writing something to me!
                             </div>
                         </div>
                         <div class='input-group'>
-                            <input type='text' id='testMessage' class='form-control' placeholder='Scrivi un messaggio di test...' onkeypress='handleKeyPress(event)'>
+                            <input type='text' id='testMessage' class='form-control' placeholder='Write a test message...' onkeypress='handleKeyPress(event)'>
                             <button class='btn btn-primary' onclick='sendTestMessage()'>
-                                <i class='fas fa-paper-plane'></i> Invia
+                                <i class='fas fa-paper-plane'></i> Send
                             </button>
                         </div>
                     </div>
@@ -251,21 +251,21 @@ public class AiDashboardController : ControllerBase
             <div class='col-md-4'>
                 <div class='card'>
                     <div class='card-header'>
-                        <h5 class='mb-0'><i class='fas fa-info-circle'></i> Info Sistema</h5>
+                        <h5 class='mb-0'><i class='fas fa-info-circle'></i> System Info</h5>
                     </div>
                     <div class='card-body'>
-                        <p><strong>Versione:</strong> 1.0.0</p>
+                        <p><strong>Version:</strong> 1.0.0</p>
                         <p><strong>Framework:</strong> .NET 9.0</p>
                         <p><strong>AI Engine:</strong> ONNX Runtime</p>
                         <p><strong>Cache:</strong> Redis</p>
                         <p><strong>Database:</strong> Entity Framework</p>
                         <hr>
-                        <h6>Funzionalità AI:</h6>
+                        <h6>AI Features:</h6>
                         <ul>
-                            <li>✅ Classificazione Intenti</li>
-                            <li>✅ Analisi Sentiment</li>
-                            <li>✅ Estrazione Entità</li>
-                            <li>✅ Generazione Risposta</li>
+                            <li>✅ Intent Classification</li>
+                            <li>✅ Sentiment Analysis</li>
+                            <li>✅ Entity Extraction</li>
+                            <li>✅ Response Generation</li>
                             <li>✅ Fine-Tuning</li>
                         </ul>
                     </div>
@@ -298,8 +298,8 @@ public class AiDashboardController : ControllerBase
                 }}
             }} catch (error) {{
                 console.error('Error checking model status:', error);
-                document.getElementById('modelStatusIndicator').innerHTML = 
-                    '<span class=""status-indicator status-offline""><i class=""fas fa-exclamation-triangle""></i> Errore</span>';
+                document.getElementById('modelStatusIndicator').innerHTML =
+                    '<span class=""status-indicator status-offline""><i class=""fas fa-exclamation-triangle""></i> Error</span>';
             }}
         }}
 
@@ -318,21 +318,21 @@ public class AiDashboardController : ControllerBase
         async function downloadModel() {{
             const button = event.target;
             const originalText = button.innerHTML;
-            button.innerHTML = '<i class=""fas fa-spinner fa-spin""></i> Scaricando...';
+            button.innerHTML = '<i class=""fas fa-spinner fa-spin""></i> Downloading...';
             button.disabled = true;
-            
+
             try {{
                 const response = await fetch('/api/aidashboard/download-model', {{ method: 'POST' }});
                 const result = await response.json();
-                
+
                 if (result.success) {{
-                    alert('✅ Modello scaricato con successo!');
+                    alert('✅ Model downloaded successfully!');
                     checkModelStatus();
                 }} else {{
-                    alert('❌ Errore durante il download: ' + result.error);
+                    alert('❌ Error during download: ' + result.error);
                 }}
             }} catch (error) {{
-                alert('❌ Errore durante il download: ' + error.message);
+                alert('❌ Error during download: ' + error.message);
             }} finally {{
                 button.innerHTML = originalText;
                 button.disabled = false;
@@ -341,12 +341,12 @@ public class AiDashboardController : ControllerBase
 
         async function testModel() {{
             const testCases = [
-                'Ciao, come stai?',
-                'Vorrei ordinare una pizza margherita',
-                'Qual è lo stato del mio ordine #12345?',
-                'Come posso pagare?',
-                'Cancella il mio ordine',
-                'Aiuto!'
+                'Hi, how are you?',
+                'I would like to order a margherita pizza',
+                'What is the status of my order #12345?',
+                'How can I pay?',
+                'Cancel my order',
+                'Help!'
             ];
             
             for (const testCase of testCases) {{
@@ -363,7 +363,7 @@ public class AiDashboardController : ControllerBase
             const chatPreview = document.getElementById('chatPreview');
             chatPreview.innerHTML += `
                 <div class='message message-user'>
-                    <strong>Tu:</strong> ${{messageText}}
+                    <strong>You:</strong> ${{messageText}}
                 </div>`;
             
             // Clear input
@@ -381,19 +381,19 @@ public class AiDashboardController : ControllerBase
                 // Add bot response to chat
                 chatPreview.innerHTML += `
                     <div class='message message-bot'>
-                        <strong>Bot:</strong> ${{result.response || 'Errore nella risposta'}}
+                        <strong>Bot:</strong> ${{result.response || 'Error in response'}}
                         <small class='d-block text-muted mt-1'>
                             Intent: ${{result.intent?.type}} (Confidence: ${{(result.confidence * 100).toFixed(1)}}%)
                         </small>
                     </div>`;
-                
+
                 // Scroll to bottom
                 chatPreview.scrollTop = chatPreview.scrollHeight;
-                
+
             }} catch (error) {{
                 chatPreview.innerHTML += `
                     <div class='message message-bot'>
-                        <strong>Bot:</strong> ❌ Errore nella comunicazione
+                        <strong>Bot:</strong> ❌ Communication error
                     </div>`;
             }}
         }}
@@ -428,7 +428,7 @@ public class AiDashboardController : ControllerBase
             if (_nlpService is AdvancedNLPService advancedNLP)
             {
                 isLoaded = advancedNLP.IsModelLoaded;
-                modelName = isLoaded ? "Microsoft DialoGPT-small" : "DialoGPT (Non caricato)";
+                modelName = isLoaded ? "Microsoft DialoGPT-small" : "DialoGPT (Not loaded)";
             }
 
             return Task.FromResult<IActionResult>(Ok(new

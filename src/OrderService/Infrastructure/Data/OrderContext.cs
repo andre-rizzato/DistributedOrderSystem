@@ -5,9 +5,9 @@ using OrderService.Domain.Aggregates;
 using OrderService.Domain.ValueObjects;
 
 /// <summary>
-/// DbContext EF Core per il bounded context degli ordini.
-/// Configura il mapping tra gli oggetti di dominio DDD e il database relazionale.
-/// I Value Object (Money, OrderStatus) sono mappati tramite HasConversion.
+/// EF Core DbContext for the orders bounded context.
+/// Configures the mapping between DDD domain objects and the relational database.
+/// Value Objects (Money, OrderStatus) are mapped via HasConversion.
 /// </summary>
 public class OrderContext : DbContext
 {
@@ -22,7 +22,7 @@ public class OrderContext : DbContext
         {
             entity.HasKey(e => e.Id);
 
-            // Value Object: OrderStatus → string
+            // Value Object: OrderStatus -> string
             entity.Property(e => e.Status)
                 .HasConversion(
                     v => v.Value,
@@ -30,7 +30,7 @@ public class OrderContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
 
-            // Value Object: Money → decimal
+            // Value Object: Money -> decimal
             entity.Property(e => e.Total)
                 .HasConversion(
                     v => v.Amount,
@@ -39,10 +39,10 @@ public class OrderContext : DbContext
 
             entity.Property(e => e.CreatedAt).IsRequired();
 
-            // Ignora la proprietà DomainEvents (non va persistita)
+            // Ignore the DomainEvents property (must not be persisted)
             entity.Ignore(e => e.DomainEvents);
 
-            // Configura la navigazione Items per usare il backing field _items
+            // Configure the Items navigation to use the _items backing field
             entity.HasMany(o => o.Items)
                 .WithOne()
                 .HasForeignKey(i => i.OrderId)
@@ -56,7 +56,7 @@ public class OrderContext : DbContext
         {
             entity.HasKey(e => e.Id);
 
-            // Value Object: Money → decimal
+            // Value Object: Money -> decimal
             entity.Property(e => e.UnitPrice)
                 .HasConversion(
                     v => v.Amount,

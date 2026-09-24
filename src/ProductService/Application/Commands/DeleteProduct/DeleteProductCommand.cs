@@ -3,6 +3,6 @@ namespace ProductService.Application.Commands.DeleteProduct;
 using MediatR;
 
 /// <summary>
-/// CQRS Command: elimina un prodotto per ID.
+/// CQRS Command: deletes a product by ID.
 /// </summary>
 public record DeleteProductCommand(Guid Id) : IRequest<bool>;
