@@ -8,8 +8,8 @@ using ProductService.Infrastructure.Configuration;
 using StackExchange.Redis;
 
 /// <summary>
-/// Implementazione Redis della cache prodotti.
-/// Implementa l'interfaccia definita nell'Application layer (Dependency Inversion).
+/// Redis implementation of the product cache.
+/// Implements the interface defined in the Application layer (Dependency Inversion).
 /// </summary>
 public class RedisProductCache : IProductCache
 {

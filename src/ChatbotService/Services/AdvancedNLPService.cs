@@ -169,7 +169,7 @@ public class AdvancedNLPService : INLPService, IDisposable
                 IntentTypes.PAYMENT_INFO => GeneratePaymentInfoResponse(),
                 IntentTypes.HELP => GenerateHelpResponse(),
                 IntentTypes.GOODBYE => GenerateGoodbyeResponse(),
-                _ => "Capisco la tua richiesta. Come posso aiutarti meglio?"
+                _ => "I understand your request. How can I help you better?"
             };
         }
         catch (Exception ex)
@@ -190,7 +190,7 @@ public class AdvancedNLPService : INLPService, IDisposable
             return PersonalizeResponse(template, intent.Parameters);
         }
         
-        return "Grazie per il tuo messaggio. Come posso aiutarti oggi?";
+        return "Thanks for your message. How can I help you today?";
     }
 
     /// <summary>
@@ -303,7 +303,7 @@ public class AdvancedNLPService : INLPService, IDisposable
         }
         
         // Extract product names (enhanced patterns)
-        var productPatterns = new[] { "pizza", "hamburger", "pasta", "gelato", "bevanda", "dolce" };
+        var productPatterns = new[] { "pizza", "hamburger", "pasta", "ice cream", "drink", "dessert" };
         foreach (var pattern in productPatterns)
         {
             if (message.ToLower().Contains(pattern))
@@ -332,8 +332,8 @@ public class AdvancedNLPService : INLPService, IDisposable
         var lowerMessage = message.ToLower();
         
         // Enhanced sentiment analysis
-        var positiveWords = new[] { "grazie", "perfetto", "ottimo", "bene", "felice", "contento", "soddisfatto" };
-        var negativeWords = new[] { "problema", "errore", "male", "sbagliato", "deluso", "arrabbiato", "difficile" };
+        var positiveWords = new[] { "thanks", "thank you", "perfect", "great", "good", "happy", "pleased", "satisfied" };
+        var negativeWords = new[] { "problem", "error", "bad", "wrong", "disappointed", "angry", "difficult" };
         
         var positiveCount = positiveWords.Count(word => lowerMessage.Contains(word));
         var negativeCount = negativeWords.Count(word => lowerMessage.Contains(word));
@@ -401,13 +401,13 @@ public class AdvancedNLPService : INLPService, IDisposable
     {
         return new Dictionary<string, List<string>>
         {
-            [IntentTypes.GREETING] = new() { "ciao", "salve", "buongiorno", "buonasera", "hello", "hi", "hola" },
-            [IntentTypes.ORDER_STATUS] = new() { "stato", "ordine", "order", "spedizione", "consegna", "tracking", "dov'è" },
-            [IntentTypes.PRODUCT_SEARCH] = new() { "cerca", "search", "prodotto", "product", "voglio", "comprare", "mostra", "menu" },
-            [IntentTypes.CANCEL_ORDER] = new() { "cancella", "cancel", "annulla", "rimuovi", "elimina", "disdici" },
-            [IntentTypes.PAYMENT_INFO] = new() { "pagamento", "payment", "carta", "credit", "fattura", "ricevuta", "prezzo" },
-            [IntentTypes.HELP] = new() { "aiuto", "help", "supporto", "assistenza", "come", "problema", "non capisco" },
-            [IntentTypes.GOODBYE] = new() { "arrivederci", "bye", "ciao", "addio", "grazie e basta", "fine", "stop" }
+            [IntentTypes.GREETING] = new() { "hello", "hi", "good morning", "good evening", "hey", "greetings" },
+            [IntentTypes.ORDER_STATUS] = new() { "status", "order", "shipment", "delivery", "tracking", "where is" },
+            [IntentTypes.PRODUCT_SEARCH] = new() { "search", "find", "product", "item", "want", "buy", "show", "menu" },
+            [IntentTypes.CANCEL_ORDER] = new() { "cancel", "abort", "remove", "delete" },
+            [IntentTypes.PAYMENT_INFO] = new() { "payment", "card", "credit", "invoice", "receipt", "price" },
+            [IntentTypes.HELP] = new() { "help", "support", "assistance", "how do i", "problem", "don't understand" },
+            [IntentTypes.GOODBYE] = new() { "goodbye", "bye", "farewell", "that's all thanks", "done", "stop" }
         };
     }
 
@@ -417,39 +417,39 @@ public class AdvancedNLPService : INLPService, IDisposable
         {
             [IntentTypes.GREETING] = new[]
             {
-                "Ciao! Benvenuto nel nostro servizio. Come posso aiutarti oggi?",
-                "Salve! Sono qui per assisterti con i tuoi ordini. Cosa posso fare per te?",
-                "Buongiorno! Come posso essere utile?"
+                "Hi! Welcome to our service. How can I help you today?",
+                "Hello! I'm here to help you with your orders. What can I do for you?",
+                "Good morning! How can I be of help?"
             },
             [IntentTypes.PRODUCT_SEARCH] = new[]
             {
-                "Perfetto! Ti aiuto a trovare quello che cerchi. Che tipo di prodotto ti interessa?",
-                "Ottimo! Posso mostrarti il nostro menu e aiutarti a scegliere.",
-                "Che bello! Dimmi cosa ti piacerebbe ordinare e ti aiuto a trovarlo."
+                "Great! I'll help you find what you're looking for. What kind of product are you interested in?",
+                "Awesome! I can show you our menu and help you choose.",
+                "Nice! Tell me what you'd like to order and I'll help you find it."
             },
             [IntentTypes.ORDER_STATUS] = new[]
             {
-                "Ti aiuto subito a controllare il tuo ordine. Puoi fornirmi il numero?",
-                "Certo! Fammi controllare lo stato del tuo ordine.",
-                "Perfetto, verifico subito la situazione del tuo ordine."
+                "I'll help you check your order right away. Can you give me the order number?",
+                "Sure! Let me check the status of your order.",
+                "Great, let me check on your order right now."
             },
             [IntentTypes.PAYMENT_INFO] = new[]
             {
-                "Ti spiego volentieri i dettagli del pagamento. Cosa vuoi sapere?",
-                "Certo! Posso aiutarti con tutte le informazioni sui pagamenti.",
-                "Nessun problema! Ti fornisco i dettagli che ti servono."
+                "I'm happy to explain the payment details. What would you like to know?",
+                "Sure! I can help you with all the payment information.",
+                "No problem! Here are the details you need."
             },
             [IntentTypes.HELP] = new[]
             {
-                "Sono qui per aiutarti! Dimmi pure qual è il problema.",
-                "Nessun problema! Come posso assisterti?",
-                "Certamente! Spiegami cosa ti serve e ti aiuto subito."
+                "I'm here to help! Just tell me what the problem is.",
+                "No problem! How can I assist you?",
+                "Of course! Tell me what you need and I'll help you right away."
             },
             [IntentTypes.GOODBYE] = new[]
             {
-                "È stato un piacere aiutarti! Torna presto!",
-                "Grazie per aver utilizzato il nostro servizio. Buona giornata!",
-                "Arrivederci e buona giornata!"
+                "It was a pleasure helping you! Come back soon!",
+                "Thanks for using our service. Have a great day!",
+                "Goodbye and have a great day!"
             }
         };
     }
@@ -466,7 +466,7 @@ public class AdvancedNLPService : INLPService, IDisposable
                 break;
                 
             case IntentTypes.PRODUCT_SEARCH:
-                var productPatterns = new[] { "pizza", "hamburger", "pasta", "gelato", "bevanda" };
+                var productPatterns = new[] { "pizza", "hamburger", "pasta", "ice cream", "drink" };
                 foreach (var product in productPatterns)
                 {
                     if (message.ToLower().Contains(product))
@@ -507,9 +507,9 @@ public class AdvancedNLPService : INLPService, IDisposable
     {
         var greetings = new[]
         {
-            "Ciao! Sono il tuo assistente AI. Come posso aiutarti oggi?",
-            "Buongiorno! Benvenuto nel nostro servizio clienti intelligente.",
-            "Salve! Sono qui per assisterti con qualsiasi domanda tu abbia."
+            "Hi! I'm your AI assistant. How can I help you today?",
+            "Good morning! Welcome to our smart customer service.",
+            "Hello! I'm here to help you with any question you have."
         };
         return greetings[Random.Shared.Next(greetings.Length)];
     }
@@ -518,42 +518,42 @@ public class AdvancedNLPService : INLPService, IDisposable
     {
         if (parameters.TryGetValue("product", out var product))
         {
-            return $"Ottimo! Ti mostro tutte le opzioni disponibili per {product}. Che tipo preferisci?";
+            return $"Great! Here are all the available options for {product}. Which type do you prefer?";
         }
-        return "Perfetto! Ti aiuto a trovare il prodotto che cerchi. Cosa ti interessa?";
+        return "Sure! I'll help you find the product you're looking for. What are you interested in?";
     }
 
     private string GenerateOrderStatusResponse(Dictionary<string, string> parameters)
     {
         if (parameters.TryGetValue("order_id", out var orderId))
         {
-            return $"Controllando l'ordine #{orderId}... Il tuo ordine è in preparazione e sarà pronto tra 15-20 minuti!";
+            return $"Checking order #{orderId}... Your order is being prepared and will be ready in 15-20 minutes!";
         }
-        return "Ti aiuto a controllare il tuo ordine. Puoi fornirmi il numero dell'ordine?";
+        return "I'll help you check your order. Can you give me the order number?";
     }
 
     private string GenerateCancelOrderResponse(Dictionary<string, string> parameters)
     {
         if (parameters.TryGetValue("order_id", out var orderId))
         {
-            return $"Capisco che vuoi cancellare l'ordine #{orderId}. Procedo subito con la cancellazione.";
+            return $"I understand you want to cancel order #{orderId}. I'll proceed with the cancellation right away.";
         }
-        return "Mi dispiace che tu debba cancellare l'ordine. Fammi il numero così posso aiutarti.";
+        return "Sorry to hear you need to cancel the order. Give me the order number so I can help you.";
     }
 
     private string GeneratePaymentInfoResponse()
     {
-        return "Per i pagamenti accettiamo carte di credito/debito, PayPal e contanti alla consegna. Serve altro?";
+        return "For payments we accept credit/debit cards, PayPal, and cash on delivery. Anything else you need?";
     }
 
     private string GenerateHelpResponse()
     {
-        return "Sono qui per aiutarti! Puoi chiedermi di: controllare ordini, cercare prodotti, assistenza pagamenti, e altro ancora.";
+        return "I'm here to help! You can ask me to: check orders, search for products, get payment assistance, and more.";
     }
 
     private string GenerateGoodbyeResponse()
     {
-        return "Grazie per aver utilizzato il nostro servizio! Sono sempre qui se hai bisogno. Buona giornata! 😊";
+        return "Thanks for using our service! I'm always here if you need me. Have a great day! 😊";
     }
 
     #endregion

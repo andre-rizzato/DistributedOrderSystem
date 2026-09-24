@@ -22,7 +22,7 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// Ottieni profilo utente corrente
+    /// Get the current user's profile
     /// </summary>
     [HttpGet("me")]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
@@ -41,7 +41,7 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// Ottieni profilo utente per ID
+    /// Get a user's profile by ID
     /// </summary>
     [HttpGet("{userId:guid}")]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
@@ -59,7 +59,7 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// Aggiorna profilo utente
+    /// Update the user's profile
     /// </summary>
     [HttpPut("me")]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
@@ -87,12 +87,12 @@ public class UsersController : ControllerBase
             return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
         }
 
-        _logger.LogInformation("Profilo aggiornato per utente: {Email}", user.Email);
+        _logger.LogInformation("Profile updated for user: {Email}", user.Email);
         return Ok(MapToDto(user));
     }
 
     /// <summary>
-    /// Aggiorna preferenze utente
+    /// Update user preferences
     /// </summary>
     [HttpPut("me/preferences")]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
@@ -114,12 +114,12 @@ public class UsersController : ControllerBase
 
         await _userManager.UpdateAsync(user);
 
-        _logger.LogInformation("Preferenze aggiornate per utente: {Email}", user.Email);
+        _logger.LogInformation("Preferences updated for user: {Email}", user.Email);
         return Ok(MapToDto(user));
     }
 
     /// <summary>
-    /// Elimina account utente
+    /// Delete the user's account
     /// </summary>
     [HttpDelete("me")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -137,7 +137,7 @@ public class UsersController : ControllerBase
         user.IsActive = false;
         await _userManager.UpdateAsync(user);
 
-        _logger.LogWarning("Account disattivato per utente: {Email}", user.Email);
+        _logger.LogWarning("Account deactivated for user: {Email}", user.Email);
         return NoContent();
     }
 

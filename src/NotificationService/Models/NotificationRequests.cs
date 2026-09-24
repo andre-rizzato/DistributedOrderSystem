@@ -1,435 +1,435 @@
 namespace NotificationService.Models.Requests;
 
 /// <summary>
-/// Richiesta per inviare una notifica generica
+/// Request to send a generic notification
 /// </summary>
 public class SendNotificationRequest
 {
     /// <summary>
-    /// Tipo di notifica da inviare
+    /// Type of notification to send
     /// </summary>
     public NotificationType Type { get; set; }
-    
+
     /// <summary>
-    /// Destinatario (email, numero telefono, user ID, etc.)
+    /// Recipient (email, phone number, user ID, etc.)
     /// </summary>
     public required string Recipient { get; set; }
-    
+
     /// <summary>
-    /// Oggetto/Titolo della notifica
+    /// Notification subject/title
     /// </summary>
     public required string Subject { get; set; }
-    
+
     /// <summary>
-    /// Contenuto della notifica
+    /// Notification content
     /// </summary>
     public required string Content { get; set; }
-    
+
     /// <summary>
-    /// Contenuto HTML (opzionale, per email)
+    /// HTML content (optional, for email)
     /// </summary>
     public string? HtmlContent { get; set; }
-    
+
     /// <summary>
-    /// Priorità della notifica
+    /// Notification priority
     /// </summary>
     public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
-    
+
     /// <summary>
-    /// Quando inviare la notifica (null = subito)
+    /// When to send the notification (null = immediately)
     /// </summary>
     public DateTime? ScheduledAt { get; set; }
-    
+
     /// <summary>
-    /// Metadati aggiuntivi
+    /// Additional metadata
     /// </summary>
     public Dictionary<string, string>? Metadata { get; set; }
-    
+
     /// <summary>
-    /// ID di riferimento per tracking
+    /// Reference ID for tracking
     /// </summary>
     public string? ReferenceId { get; set; }
-    
+
     /// <summary>
-    /// Tipo di riferimento
+    /// Reference type
     /// </summary>
     public string? ReferenceType { get; set; }
-    
+
     /// <summary>
-    /// Servizio che ha generato la notifica
+    /// Service that generated the notification
     /// </summary>
     public string? Source { get; set; }
-    
+
     /// <summary>
-    /// ID dell'utente destinatario
+    /// ID of the recipient user
     /// </summary>
     public string? UserId { get; set; }
 }
 
 /// <summary>
-/// Richiesta specifica per invio email
+/// Request specific to sending email
 /// </summary>
 public class SendEmailRequest
 {
     /// <summary>
-    /// Destinatario email
+    /// Email recipient
     /// </summary>
     public required string To { get; set; }
-    
+
     /// <summary>
-    /// Destinatari in copia
+    /// CC recipients
     /// </summary>
     public List<string>? Cc { get; set; }
-    
+
     /// <summary>
-    /// Destinatari in copia nascosta
+    /// BCC recipients
     /// </summary>
     public List<string>? Bcc { get; set; }
-    
+
     /// <summary>
-    /// Oggetto email
+    /// Email subject
     /// </summary>
     public required string Subject { get; set; }
-    
+
     /// <summary>
-    /// Contenuto testuale
+    /// Plain text content
     /// </summary>
     public string? TextContent { get; set; }
-    
+
     /// <summary>
-    /// Contenuto HTML
+    /// HTML content
     /// </summary>
     public string? HtmlContent { get; set; }
-    
+
     /// <summary>
-    /// Contenuto testuale semplice (alias per compatibilità)
+    /// Plain text content (alias, for compatibility)
     /// </summary>
     public string? Content
     {
         get => TextContent;
         set => TextContent = value;
     }
-    
+
     /// <summary>
-    /// Allegati
+    /// Attachments
     /// </summary>
     public List<EmailAttachment>? Attachments { get; set; }
-    
+
     /// <summary>
-    /// Template da utilizzare
+    /// Template to use
     /// </summary>
     public string? TemplateName { get; set; }
-    
+
     /// <summary>
-    /// Variabili per il template
+    /// Variables for the template
     /// </summary>
     public Dictionary<string, string>? TemplateVariables { get; set; }
-    
+
     /// <summary>
-    /// Priorità email
+    /// Email priority
     /// </summary>
     public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
 }
 
 /// <summary>
-/// Allegato email
+/// Email attachment
 /// </summary>
 public class EmailAttachment
 {
     /// <summary>
-    /// Nome file
+    /// File name
     /// </summary>
     public required string FileName { get; set; }
-    
+
     /// <summary>
-    /// Tipo MIME
+    /// MIME type
     /// </summary>
     public required string ContentType { get; set; }
-    
+
     /// <summary>
-    /// Contenuto file in base64
+    /// File content in base64
     /// </summary>
     public required string Content { get; set; }
 }
 
 /// <summary>
-/// Richiesta per invio SMS
+/// Request to send an SMS
 /// </summary>
 public class SendSmsRequest
 {
     /// <summary>
-    /// Numero di telefono destinatario (formato internazionale)
+    /// Recipient phone number (international format)
     /// </summary>
     public required string PhoneNumber { get; set; }
-    
+
     /// <summary>
-    /// Messaggio SMS (max 160 caratteri per SMS singolo)
+    /// SMS message (max 160 characters per single SMS)
     /// </summary>
     public required string Message { get; set; }
-    
+
     /// <summary>
-    /// Template da utilizzare
+    /// Template to use
     /// </summary>
     public string? TemplateName { get; set; }
-    
+
     /// <summary>
-    /// Variabili per il template
+    /// Variables for the template
     /// </summary>
     public Dictionary<string, string>? TemplateVariables { get; set; }
-    
+
     /// <summary>
-    /// Priorità SMS
+    /// SMS priority
     /// </summary>
     public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
-    
+
     /// <summary>
-    /// Quando inviare l'SMS
+    /// When to send the SMS
     /// </summary>
     public DateTime? ScheduledAt { get; set; }
 }
 
 /// <summary>
-/// Richiesta per notifiche push
+/// Request for push notifications
 /// </summary>
 public class SendPushNotificationRequest
 {
     /// <summary>
-    /// Device token o topic
+    /// Device token or topic
     /// </summary>
     public required string Target { get; set; }
-    
+
     /// <summary>
-    /// Device token (alias per Target)
+    /// Device token (alias for Target)
     /// </summary>
     public string DeviceToken
     {
         get => Target;
         set => Target = value;
     }
-    
+
     /// <summary>
-    /// Titolo notifica
+    /// Notification title
     /// </summary>
     public required string Title { get; set; }
-    
+
     /// <summary>
-    /// Corpo della notifica
+    /// Notification body
     /// </summary>
     public required string Body { get; set; }
-    
+
     /// <summary>
-    /// Icona notifica
+    /// Notification icon
     /// </summary>
     public string? Icon { get; set; }
-    
+
     /// <summary>
-    /// Immagine notifica
+    /// Notification image
     /// </summary>
     public string? Image { get; set; }
-    
+
     /// <summary>
-    /// URL immagine (alias per Image)
+    /// Image URL (alias for Image)
     /// </summary>
     public string? ImageUrl
     {
         get => Image;
         set => Image = value;
     }
-    
+
     /// <summary>
-    /// Action quando si clicca la notifica
+    /// Action when the notification is clicked
     /// </summary>
     public string? ClickAction { get; set; }
-    
+
     /// <summary>
-    /// Dati aggiuntivi
+    /// Additional data
     /// </summary>
     public Dictionary<string, string>? Data { get; set; }
-    
+
     /// <summary>
     /// Badge count (iOS)
     /// </summary>
     public int? Badge { get; set; }
-    
+
     /// <summary>
-    /// Suono notifica
+    /// Notification sound
     /// </summary>
     public string? Sound { get; set; } = "default";
 }
 
 /// <summary>
-/// Richiesta per notifiche in-app
+/// Request for in-app notifications
 /// </summary>
 public class SendInAppNotificationRequest
 {
     /// <summary>
-    /// ID utente destinatario
+    /// Recipient user ID
     /// </summary>
     public required string UserId { get; set; }
-    
+
     /// <summary>
-    /// Titolo notifica
+    /// Notification title
     /// </summary>
     public required string Title { get; set; }
-    
+
     /// <summary>
-    /// Messaggio notifica
+    /// Notification message
     /// </summary>
     public required string Message { get; set; }
-    
+
     /// <summary>
-    /// Tipo/categoria della notifica
+    /// Notification type/category
     /// </summary>
     public string? Category { get; set; }
-    
+
     /// <summary>
-    /// Tipo di notifica (alias per Category)
+    /// Notification type (alias for Category)
     /// </summary>
     public string? NotificationType
     {
         get => Category;
         set => Category = value;
     }
-    
+
     /// <summary>
-    /// URL o action associata
+    /// Associated URL or action
     /// </summary>
     public string? ActionUrl { get; set; }
-    
+
     /// <summary>
-    /// Icona notifica
+    /// Notification icon
     /// </summary>
     public string? Icon { get; set; }
-    
+
     /// <summary>
-    /// Dati aggiuntivi
+    /// Additional data
     /// </summary>
     public Dictionary<string, string>? Data { get; set; }
-    
+
     /// <summary>
-    /// Priorità notifica
+    /// Notification priority
     /// </summary>
     public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
-    
+
     /// <summary>
-    /// Servizio che ha generato la notifica
+    /// Service that generated the notification
     /// </summary>
     public string? Source { get; set; }
-    
+
     /// <summary>
-    /// ID di riferimento per tracking
+    /// Reference ID for tracking
     /// </summary>
     public string? ReferenceId { get; set; }
-    
+
     /// <summary>
-    /// Tipo di riferimento
+    /// Reference type
     /// </summary>
     public string? ReferenceType { get; set; }
 }
 
 /// <summary>
-/// Richiesta per invio notifica tramite template
+/// Request to send a notification via a template
 /// </summary>
 public class SendTemplateNotificationRequest
 {
     /// <summary>
-    /// Nome del template
+    /// Template name
     /// </summary>
     public required string TemplateName { get; set; }
-    
+
     /// <summary>
-    /// Destinatario
+    /// Recipient
     /// </summary>
     public required string Recipient { get; set; }
-    
+
     /// <summary>
-    /// Variabili per sostituire i placeholder nel template
+    /// Variables to substitute the template placeholders
     /// </summary>
     public required Dictionary<string, string> Variables { get; set; }
-    
+
     /// <summary>
-    /// Tipo di notifica (se non specificato nel template)
+    /// Notification type (if not specified in the template)
     /// </summary>
     public NotificationType? Type { get; set; }
-    
+
     /// <summary>
-    /// Priorità notifica
+    /// Notification priority
     /// </summary>
     public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
-    
+
     /// <summary>
-    /// ID utente (opzionale)
+    /// User ID (optional)
     /// </summary>
     public string? UserId { get; set; }
-    
+
     /// <summary>
-    /// Servizio che ha generato la notifica
+    /// Service that generated the notification
     /// </summary>
     public string? Source { get; set; }
-    
+
     /// <summary>
-    /// ID di riferimento per tracking
+    /// Reference ID for tracking
     /// </summary>
     public string? ReferenceId { get; set; }
-    
+
     /// <summary>
-    /// Tipo di riferimento
+    /// Reference type
     /// </summary>
     public string? ReferenceType { get; set; }
-    
+
     /// <summary>
-    /// Metadati aggiuntivi
+    /// Additional metadata
     /// </summary>
     public Dictionary<string, string>? Metadata { get; set; }
-    
+
     /// <summary>
-    /// Quando inviare la notifica
+    /// When to send the notification
     /// </summary>
     public DateTime? ScheduledAt { get; set; }
 }
 
 /// <summary>
-/// Richiesta per notifiche multiple (bulk)
+/// Request for multiple (bulk) notifications
 /// </summary>
 public class SendBulkNotificationRequest
 {
     /// <summary>
-    /// Lista di destinatari
+    /// List of recipients
     /// </summary>
     public required List<string> Recipients { get; set; }
-    
+
     /// <summary>
-    /// Tipo di notifica
+    /// Notification type
     /// </summary>
     public NotificationType Type { get; set; }
-    
+
     /// <summary>
-    /// Oggetto/Titolo
+    /// Subject/title
     /// </summary>
     public required string Subject { get; set; }
-    
+
     /// <summary>
-    /// Contenuto
+    /// Content
     /// </summary>
     public required string Content { get; set; }
-    
+
     /// <summary>
-    /// Template da utilizzare (opzionale)
+    /// Template to use (optional)
     /// </summary>
     public string? TemplateName { get; set; }
-    
+
     /// <summary>
-    /// Variabili comuni per tutti i destinatari
+    /// Common variables for all recipients
     /// </summary>
     public Dictionary<string, string>? CommonVariables { get; set; }
-    
+
     /// <summary>
-    /// Variabili specifiche per destinatario
+    /// Per-recipient specific variables
     /// </summary>
     public Dictionary<string, Dictionary<string, string>>? RecipientVariables { get; set; }
-    
+
     /// <summary>
-    /// Priorità notifiche
+    /// Notification priority
     /// </summary>
     public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
 }

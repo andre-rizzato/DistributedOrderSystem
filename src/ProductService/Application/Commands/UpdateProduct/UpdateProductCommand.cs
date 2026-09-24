@@ -4,7 +4,7 @@ using MediatR;
 using ProductService.Application.DTOs;
 
 /// <summary>
-/// CQRS Command: aggiorna un prodotto esistente.
+/// CQRS Command: updates an existing product.
 /// </summary>
 public record UpdateProductCommand(
     Guid Id,

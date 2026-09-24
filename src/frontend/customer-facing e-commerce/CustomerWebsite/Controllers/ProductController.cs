@@ -5,7 +5,7 @@ using CustomerWebsite.Services;
 namespace CustomerWebsite.Controllers;
 
 /// <summary>
-/// Controller per la gestione dei prodotti
+/// Controller for product management
 /// </summary>
 public class ProductController : Controller
 {
@@ -27,7 +27,7 @@ public class ProductController : Controller
     }
 
     /// <summary>
-    /// Pagina di dettaglio del prodotto
+    /// Product detail page
     /// </summary>
     public async Task<IActionResult> Details(Guid id)
     {
@@ -47,18 +47,18 @@ public class ProductController : Controller
             };
 
             ViewBag.CartItemCount = await _cartService.GetCartItemCountAsync(HttpContext.Session.Id);
-            
+
             return View(model);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il caricamento del prodotto {ProductId}", id);
+            _logger.LogError(ex, "Error loading product {ProductId}", id);
             return NotFound();
         }
     }
 
     /// <summary>
-    /// Aggiunge un prodotto al carrello
+    /// Adds a product to the cart
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> AddToCart([FromBody] AddToCartModel model)
@@ -79,44 +79,44 @@ public class ProductController : Controller
                 return Json(new { success = true, cartItemCount = cartItemCount });
             }
 
-            return Json(new { success = false, message = "Errore durante l'aggiunta al carrello" });
+            return Json(new { success = false, message = "Error adding to cart" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiunta al carrello");
-            return Json(new { success = false, message = "Errore interno del server" });
+            _logger.LogError(ex, "Error adding to cart");
+            return Json(new { success = false, message = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Aggiunge un prodotto alla wishlist
+    /// Adds a product to the wishlist
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> AddToWishlist(Guid productId, string? notes = null)
     {
         try
         {
-            // In un'implementazione reale, dovresti ottenere l'ID utente dal sistema di autenticazione
-            var userId = Guid.NewGuid(); // Placeholder per l'ID utente
-            
+            // In a real implementation, the user ID should come from the authentication system
+            var userId = Guid.NewGuid(); // Placeholder for the user ID
+
             var success = await _wishlistService.AddToWishlistAsync(userId, productId, notes);
 
             if (success)
             {
-                return Json(new { success = true, message = "Prodotto aggiunto alla wishlist" });
+                return Json(new { success = true, message = "Product added to wishlist" });
             }
 
-            return Json(new { success = false, message = "Errore durante l'aggiunta alla wishlist" });
+            return Json(new { success = false, message = "Error adding to wishlist" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiunta alla wishlist");
-            return Json(new { success = false, message = "Errore interno del server" });
+            _logger.LogError(ex, "Error adding to wishlist");
+            return Json(new { success = false, message = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Carica le recensioni di un prodotto via AJAX
+    /// Loads a product's reviews via AJAX
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> LoadReviews(Guid productId, int page = 1)
@@ -128,13 +128,13 @@ public class ProductController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il caricamento delle recensioni");
+            _logger.LogError(ex, "Error loading reviews");
             return PartialView("_ProductReviews", new List<ProductReviewModel>());
         }
     }
 
     /// <summary>
-    /// Aggiunge una recensione
+    /// Adds a review
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> AddReview([FromBody] AddReviewModel model)
@@ -146,27 +146,27 @@ public class ProductController : Controller
                 return BadRequest(ModelState);
             }
 
-            // In un'implementazione reale, dovresti ottenere l'ID utente dal sistema di autenticazione
-            var userId = Guid.NewGuid(); // Placeholder per l'ID utente
-            
+            // In a real implementation, the user ID should come from the authentication system
+            var userId = Guid.NewGuid(); // Placeholder for the user ID
+
             var success = await _productService.AddReviewAsync(model, userId);
 
             if (success)
             {
-                return Json(new { success = true, message = "Recensione aggiunta con successo" });
+                return Json(new { success = true, message = "Review added successfully" });
             }
 
-            return Json(new { success = false, message = "Errore durante l'aggiunta della recensione" });
+            return Json(new { success = false, message = "Error adding the review" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiunta della recensione");
-            return Json(new { success = false, message = "Errore interno del server" });
+            _logger.LogError(ex, "Error adding the review");
+            return Json(new { success = false, message = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Confronta prodotti
+    /// Compares products
     /// </summary>
     public async Task<IActionResult> Compare(List<Guid> productIds)
     {
@@ -178,7 +178,7 @@ public class ProductController : Controller
             }
 
             var products = new List<ProductDisplayModel>();
-            foreach (var productId in productIds.Take(4)) // Massimo 4 prodotti
+            foreach (var productId in productIds.Take(4)) // Maximum 4 products
             {
                 var product = await _productService.GetProductByIdAsync(productId);
                 if (product != null)
@@ -198,13 +198,13 @@ public class ProductController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il confronto prodotti");
+            _logger.LogError(ex, "Error comparing products");
             return RedirectToAction("Index", "Home");
         }
     }
 
     /// <summary>
-    /// Ricerca rapida prodotti (autocomplete)
+    /// Quick product search (autocomplete)
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> QuickSearch(string term)
@@ -236,14 +236,14 @@ public class ProductController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la ricerca rapida");
+            _logger.LogError(ex, "Error during quick search");
             return Json(new List<object>());
         }
     }
 }
 
 /// <summary>
-/// ViewModel per la pagina di dettaglio del prodotto
+/// ViewModel for the product detail page
 /// </summary>
 public class ProductDetailViewModel
 {

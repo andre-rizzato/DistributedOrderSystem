@@ -4,8 +4,8 @@ using MediatR;
 using ProductService.Application.DTOs;
 
 /// <summary>
-/// CQRS Command: crea un nuovo prodotto.
-/// I Command rappresentano intenzioni di modifica (write-side).
+/// CQRS Command: creates a new product.
+/// Commands represent write-side intentions to change state.
 /// </summary>
 public record CreateProductCommand(
     string Name,

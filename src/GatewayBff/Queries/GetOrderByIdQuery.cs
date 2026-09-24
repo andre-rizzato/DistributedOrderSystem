@@ -20,13 +20,13 @@ public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, Order
 
     public async Task<OrderDto?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Recupero ordine {OrderId}", request.OrderId);
-        
+        _logger.LogInformation("Retrieving order {OrderId}", request.OrderId);
+
         var response = await _httpClient.GetAsync($"api/orders/{request.OrderId}", cancellationToken);
-        
+
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("Ordine {OrderId} non trovato", request.OrderId);
+            _logger.LogWarning("Order {OrderId} not found", request.OrderId);
             return null;
         }
         

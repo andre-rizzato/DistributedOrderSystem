@@ -1,14 +1,14 @@
 <div class="orders-container">
   <div class="header">
-    <h1>Gestione Ordini</h1>
+    <h1>Order Management</h1>
     <button class="btn btn-primary" routerLink="/create-order">
       <span class="icon">+</span>
-      Nuovo Ordine
+      New Order
     </button>
   </div>
 
   @if (loading()) {
-    <div class="loading">Caricamento ordini...</div>
+    <div class="loading">Loading orders...</div>
   }
 
   @if (error()) {
@@ -19,9 +19,9 @@
     <div class="orders-list">
       @if (orders().length === 0) {
         <div class="empty-state">
-          <p>Nessun ordine trovato</p>
+          <p>No orders found</p>
           <button class="btn btn-primary" routerLink="/create-order">
-            Crea il primo ordine
+            Create the first order
           </button>
         </div>
       } @else {
@@ -29,7 +29,7 @@
           <div class="order-card">
             <div class="order-header">
               <div class="order-info">
-                <h3>Ordine #{{ order.id }}</h3>
+                <h3>Order #{{ order.id }}</h3>
                 <span class="order-date">{{ formatDate(order.createdAt) }}</span>
               </div>
               <div class="order-meta">
@@ -41,11 +41,11 @@
             </div>
 
             <div class="order-items">
-              <h4>Articoli ({{ order.items.length }})</h4>
+              <h4>Items ({{ order.items.length }})</h4>
               <ul>
                 @for (item of order.items; track item.id) {
                   <li>
-                    <span class="item-product">Prodotto #{{ item.productId }}</span>
+                    <span class="item-product">Product #{{ item.productId }}</span>
                     <span class="item-quantity">x{{ item.quantity }}</span>
                     <span class="item-price">{{ formatCurrency(item.unitPrice) }}</span>
                   </li>

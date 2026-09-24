@@ -3,319 +3,319 @@ using NotificationService.Models;
 namespace NotificationService.Configuration;
 
 /// <summary>
-/// Configurazione per provider SMS (Twilio)
+/// Configuration for the SMS provider (Twilio)
 /// </summary>
 public class SmsSettings
 {
     /// <summary>
-    /// Provider SMS da utilizzare (twilio, nexmo, etc.)
+    /// SMS provider to use (twilio, nexmo, etc.)
     /// </summary>
     public string Provider { get; set; } = "twilio";
-    
+
     /// <summary>
-    /// Account SID di Twilio
+    /// Twilio Account SID
     /// </summary>
     public required string AccountSid { get; set; }
-    
+
     /// <summary>
-    /// Auth Token di Twilio
+    /// Twilio Auth Token
     /// </summary>
     public required string AuthToken { get; set; }
-    
+
     /// <summary>
-    /// Numero di telefono mittente
+    /// Sender phone number
     /// </summary>
     public required string FromNumber { get; set; }
-    
+
     /// <summary>
-    /// Numero di telefono mittente (alias per compatibilità)
+    /// Sender phone number (alias for compatibility)
     /// </summary>
     public string FromPhoneNumber => FromNumber;
-    
+
     /// <summary>
-    /// Webhook per status callback
+    /// Webhook for status callbacks
     /// </summary>
     public string? WebhookUrl { get; set; }
-    
+
     /// <summary>
-    /// Timeout per invio SMS
+    /// SMS send timeout
     /// </summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
-    
+
     /// <summary>
-    /// Numero massimo di tentativi
+    /// Maximum number of retries
     /// </summary>
     public int MaxRetries { get; set; } = 3;
 }
 
 /// <summary>
-/// Configurazione per provider Email (SMTP)
+/// Configuration for the Email provider (SMTP)
 /// </summary>
 public class EmailSettings
 {
     /// <summary>
-    /// Server SMTP
+    /// SMTP server
     /// </summary>
     public required string SmtpHost { get; set; }
-    
+
     /// <summary>
-    /// Porta SMTP
+    /// SMTP port
     /// </summary>
     public int SmtpPort { get; set; } = 587;
-    
+
     /// <summary>
-    /// Usa SSL/TLS
+    /// Use SSL/TLS
     /// </summary>
     public bool EnableSsl { get; set; } = true;
-    
+
     /// <summary>
-    /// Username SMTP
+    /// SMTP username
     /// </summary>
     public required string Username { get; set; }
-    
+
     /// <summary>
-    /// Password SMTP
+    /// SMTP password
     /// </summary>
     public required string Password { get; set; }
-    
+
     /// <summary>
-    /// Email mittente di default
+    /// Default sender email
     /// </summary>
     public required string DefaultFromEmail { get; set; }
-    
+
     /// <summary>
-    /// Nome mittente di default
+    /// Default sender name
     /// </summary>
     public string? DefaultFromName { get; set; }
-    
+
     /// <summary>
-    /// Email per risposte
+    /// Reply-to email
     /// </summary>
     public string? ReplyToEmail { get; set; }
-    
+
     /// <summary>
-    /// Timeout invio email
+    /// Email send timeout
     /// </summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(60);
-    
+
     /// <summary>
-    /// Numero massimo di tentativi
+    /// Maximum number of retries
     /// </summary>
     public int MaxRetries { get; set; } = 3;
-    
+
     /// <summary>
-    /// Host SMTP (alias per compatibilità)
+    /// SMTP host (alias for compatibility)
     /// </summary>
     public string Host => SmtpHost;
-    
+
     /// <summary>
-    /// Port SMTP (alias per compatibilità)
+    /// SMTP port (alias for compatibility)
     /// </summary>
     public int Port => SmtpPort;
-    
+
     /// <summary>
-    /// Use SSL (alias per compatibilità)
+    /// Use SSL (alias for compatibility)
     /// </summary>
     public bool UseSsl => EnableSsl;
-    
+
     /// <summary>
-    /// From email (alias per compatibilità)
+    /// From email (alias for compatibility)
     /// </summary>
     public string FromEmail => DefaultFromEmail;
-    
+
     /// <summary>
-    /// From name (alias per compatibilità)
+    /// From name (alias for compatibility)
     /// </summary>
     public string FromName => DefaultFromName ?? "ShopVerse";
 }
 
 /// <summary>
-/// Configurazione per notifiche Push (Firebase)
+/// Configuration for Push notifications (Firebase)
 /// </summary>
 public class PushNotificationSettings
 {
     /// <summary>
-    /// Provider push (firebase, apns, etc.)
+    /// Push provider (firebase, apns, etc.)
     /// </summary>
     public string Provider { get; set; } = "firebase";
-    
+
     /// <summary>
-    /// Percorso file credenziali Firebase
+    /// Path to the Firebase credentials file
     /// </summary>
     public required string FirebaseCredentialsPath { get; set; }
-    
+
     /// <summary>
-    /// Percorso file credenziali Firebase (alias per compatibilità)
+    /// Path to the Firebase credentials file (alias for compatibility)
     /// </summary>
     public string ServiceAccountJson => FirebaseCredentialsPath;
-    
+
     /// <summary>
-    /// Project ID Firebase
+    /// Firebase Project ID
     /// </summary>
     public required string FirebaseProjectId { get; set; }
-    
+
     /// <summary>
-    /// URL per deep linking
+    /// URL for deep linking
     /// </summary>
     public string? DeepLinkUrl { get; set; }
-    
+
     /// <summary>
-    /// Timeout per push notifications
+    /// Push notification timeout
     /// </summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
-    
+
     /// <summary>
-    /// Numero massimo di tentativi
+    /// Maximum number of retries
     /// </summary>
     public int MaxRetries { get; set; } = 3;
 }
 
 /// <summary>
-/// Configurazione generale del servizio notifiche
+/// General configuration for the notification service
 /// </summary>
 public class NotificationSettings
 {
     /// <summary>
-    /// Abilita il servizio di notifiche
+    /// Enables the notification service
     /// </summary>
     public bool Enabled { get; set; } = true;
-    
+
     /// <summary>
-    /// Modalità debug (stampa log dettagliati)
+    /// Debug mode (prints detailed logs)
     /// </summary>
     public bool DebugMode { get; set; } = false;
-    
+
     /// <summary>
-    /// Numero massimo di notifiche da processare per batch
+    /// Maximum number of notifications to process per batch
     /// </summary>
     public int BatchSize { get; set; } = 100;
-    
+
     /// <summary>
-    /// Intervallo di processamento batch (in secondi)
+    /// Batch processing interval (in seconds)
     /// </summary>
     public int BatchIntervalSeconds { get; set; } = 30;
-    
+
     /// <summary>
-    /// Numero massimo di tentativi globale
+    /// Global maximum number of retries
     /// </summary>
     public int MaxGlobalRetries { get; set; } = 5;
-    
+
     /// <summary>
-    /// Tempo di attesa tra tentativi (backoff)
+    /// Wait time between retries (backoff)
     /// </summary>
     public TimeSpan RetryDelay { get; set; } = TimeSpan.FromMinutes(5);
-    
+
     /// <summary>
-    /// Fattore moltiplicativo per backoff esponenziale
+    /// Multiplier for exponential backoff
     /// </summary>
     public double BackoffMultiplier { get; set; } = 2.0;
-    
+
     /// <summary>
-    /// Conserva notifiche per N giorni
+    /// Keep notifications for N days
     /// </summary>
     public int RetentionDays { get; set; } = 90;
-    
+
     /// <summary>
-    /// Abilita cleanup automatico notifiche vecchie
+    /// Enables automatic cleanup of old notifications
     /// </summary>
     public bool AutoCleanup { get; set; } = true;
-    
+
     /// <summary>
-    /// Ora del cleanup automatico (formato HH:mm)
+    /// Time of day for automatic cleanup (HH:mm format)
     /// </summary>
     public string CleanupTime { get; set; } = "02:00";
 }
 
 /// <summary>
-/// Configurazione per cache Redis
+/// Configuration for the Redis cache
 /// </summary>
 public class RedisSettings
 {
     /// <summary>
-    /// Connection string Redis
+    /// Redis connection string
     /// </summary>
     public required string ConnectionString { get; set; }
-    
+
     /// <summary>
-    /// Prefisso per le chiavi
+    /// Key prefix
     /// </summary>
     public string KeyPrefix { get; set; } = "notifications:";
-    
+
     /// <summary>
-    /// TTL di default per cache (in minuti)
+    /// Default cache TTL (in minutes)
     /// </summary>
     public int DefaultTtlMinutes { get; set; } = 60;
-    
+
     /// <summary>
-    /// Database Redis da utilizzare
+    /// Redis database to use
     /// </summary>
     public int Database { get; set; } = 0;
 }
 
 /// <summary>
-/// Configurazione per template di notifiche
+/// Configuration for notification templates
 /// </summary>
 public class TemplateSettings
 {
     /// <summary>
-    /// Percorso cartella template
+    /// Template folder path
     /// </summary>
     public string TemplatePath { get; set; } = "Templates";
-    
+
     /// <summary>
-    /// Linguaggio di default per template
+    /// Default template language
     /// </summary>
-    public string DefaultLanguage { get; set; } = "it";
-    
+    public string DefaultLanguage { get; set; } = "en";
+
     /// <summary>
-    /// Abilita cache dei template
+    /// Enables template caching
     /// </summary>
     public bool EnableCache { get; set; } = true;
-    
+
     /// <summary>
-    /// Durata cache template (in minuti)
+    /// Template cache duration (in minutes)
     /// </summary>
     public int CacheDurationMinutes { get; set; } = 30;
 }
 
 /// <summary>
-/// Configurazione per webhook e callback
+/// Configuration for webhooks and callbacks
 /// </summary>
 public class WebhookSettings
 {
     /// <summary>
-    /// URL base per webhook di status
+    /// Base URL for status webhooks
     /// </summary>
     public string? BaseUrl { get; set; }
-    
+
     /// <summary>
-    /// Token segreto per validare webhook
+    /// Secret token for validating webhooks
     /// </summary>
     public string? SecretToken { get; set; }
-    
+
     /// <summary>
-    /// Timeout per chiamate webhook
+    /// Webhook call timeout
     /// </summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
-    
+
     /// <summary>
-    /// Numero massimo di tentativi per webhook
+    /// Maximum number of retries for webhooks
     /// </summary>
     public int MaxRetries { get; set; } = 3;
 }
 
 /// <summary>
-/// Configurazione per rate limiting
+/// Configuration for rate limiting
 /// </summary>
 public class RateLimitSettings
 {
     /// <summary>
-    /// Abilita rate limiting
+    /// Enables rate limiting
     /// </summary>
     public bool Enabled { get; set; } = true;
-    
+
     /// <summary>
-    /// Numero massimo di notifiche per minuto per tipo
+    /// Maximum number of notifications per minute per type
     /// </summary>
     public Dictionary<NotificationType, int> LimitsPerMinute { get; set; } = new()
     {
@@ -324,14 +324,14 @@ public class RateLimitSettings
         { NotificationType.Push, 200 },
         { NotificationType.InApp, 500 }
     };
-    
+
     /// <summary>
-    /// Numero massimo di notifiche per utente per ora
+    /// Maximum number of notifications per user per hour
     /// </summary>
     public int PerUserPerHourLimit { get; set; } = 50;
-    
+
     /// <summary>
-    /// Finestra temporale per rate limiting (in minuti)
+    /// Time window for rate limiting (in minutes)
     /// </summary>
     public int WindowMinutes { get; set; } = 1;
 }

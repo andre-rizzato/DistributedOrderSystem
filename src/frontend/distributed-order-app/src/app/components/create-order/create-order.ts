@@ -41,7 +41,7 @@ export class CreateOrderComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading products:', err);
-        this.error.set('Impossibile caricare i prodotti');
+        this.error.set('Unable to load products');
         this.loading.set(false);
       }
     });
@@ -111,7 +111,7 @@ export class CreateOrderComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error creating order:', err);
-        this.error.set(err.error?.message || 'Errore durante la creazione dell\'ordine');
+        this.error.set(err.error?.message || 'Error creating the order');
         this.submitting.set(false);
       }
     });

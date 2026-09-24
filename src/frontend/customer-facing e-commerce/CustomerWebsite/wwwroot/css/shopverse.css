@@ -1,14 +1,14 @@
-/* ShopVerse Styles - Piattaforma E-commerce Moderna */
-/* Palette colori principale: Viola (#7C3AED), Indaco (#4F46E5), Teal (#14B8A6) */
+/* ShopVerse Styles - Modern E-commerce Platform */
+/* Main color palette: Purple (#7C3AED), Indigo (#4F46E5), Teal (#14B8A6) */
 
-/* Header personalizzato ShopVerse con gradiente moderno */
+/* Custom ShopVerse header with a modern gradient */
 .shopverse-header {
     background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 50%, #3B82F6 100%);
     border-bottom: 1px solid rgba(255,255,255,0.1);
     box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
 }
 
-/* Logo ShopVerse con effetti moderni */
+/* ShopVerse logo with modern effects */
 .shopverse-logo {
     color: #ffffff !important;
     font-weight: 700;
@@ -33,7 +33,7 @@
     font-weight: 800;
 }
 
-/* Barra di ricerca moderna con design ShopVerse */
+/* Modern search bar with ShopVerse design */
 .search-bar {
     border-radius: 50px 0 0 50px;
     border: 2px solid #14B8A6;
@@ -48,7 +48,7 @@
     box-shadow: 0 0 0 3px rgba(253, 224, 71, 0.3);
 }
 
-/* Bottone di ricerca con gradiente accattivante */
+/* Search button with an eye-catching gradient */
 .search-btn {
     background: linear-gradient(135deg, #14B8A6, #059669);
     border: none;
@@ -68,7 +68,7 @@
     box-shadow: 0 4px 15px rgba(20, 184, 166, 0.4);
 }
 
-/* Navigazione personalizzata ShopVerse con design moderno */
+/* Custom ShopVerse navigation with a modern design */
 .navbar-nav .nav-link {
     color: #E5E7EB !important;
     font-weight: 600;
@@ -86,7 +86,7 @@
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
-/* Cards prodotti con design moderno ShopVerse */
+/* Product cards with modern ShopVerse design */
 .product-card {
     border: 1px solid #E5E7EB;
     border-radius: 16px;
@@ -103,7 +103,7 @@
     border-color: #7C3AED;
 }
 
-/* Immagini prodotto con effetti hover eleganti */
+/* Product images with elegant hover effects */
 .product-image {
     width: 100%;
     height: 200px;
@@ -117,7 +117,7 @@
     transform: scale(1.05);
 }
 
-/* Titoli prodotti con tipografia moderna */
+/* Product titles with modern typography */
 .product-title {
     font-size: 15px;
     font-weight: 600;
@@ -131,14 +131,14 @@
     color: #1F2937;
 }
 
-/* Prezzi con colori distintivi ShopVerse */
+/* Prices with distinctive ShopVerse colors */
 .product-price {
     font-size: 18px;
     font-weight: 700;
     color: #7C3AED;
 }
 
-/* Prezzo originale barrato con stile moderno */
+/* Original strikethrough price with a modern style */
 .original-price {
     text-decoration: line-through;
     color: #9CA3AF;
@@ -147,7 +147,7 @@
     font-weight: 400;
 }
 
-/* Sezione hero principale ShopVerse con gradiente moderno */
+/* Main ShopVerse hero section with a modern gradient */
 .hero-section {
     background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 25%, #3B82F6 50%, #14B8A6 75%, #10B981 100%);
     color: white;
@@ -168,7 +168,7 @@
     opacity: 0.3;
 }
 
-/* Cards categoria con design elegante */
+/* Category cards with an elegant design */
 .category-card {
     background: linear-gradient(145deg, #ffffff, #f8fafc);
     border-radius: 20px;
@@ -204,7 +204,7 @@
     opacity: 0.1;
 }
 
-/* Icone categoria con gradiente colorato */
+/* Category icons with a colorful gradient */
 .category-icon {
     font-size: 52px;
     background: linear-gradient(135deg, #7C3AED, #14B8A6);
@@ -219,7 +219,7 @@
     transform: scale(1.1) rotate(5deg);
 }
 
-/* Banner promozionali ShopVerse con design accattivante */
+/* ShopVerse promotional banners with an eye-catching design */
 .promo-banner {
     background: linear-gradient(45deg, #EC4899, #F97316, #EAB308);
     color: white;
@@ -256,7 +256,7 @@
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-/* Footer personalizzato ShopVerse con design moderno */
+/* Custom ShopVerse footer with a modern design */
 .shopverse-footer {
     background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
     color: #D1D5DB;
@@ -287,7 +287,7 @@
     transform: translateX(5px);
 }
 
-/* Elementi carrello e checkout con design ShopVerse */
+/* Cart and checkout elements with ShopVerse design */
 .cart-item {
     border: 1px solid #E5E7EB;
     border-radius: 16px;
@@ -302,7 +302,7 @@
     border-color: #7C3AED;
 }
 
-/* Sommario carrello con design elegante */
+/* Cart summary with an elegant design */
 .cart-summary {
     background: linear-gradient(145deg, #f8fafc, #ffffff);
     border: 1px solid #E5E7EB;
@@ -313,7 +313,7 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.1);
 }
 
-/* Bottoni principali ShopVerse con gradiente */
+/* Main ShopVerse buttons with a gradient */
 .btn-shopverse {
     background: linear-gradient(135deg, #7C3AED, #4F46E5);
     border: none;
@@ -332,7 +332,7 @@
     box-shadow: 0 8px 25px rgba(124, 58, 237, 0.4);
 }
 
-/* Bottone primario con stile distintivo */
+/* Primary button with a distinctive style */
 .btn-shopverse-primary {
     background: linear-gradient(135deg, #14B8A6, #10B981);
     border: none;
@@ -349,7 +349,7 @@
     transform: scale(1.05);
 }
 
-/* Variante del bottone principale per call-to-action */
+/* Main button variant for calls-to-action */
 .btn-shopverse {
     background: linear-gradient(135deg, #7C3AED, #4F46E5);
     border: none;
@@ -401,7 +401,7 @@
     }
 }
 
-/* Sistema di valutazione stelle con colori ShopVerse */
+/* Star rating system with ShopVerse colors */
 .stars {
     color: #F59E0B;
     text-shadow: 0 1px 2px rgba(0,0,0,0.1);
@@ -411,7 +411,7 @@
     color: #E5E7EB;
 }
 
-/* Badge offerte con design accattivante */
+/* Deal badges with an eye-catching design */
 .deal-badge {
     background: linear-gradient(135deg, #EF4444, #DC2626);
     color: white;
@@ -431,7 +431,7 @@
     50% { transform: scale(1.05); }
 }
 
-/* Breadcrumb personalizzato con stile moderno */
+/* Custom breadcrumb with a modern style */
 .breadcrumb {
     background: linear-gradient(135deg, #f8fafc, #ffffff);
     padding: 15px 20px;

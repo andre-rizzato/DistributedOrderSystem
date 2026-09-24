@@ -14,20 +14,20 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
-// ── Infrastructure: Configurazione ──
+// ── Infrastructure: Configuration ──
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
 
 // ── Infrastructure: Database (EF Core + PostgreSQL) ──
 builder.Services.AddDbContext<OrderContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("OrderDb")));
 
-// ── Infrastructure: Repository (implementa interfaccia del Domain layer) ──
+// ── Infrastructure: Repository (implements the Domain layer's interface) ──
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
 // ── Infrastructure: Messaging (Kafka) ──
 builder.Services.AddSingleton<IOrderEventProducer, OrderEventProducer>();
 
-// ── Application: Servizio applicativo ──
+// ── Application: Application service ──
 builder.Services.AddScoped<IOrderApplicationService, OrderApplicationService>();
 
 // CORS
@@ -43,7 +43,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configura la pipeline delle richieste HTTP
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -53,7 +53,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors();
 app.MapControllers();
 
-// Assicura che il database sia creato
+// Make sure the database is created
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<OrderContext>();

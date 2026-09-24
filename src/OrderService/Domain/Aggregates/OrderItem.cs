@@ -5,8 +5,8 @@ using OrderService.Domain.ValueObjects;
 using OrderService.Domain.Exceptions;
 
 /// <summary>
-/// Entità che rappresenta una riga d'ordine all'interno dell'aggregato Order.
-/// Non può esistere indipendentemente da un Order (cycle di vita gestito dall'aggregato).
+/// Entity representing an order line within the Order aggregate.
+/// Cannot exist independently of an Order (lifecycle managed by the aggregate).
 /// </summary>
 public class OrderItem : Entity
 {
@@ -15,26 +15,26 @@ public class OrderItem : Entity
     public int Quantity { get; private set; }
     public Money UnitPrice { get; private set; } = Money.Zero;
 
-    // Costruttore privato richiesto da EF Core per la materializzazione
+    // Private constructor required by EF Core for materialization
     private OrderItem() { }
 
     /// <summary>
-    /// Crea una nuova riga d'ordine, validando gli invarianti.
+    /// Creates a new order line, validating the invariants.
     /// </summary>
     internal OrderItem(Guid productId, int quantity, Money unitPrice)
     {
         if (productId == Guid.Empty)
-            throw new OrderDomainException("Il ProductId non può essere vuoto.");
+            throw new OrderDomainException("ProductId cannot be empty.");
         if (quantity <= 0)
-            throw new OrderDomainException("La quantità deve essere maggiore di zero.");
+            throw new OrderDomainException("Quantity must be greater than zero.");
 
         ProductId = productId;
         Quantity = quantity;
-        UnitPrice = unitPrice ?? throw new OrderDomainException("Il prezzo unitario è obbligatorio.");
+        UnitPrice = unitPrice ?? throw new OrderDomainException("Unit price is required.");
     }
 
     /// <summary>
-    /// Calcola il subtotale per questa riga d'ordine.
+    /// Calculates the subtotal for this order line.
     /// </summary>
     public Money GetSubtotal() => UnitPrice.Multiply(Quantity);
 }

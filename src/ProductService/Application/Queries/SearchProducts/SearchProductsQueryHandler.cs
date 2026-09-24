@@ -5,8 +5,8 @@ using ProductService.Application.DTOs;
 using ProductService.Domain.Interfaces;
 
 /// <summary>
-/// Handler per SearchProductsQuery.
-/// Applica i filtri lato server e restituisce DTO read-only.
+/// Handler for SearchProductsQuery.
+/// Applies filters server-side and returns read-only DTOs.
 /// </summary>
 public class SearchProductsQueryHandler : IRequestHandler<SearchProductsQuery, IEnumerable<ProductDto>>
 {
@@ -32,7 +32,7 @@ public class SearchProductsQueryHandler : IRequestHandler<SearchProductsQuery, I
 
         if (!string.IsNullOrWhiteSpace(request.Category))
         {
-            _logger.LogWarning("Filtro per categoria non ancora implementato");
+            _logger.LogWarning("Category filter not yet implemented");
         }
 
         if (request.MinPrice.HasValue)

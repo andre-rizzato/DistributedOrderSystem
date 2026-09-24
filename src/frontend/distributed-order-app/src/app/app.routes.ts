@@ -7,65 +7,65 @@ import { CreateOrderComponent } from './components/create-order/create-order';
 import { NotFoundComponent } from './components/not-found/not-found';
 
 /**
- * Configurazione delle Routes dell'applicazione
+ * Application Routes configuration
  *
- * Definisce tutte le routes (percorsi URL) dell'applicazione e i componenti
- * associati a ciascuna route. Angular usa questa configurazione per navigare
- * tra le diverse pagine dell'applicazione senza ricaricare la pagina (SPA).
+ * Defines all the routes (URL paths) of the application and the components
+ * associated with each route. Angular uses this configuration to navigate
+ * between the application's different pages without reloading the page (SPA).
  *
- * Routes disponibili:
- * 1. '' (root) -> Reindirizza a /products
- * 2. /products -> Lista di tutti i prodotti
- * 3. /products/new -> Form per creare un nuovo prodotto
- * 4. /products/edit/:id -> Form per modificare un prodotto esistente
- * 5. /inventory -> Gestione inventario prodotti
- * 6. /orders -> Lista degli ordini
- * 7. /create-order -> Creazione nuovo ordine
- * 8. ** (qualsiasi altro percorso) -> Reindirizza a /products (404 handler)
+ * Available routes:
+ * 1. '' (root) -> Redirects to /products
+ * 2. /products -> List of all products
+ * 3. /products/new -> Form to create a new product
+ * 4. /products/edit/:id -> Form to edit an existing product
+ * 5. /inventory -> Product inventory management
+ * 6. /orders -> List of orders
+ * 7. /create-order -> Create a new order
+ * 8. ** (any other path) -> Redirects to /products (404 handler)
  */
 export const routes: Routes = [
   {
-    path: '',                        // Route root (homepage)
-    redirectTo: '/products',         // Reindirizza alla lista prodotti
-    pathMatch: 'full'                // Deve corrispondere esattamente al path vuoto
+    path: '',                        // Root route (homepage)
+    redirectTo: '/products',         // Redirect to the product list
+    pathMatch: 'full'                // Must match the empty path exactly
   },
   {
-    path: 'products',                // Route per la lista prodotti
-    component: ProductsComponent,    // Componente da renderizzare
-    title: 'Products'                // Titolo della pagina (mostrato nel tab del browser)
+    path: 'products',                // Route for the product list
+    component: ProductsComponent,    // Component to render
+    title: 'Products'                // Page title (shown in the browser tab)
   },
   {
-    path: 'products/new',            // Route per creare un nuovo prodotto
-    component: ProductFormComponent, // Usa lo stesso form component
-    title: 'Add Product'             // Titolo della pagina
+    path: 'products/new',            // Route to create a new product
+    component: ProductFormComponent, // Uses the same form component
+    title: 'Add Product'             // Page title
   },
   {
-    path: 'products/:id/edit',       // Route per modificare un prodotto (:id è un parametro dinamico)
-    component: ProductFormComponent, // Usa lo stesso form component (modalità modifica)
-    title: 'Edit Product'            // Titolo della pagina
+    path: 'products/:id/edit',       // Route to edit a product (:id is a dynamic parameter)
+    component: ProductFormComponent, // Uses the same form component (edit mode)
+    title: 'Edit Product'            // Page title
   },
   {
-    path: 'inventory',               // Route per la gestione inventario
-    component: InventoryComponent,   // Componente per gestire l'inventario
-    title: 'Inventory Management'    // Titolo della pagina
+    path: 'inventory',               // Route for inventory management
+    component: InventoryComponent,   // Component to manage inventory
+    title: 'Inventory Management'    // Page title
   },
   {
-    path: 'orders',                  // Route per la lista ordini
-    component: OrdersComponent,      // Componente per visualizzare gli ordini
-    title: 'Orders'                  // Titolo della pagina
+    path: 'orders',                  // Route for the order list
+    component: OrdersComponent,      // Component to display orders
+    title: 'Orders'                  // Page title
   },
   {
-    path: 'create-order',            // Route per creare un nuovo ordine
-    component: CreateOrderComponent, // Componente per creare ordini
-    title: 'Create Order'            // Titolo della pagina
+    path: 'create-order',            // Route to create a new order
+    component: CreateOrderComponent, // Component to create orders
+    title: 'Create Order'            // Page title
   },
   {
-    path: 'not-found',               // Route per pagina 404
-    component: NotFoundComponent,    // Componente per gestire errori 404
-    title: 'Page Not Found'          // Titolo della pagina
+    path: 'not-found',               // Route for the 404 page
+    component: NotFoundComponent,    // Component to handle 404 errors
+    title: 'Page Not Found'          // Page title
   },
   {
-    path: '**',                      // Wildcard route: corrisponde a qualsiasi percorso non definito sopra
-    component: NotFoundComponent     // Mostra la pagina 404 invece di reindirizzare
+    path: '**',                      // Wildcard route: matches any path not defined above
+    component: NotFoundComponent     // Show the 404 page instead of redirecting
   }
 ];

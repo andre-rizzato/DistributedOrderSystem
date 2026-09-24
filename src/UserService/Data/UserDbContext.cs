@@ -19,7 +19,7 @@ public class UserDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
     {
         base.OnModelCreating(builder);
 
-        // Configuração ApplicationUser
+        // ApplicationUser configuration
         builder.Entity<ApplicationUser>(entity =>
         {
             entity.ToTable("Users");
@@ -46,7 +46,7 @@ public class UserDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
             entity.HasIndex(e => e.FacebookId);
         });
 
-        // Configuração Address
+        // Address configuration
         builder.Entity<Address>(entity =>
         {
             entity.ToTable("Addresses");
@@ -63,7 +63,7 @@ public class UserDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
             entity.HasIndex(e => new { e.UserId, e.IsDefault });
         });
 
-        // Configuração PaymentMethod
+        // PaymentMethod configuration
         builder.Entity<PaymentMethod>(entity =>
         {
             entity.ToTable("PaymentMethods");
@@ -80,7 +80,7 @@ public class UserDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
             entity.HasIndex(e => new { e.UserId, e.IsDefault });
         });
 
-        // Configuração RefreshToken
+        // RefreshToken configuration
         builder.Entity<RefreshToken>(entity =>
         {
             entity.ToTable("RefreshTokens");
@@ -93,7 +93,7 @@ public class UserDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Gui
             entity.HasIndex(e => e.ExpiresAt);
         });
 
-        // Renomear tabelas do Identity
+        // Rename Identity tables
         builder.Entity<IdentityRole<Guid>>().ToTable("Roles");
         builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");
         builder.Entity<IdentityUserClaim<Guid>>().ToTable("UserClaims");

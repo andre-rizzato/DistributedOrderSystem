@@ -5,8 +5,8 @@ using ProductService.Application.DTOs;
 using ProductService.Domain.Interfaces;
 
 /// <summary>
-/// Handler per GetAllProductsQuery.
-/// Legge direttamente dal repository (read-side ottimizzato).
+/// Handler for GetAllProductsQuery.
+/// Reads directly from the repository (optimized read-side).
 /// </summary>
 public class GetAllProductsQueryHandler : IRequestHandler<GetAllProductsQuery, IEnumerable<ProductDto>>
 {

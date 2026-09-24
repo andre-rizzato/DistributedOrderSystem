@@ -3,84 +3,84 @@ using System.ComponentModel.DataAnnotations;
 namespace CustomerWebsite.Models;
 
 /// <summary>
-/// Modello del prodotto per la visualizzazione nel sito del cliente
+/// Product model for display on the customer site
 /// </summary>
 public class ProductDisplayModel
 {
     public Guid ProductId { get; set; }
-    
-    [Display(Name = "Nome Prodotto")]
+
+    [Display(Name = "Product Name")]
     public string Name { get; set; } = string.Empty;
-    
-    [Display(Name = "Descrizione")]
+
+    [Display(Name = "Description")]
     public string Description { get; set; } = string.Empty;
-    
-    [Display(Name = "Descrizione Breve")]
+
+    [Display(Name = "Short Description")]
     public string ShortDescription { get; set; } = string.Empty;
-    
-    [Display(Name = "Prezzo")]
+
+    [Display(Name = "Price")]
     [DataType(DataType.Currency)]
     public decimal Price { get; set; }
-    
-    [Display(Name = "Prezzo Scontato")]
+
+    [Display(Name = "Discounted Price")]
     [DataType(DataType.Currency)]
     public decimal? DiscountPrice { get; set; }
-    
-    [Display(Name = "Categoria")]
+
+    [Display(Name = "Category")]
     public string Category { get; set; } = string.Empty;
-    
+
     [Display(Name = "Brand")]
     public string Brand { get; set; } = string.Empty;
-    
+
     [Display(Name = "SKU")]
     public string SKU { get; set; } = string.Empty;
-    
-    [Display(Name = "Immagini")]
+
+    [Display(Name = "Images")]
     public List<ProductImageModel> Images { get; set; } = new();
-    
-    [Display(Name = "Disponibilità")]
+
+    [Display(Name = "Availability")]
     public int QuantityAvailable { get; set; }
-    
+
     [Display(Name = "Rating")]
     public double AverageRating { get; set; }
-    
-    [Display(Name = "Numero Recensioni")]
+
+    [Display(Name = "Review Count")]
     public int ReviewCount { get; set; }
-    
-    [Display(Name = "Spedizione Gratuita")]
+
+    [Display(Name = "Free Shipping")]
     public bool FreeShipping { get; set; }
-    
+
     [Display(Name = "Prime Eligible")]
     public bool IsPrimeEligible { get; set; }
-    
+
     [Display(Name = "Bestseller")]
     public bool IsBestseller { get; set; }
-    
-    [Display(Name = "Data Creazione")]
+
+    [Display(Name = "Created At")]
     public DateTime CreatedAt { get; set; }
-    
-    [Display(Name = "Ultima Modifica")]
+
+    [Display(Name = "Last Modified")]
     public DateTime UpdatedAt { get; set; }
-    
+
     /// <summary>
-    /// Calcola il prezzo finale considerando eventuali sconti
+    /// Computes the final price factoring in any discount
     /// </summary>
     public decimal FinalPrice => DiscountPrice ?? Price;
-    
+
     /// <summary>
-    /// Calcola la percentuale di sconto
+    /// Computes the discount percentage
     /// </summary>
-    public int DiscountPercentage => DiscountPrice.HasValue ? 
+    public int DiscountPercentage => DiscountPrice.HasValue ?
         (int)Math.Round((1 - (DiscountPrice.Value / Price)) * 100) : 0;
-    
+
     /// <summary>
-    /// Verifica se il prodotto è disponibile
+    /// Checks whether the product is in stock
     /// </summary>
     public bool IsInStock => QuantityAvailable > 0;
 }
 
 /// <summary>
-/// Modello delle immagini del prodotto
+/// Product image model
 /// </summary>
 public class ProductImageModel
 {
@@ -91,69 +91,69 @@ public class ProductImageModel
 }
 
 /// <summary>
-/// Modello per la ricerca dei prodotti
+/// Model for product search
 /// </summary>
 public class ProductSearchModel
 {
-    [Display(Name = "Termine di ricerca")]
+    [Display(Name = "Search term")]
     public string? SearchTerm { get; set; }
-    
-    [Display(Name = "Categoria")]
+
+    [Display(Name = "Category")]
     public string? Category { get; set; }
-    
+
     [Display(Name = "Brand")]
     public string? Brand { get; set; }
-    
-    [Display(Name = "Prezzo minimo")]
+
+    [Display(Name = "Minimum price")]
     [DataType(DataType.Currency)]
     public decimal? MinPrice { get; set; }
-    
-    [Display(Name = "Prezzo massimo")]
+
+    [Display(Name = "Maximum price")]
     [DataType(DataType.Currency)]
     public decimal? MaxPrice { get; set; }
-    
-    [Display(Name = "Solo prodotti disponibili")]
+
+    [Display(Name = "In-stock products only")]
     public bool OnlyInStock { get; set; } = true;
-    
-    [Display(Name = "Solo prodotti Prime")]
+
+    [Display(Name = "Prime-eligible products only")]
     public bool OnlyPrimeEligible { get; set; }
-    
-    [Display(Name = "Rating minimo")]
+
+    [Display(Name = "Minimum rating")]
     public int? MinRating { get; set; }
-    
-    [Display(Name = "Ordinamento")]
+
+    [Display(Name = "Sort by")]
     public ProductSortOrder SortOrder { get; set; } = ProductSortOrder.Relevance;
-    
+
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }
 
 /// <summary>
-/// Enumerazione per l'ordinamento dei prodotti
+/// Enumeration for product sort order
 /// </summary>
 public enum ProductSortOrder
 {
-    [Display(Name = "Rilevanza")]
+    [Display(Name = "Relevance")]
     Relevance,
-    
-    [Display(Name = "Prezzo: dal più basso")]
+
+    [Display(Name = "Price: low to high")]
     PriceAscending,
-    
-    [Display(Name = "Prezzo: dal più alto")]
+
+    [Display(Name = "Price: high to low")]
     PriceDescending,
-    
-    [Display(Name = "Rating del cliente")]
+
+    [Display(Name = "Customer rating")]
     CustomerRating,
-    
-    [Display(Name = "Data di pubblicazione")]
+
+    [Display(Name = "Newest first")]
     NewestFirst,
-    
+
     [Display(Name = "Bestseller")]
     Bestseller
 }
 
 /// <summary>
-/// Modello dei risultati della ricerca
+/// Search results model
 /// </summary>
 public class ProductSearchResultModel
 {
@@ -162,14 +162,14 @@ public class ProductSearchResultModel
     public int CurrentPage { get; set; }
     public int PageSize { get; set; }
     public ProductSearchModel SearchCriteria { get; set; } = new();
-    
+
     public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
     public bool HasPreviousPage => CurrentPage > 1;
     public bool HasNextPage => CurrentPage < TotalPages;
 }
 
 /// <summary>
-/// Modello delle categorie di prodotti
+/// Product category model
 /// </summary>
 public class CategoryModel
 {

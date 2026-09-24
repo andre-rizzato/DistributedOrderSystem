@@ -46,8 +46,8 @@ public class OrderCreatedConsumer : BackgroundService
         _consumer.Subscribe(_topic);
         try
         {
-            _logger.LogInformation("Avvio consumer Kafka per topic: {Topic}", _topic);
-            // Aggiungi un delay per permettere all'host di avviarsi completamente
+            _logger.LogInformation("Starting Kafka consumer for topic: {Topic}", _topic);
+            // Add a delay to let the host finish starting up completely
             await Task.Delay(2000, stoppingToken);
         
             while (!stoppingToken.IsCancellationRequested)
@@ -60,39 +60,39 @@ public class OrderCreatedConsumer : BackgroundService
                         continue;
 
                     _logger.LogInformation(
-                        "Ricevuto messaggio dalla partizione {Partition} all'offset {Offset}",
+                        "Received message from partition {Partition} at offset {Offset}",
                         consumeResult.Partition.Value,
                         consumeResult.Offset.Value);
 
                     await ProcessMessageAsync(consumeResult.Message.Value, stoppingToken);
 
-                    // Conferma offset dopo elaborazione riuscita
+                    // Commit offset after successful processing
                     _consumer.Commit(consumeResult);
                     _consumer.StoreOffset(consumeResult);
 
                     _logger.LogInformation(
-                        "Messaggio elaborato e confermato con successo all'offset {Offset}",
+                        "Message processed and successfully committed at offset {Offset}",
                         consumeResult.Offset.Value);
                 }
                 catch (ConsumeException ex)
                 {
-                    _logger.LogError(ex, "Errore durante il consumo del messaggio: {Error}", ex.Error.Reason);
-                    
-                    // Non confermare in caso di errore - il messaggio verrà rielaborato
+                    _logger.LogError(ex, "Error consuming message: {Error}", ex.Error.Reason);
+
+                    // Don't commit on error - the message will be reprocessed
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Errore durante l'elaborazione del messaggio");
-                    
-                    // Non confermare in caso di errore - il messaggio verrà rielaborato
+                    _logger.LogError(ex, "Error processing message");
+
+                    // Don't commit on error - the message will be reprocessed
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
             }
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation("Consumer Kafka arrestato");
+            _logger.LogInformation("Kafka consumer stopped");
         }
         finally
         {
@@ -121,24 +121,24 @@ public class OrderCreatedConsumer : BackgroundService
         
         if (orderEvent == null)
         {
-            _logger.LogWarning("Impossibile deserializzare OrderCreatedEvent");
+            _logger.LogWarning("Unable to deserialize OrderCreatedEvent");
             return;
         }
 
         _logger.LogInformation(
-            "Elaborazione OrderCreatedEvent per Ordine {OrderId} con {ItemCount} articoli",
+            "Processing OrderCreatedEvent for Order {OrderId} with {ItemCount} items",
             orderEvent.OrderId,
             orderEvent.Items.Count);
 
         using var scope = _serviceProvider.CreateScope();
         var inventoryService = scope.ServiceProvider.GetRequiredService<IInventoryWorkerService>();
 
-        // Aggiorna inventario per ogni articolo nell'ordine
+        // Update inventory for each item in the order
         foreach (var item in orderEvent.Items)
         {
             try
             {
-                // Riduce inventario della quantità ordinata (delta negativo)
+                // Reduce inventory by the ordered quantity (negative delta)
                 var success = await inventoryService.AdjustInventoryQuantityAsync(
                     Guid.Parse(item.ProductId),
                     -item.Quantity,
@@ -147,7 +147,7 @@ public class OrderCreatedConsumer : BackgroundService
                 if (success)
                 {
                     _logger.LogInformation(
-                        "Ridotto inventario per Prodotto {ProductId} di {Quantity} unità (Ordine {OrderId})",
+                        "Reduced inventory for Product {ProductId} by {Quantity} units (Order {OrderId})",
                         item.ProductId,
                         item.Quantity,
                         orderEvent.OrderId);
@@ -155,7 +155,7 @@ public class OrderCreatedConsumer : BackgroundService
                 else
                 {
                     _logger.LogWarning(
-                        "Impossibile ridurre inventario per Prodotto {ProductId} di {Quantity} unità (Ordine {OrderId}) - inventario insufficiente o prodotto non trovato",
+                        "Unable to reduce inventory for Product {ProductId} by {Quantity} units (Order {OrderId}) - insufficient inventory or product not found",
                         item.ProductId,
                         item.Quantity,
                         orderEvent.OrderId);
@@ -164,15 +164,15 @@ public class OrderCreatedConsumer : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex,
-                    "Errore durante l'aggiornamento dell'inventario per Prodotto {ProductId} (Ordine {OrderId})",
+                    "Error updating inventory for Product {ProductId} (Order {OrderId})",
                     item.ProductId,
                     orderEvent.OrderId);
-                throw; // Rilancia per evitare commit - il messaggio verrà rielaborato
+                throw; // Rethrow to prevent commit - the message will be reprocessed
             }
         }
 
         _logger.LogInformation(
-            "Completati aggiornamenti inventario per Ordine {OrderId}",
+            "Completed inventory updates for Order {OrderId}",
             orderEvent.OrderId);
     }
 

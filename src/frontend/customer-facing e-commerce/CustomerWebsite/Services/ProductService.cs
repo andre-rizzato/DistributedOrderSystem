@@ -3,7 +3,7 @@ using CustomerWebsite.Models;
 namespace CustomerWebsite.Services;
 
 /// <summary>
-/// Servizio per la gestione dei prodotti tramite API
+/// Service for managing products via the API
 /// </summary>
 public interface IProductService
 {
@@ -32,7 +32,7 @@ public class ProductService : IProductService
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
-        _productServiceBaseUrl = _configuration.GetValue<string>("Services:ProductService:BaseUrl") ?? 
+        _productServiceBaseUrl = _configuration.GetValue<string>("Services:ProductService:BaseUrl") ??
                                 "https://localhost:5003";
     }
 
@@ -41,22 +41,22 @@ public class ProductService : IProductService
         try
         {
             var queryParams = new List<string>();
-            
+
             if (!string.IsNullOrWhiteSpace(searchModel.SearchTerm))
                 queryParams.Add($"searchTerm={Uri.EscapeDataString(searchModel.SearchTerm)}");
-            
+
             if (!string.IsNullOrWhiteSpace(searchModel.Category))
                 queryParams.Add($"category={Uri.EscapeDataString(searchModel.Category)}");
-            
+
             if (!string.IsNullOrWhiteSpace(searchModel.Brand))
                 queryParams.Add($"brand={Uri.EscapeDataString(searchModel.Brand)}");
-            
+
             if (searchModel.MinPrice.HasValue)
                 queryParams.Add($"minPrice={searchModel.MinPrice.Value}");
-            
+
             if (searchModel.MaxPrice.HasValue)
                 queryParams.Add($"maxPrice={searchModel.MaxPrice.Value}");
-            
+
             queryParams.Add($"onlyInStock={searchModel.OnlyInStock}");
             queryParams.Add($"onlyPrimeEligible={searchModel.OnlyPrimeEligible}");
             queryParams.Add($"sortOrder={searchModel.SortOrder}");
@@ -71,7 +71,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la ricerca prodotti");
+            _logger.LogError(ex, "Error searching products");
             return new ProductSearchResultModel();
         }
     }
@@ -85,7 +85,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero del prodotto {ProductId}", productId);
+            _logger.LogError(ex, "Error retrieving product {ProductId}", productId);
             return null;
         }
     }
@@ -100,7 +100,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero dei prodotti in evidenza");
+            _logger.LogError(ex, "Error retrieving featured products");
             return new List<ProductDisplayModel>();
         }
     }
@@ -115,7 +115,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero dei bestseller");
+            _logger.LogError(ex, "Error retrieving bestsellers");
             return new List<ProductDisplayModel>();
         }
     }
@@ -127,13 +127,13 @@ public class ProductService : IProductService
             var url = $"{_productServiceBaseUrl}/api/products/recommended?count={count}";
             if (userId.HasValue)
                 url += $"&userId={userId.Value}";
-            
+
             var response = await _httpClient.GetFromJsonAsync<List<ProductDisplayModel>>(url);
             return response ?? new List<ProductDisplayModel>();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero dei prodotti raccomandati");
+            _logger.LogError(ex, "Error retrieving recommended products");
             return new List<ProductDisplayModel>();
         }
     }
@@ -148,7 +148,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero dei prodotti correlati");
+            _logger.LogError(ex, "Error retrieving related products");
             return new List<ProductDisplayModel>();
         }
     }
@@ -163,7 +163,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero delle categorie");
+            _logger.LogError(ex, "Error retrieving categories");
             return new List<CategoryModel>();
         }
     }
@@ -178,7 +178,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero dei prodotti per categoria");
+            _logger.LogError(ex, "Error retrieving products by category");
             return new List<ProductDisplayModel>();
         }
     }
@@ -193,7 +193,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero dei brand");
+            _logger.LogError(ex, "Error retrieving brands");
             return new List<string>();
         }
     }
@@ -208,7 +208,7 @@ public class ProductService : IProductService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero delle recensioni");
+            _logger.LogError(ex, "Error retrieving reviews");
             return new List<ProductReviewModel>();
         }
     }
@@ -225,13 +225,13 @@ public class ProductService : IProductService
                 review.Content,
                 UserId = userId
             };
-            
+
             var response = await _httpClient.PostAsJsonAsync(url, reviewData);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiunta della recensione");
+            _logger.LogError(ex, "Error adding the review");
             return false;
         }
     }

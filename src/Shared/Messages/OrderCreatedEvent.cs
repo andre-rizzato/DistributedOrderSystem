@@ -1,58 +1,58 @@
 namespace Shared.Messages;
 
 /// <summary>
-/// Evento pubblicato su Kafka quando un ordine viene creato con successo.
-/// Utilizzato per triggerare aggiornamenti asincroni dell'inventario.
-/// 
-/// Flusso:
-/// 1. OrderService crea un nuovo ordine e lo salva nel database
-/// 2. OrderService pubblica questo evento sul topic Kafka "order-created"
-/// 3. InventoryService (consumer) riceve l'evento
-/// 4. InventoryService riduce automaticamente lo stock per ogni prodotto nell'ordine
-/// 
-/// Questo pattern event-driven garantisce:
-/// - Disaccoppiamento tra OrderService e InventoryService
-/// - Elaborazione asincrona (OrderService non aspetta InventoryService)
-/// - Resilienza: se InventoryService è down, l'ordine viene comunque salvato
-/// - Scalabilità: più consumer InventoryService possono elaborare eventi in parallelo
+/// Event published to Kafka when an order is successfully created.
+/// Used to trigger asynchronous inventory updates.
+///
+/// Flow:
+/// 1. OrderService creates a new order and saves it to the database
+/// 2. OrderService publishes this event to the Kafka topic "order-created"
+/// 3. InventoryService (consumer) receives the event
+/// 4. InventoryService automatically reduces stock for each product in the order
+///
+/// This event-driven pattern guarantees:
+/// - Decoupling between OrderService and InventoryService
+/// - Asynchronous processing (OrderService doesn't wait for InventoryService)
+/// - Resilience: if InventoryService is down, the order is still saved
+/// - Scalability: multiple InventoryService consumers can process events in parallel
 /// </summary>
 public record OrderCreatedEvent
 {
     /// <summary>
-    /// ID univoco dell'ordine creato.
-    /// Utilizzato per tracciare quale ordine ha triggerato l'evento.
+    /// Unique ID of the created order.
+    /// Used to track which order triggered the event.
     /// </summary>
     public string OrderId { get; init; } = string.Empty;
-    
+
     /// <summary>
-    /// Timestamp UTC di quando l'ordine è stato creato.
-    /// Utilizzato per audit trail e ordinamento eventi.
+    /// UTC timestamp of when the order was created.
+    /// Used for audit trail and event ordering.
     /// </summary>
     public DateTime CreatedAt { get; init; }
-    
+
     /// <summary>
-    /// Lista di prodotti ordinati con relative quantità.
-    /// Ogni item contiene ProductId e Quantity da sottrarre dall'inventario.
+    /// List of ordered products with their quantities.
+    /// Each item contains the ProductId and Quantity to subtract from inventory.
     /// </summary>
     public List<OrderItemEvent> Items { get; init; } = new();
 }
 
 /// <summary>
-/// Rappresenta un singolo prodotto all'interno di un ordine.
-/// Contiene le informazioni minime necessarie per aggiornare l'inventario.
+/// Represents a single product within an order.
+/// Contains the minimum information needed to update inventory.
 /// </summary>
 public record OrderItemEvent
 {
     /// <summary>
-    /// ID del prodotto ordinato.
-    /// Corrisponde al ProductId in ProductService e InventoryService.
+    /// ID of the ordered product.
+    /// Matches ProductId in ProductService and InventoryService.
     /// </summary>
     public string ProductId { get; init; } = string.Empty;
-    
+
     /// <summary>
-    /// Quantità ordinata del prodotto.
-    /// InventoryService sottrae questo valore da AvailableQuantity.
-    /// Esempio: Se Quantity=5, l'inventario verrà ridotto di 5 unità.
+    /// Quantity of the product ordered.
+    /// InventoryService subtracts this value from AvailableQuantity.
+    /// Example: if Quantity=5, inventory will be reduced by 5 units.
     /// </summary>
     public int Quantity { get; init; }
 }

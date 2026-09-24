@@ -1,8 +1,8 @@
 namespace OrderService.Domain.SeedWork;
 
 /// <summary>
-/// Classe base per tutte le entità di dominio.
-/// Fornisce uguaglianza basata sull'identità.
+/// Base class for all domain entities.
+/// Provides identity-based equality.
 /// </summary>
 public abstract class Entity
 {

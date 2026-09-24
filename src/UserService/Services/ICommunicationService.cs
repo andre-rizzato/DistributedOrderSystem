@@ -1,7 +1,7 @@
 namespace UserService.Services;
 
 /// <summary>
-/// Cliente per chiamare il CommunicationService per inviare email
+/// Client for calling CommunicationService to send emails
 /// </summary>
 public interface ICommunicationService
 {
@@ -26,7 +26,7 @@ public class CommunicationService : ICommunicationService
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
-        _communicationServiceUrl = _configuration.GetValue<string>("Services:CommunicationService:BaseUrl") 
+        _communicationServiceUrl = _configuration.GetValue<string>("Services:CommunicationService:BaseUrl")
             ?? "https://localhost:5011";
     }
 
@@ -37,21 +37,21 @@ public class CommunicationService : ICommunicationService
             var payload = new
             {
                 To = email,
-                Subject = "Verifica il tuo indirizzo email",
+                Subject = "Verify your email address",
                 TemplateName = "EmailVerification",
                 TemplateData = new { VerificationUrl = verificationUrl }
             };
 
             var response = await _httpClient.PostAsJsonAsync($"{_communicationServiceUrl}/api/emails/send", payload);
-            
+
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Errore invio email di verifica a {Email}: {StatusCode}", email, response.StatusCode);
+                _logger.LogWarning("Error sending verification email to {Email}: {StatusCode}", email, response.StatusCode);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio dell'email di verifica a {Email}", email);
+            _logger.LogError(ex, "Error sending verification email to {Email}", email);
         }
     }
 
@@ -62,21 +62,21 @@ public class CommunicationService : ICommunicationService
             var payload = new
             {
                 To = email,
-                Subject = "Reimposta la tua password",
+                Subject = "Reset your password",
                 TemplateName = "PasswordReset",
                 TemplateData = new { ResetUrl = resetUrl }
             };
 
             var response = await _httpClient.PostAsJsonAsync($"{_communicationServiceUrl}/api/emails/send", payload);
-            
+
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Errore invio email reset password a {Email}: {StatusCode}", email, response.StatusCode);
+                _logger.LogWarning("Error sending password reset email to {Email}: {StatusCode}", email, response.StatusCode);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio dell'email di reset password a {Email}", email);
+            _logger.LogError(ex, "Error sending password reset email to {Email}", email);
         }
     }
 
@@ -87,7 +87,7 @@ public class CommunicationService : ICommunicationService
             var payload = new
             {
                 To = email,
-                Subject = "Benvenuto!",
+                Subject = "Welcome!",
                 TemplateName = "Welcome",
                 TemplateData = new { FirstName = firstName }
             };
@@ -96,7 +96,7 @@ public class CommunicationService : ICommunicationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio dell'email di benvenuto a {Email}", email);
+            _logger.LogError(ex, "Error sending welcome email to {Email}", email);
         }
     }
 
@@ -107,7 +107,7 @@ public class CommunicationService : ICommunicationService
             var payload = new
             {
                 To = email,
-                Subject = "Password modificata",
+                Subject = "Password changed",
                 TemplateName = "PasswordChanged",
                 TemplateData = new { }
             };
@@ -116,7 +116,7 @@ public class CommunicationService : ICommunicationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio della notifica di cambio password a {Email}", email);
+            _logger.LogError(ex, "Error sending password change notification to {Email}", email);
         }
     }
 }

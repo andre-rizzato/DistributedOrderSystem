@@ -1,21 +1,21 @@
 @model CustomerWebsite.Models.ProductDisplayModel
 
-@* ViewComponent per la card prodotto - Rendering ottimizzato e riutilizzabile *@
+@* ViewComponent for the product card - optimized, reusable rendering *@
 <div class="col-lg-3 col-md-6">
     <div class="product-card">
         <div class="position-relative">
-            @* Immagine prodotto con fallback a placeholder *@
-            <img src="@(Model.Images?.FirstOrDefault(i => i.IsPrimary)?.Url ?? $"https://via.placeholder.com/250x250/f8f9fa/333333?text={Uri.EscapeDataString(Model.Name)}")" 
-                 alt="@Model.Name" 
+            @* Product image with placeholder fallback *@
+            <img src="@(Model.Images?.FirstOrDefault(i => i.IsPrimary)?.Url ?? $"https://via.placeholder.com/250x250/f8f9fa/333333?text={Uri.EscapeDataString(Model.Name)}")"
+                 alt="@Model.Name"
                  class="product-image" />
-            
-            @* Badge sconto se presente *@
+
+            @* Discount badge, if any *@
             @if (Model.DiscountPercentage > 0)
             {
                 <span class="deal-badge">-@Model.DiscountPercentage%</span>
             }
-            
-            @* Badge Bestseller se applicabile *@
+
+            @* Bestseller badge, if applicable *@
             @if (Model.IsBestseller)
             {
                 <span class="badge badge-primary position-absolute top-0 start-0 m-2">
@@ -25,14 +25,14 @@
         </div>
         
         <div class="p-3">
-            @* Titolo prodotto con link alla pagina dettaglio *@
+            @* Product title linking to the detail page *@
             <h6 class="product-title">
                 <a href="/Product/Details/@Model.ProductId" class="text-decoration-none text-dark">
                     @Model.Name
                 </a>
             </h6>
-            
-            @* Rating stelle prodotto *@
+
+            @* Product star rating *@
             <div class="stars mb-2">
                 @for (int i = 1; i <= 5; i++)
                 {
@@ -52,7 +52,7 @@
                 <small class="text-muted ms-2">(@Model.ReviewCount.ToString("N0"))</small>
             </div>
             
-            @* Prezzo prodotto con eventuale sconto *@
+            @* Product price, with discount if any *@
             <div class="mb-3">
                 @if (Model.DiscountPrice.HasValue)
                 {
@@ -64,35 +64,35 @@
                     <span class="product-price">€@Model.Price.ToString("N2")</span>
                 }
             </div>
-            
-            @* Indicatore disponibilità *@
+
+            @* Availability indicator *@
             @if (!Model.IsInStock)
             {
                 <p class="text-danger small mb-2">
-                    <i class="fas fa-exclamation-circle"></i> Non disponibile
+                    <i class="fas fa-exclamation-circle"></i> Out of stock
                 </p>
             }
             else if (Model.QuantityAvailable <= 5)
             {
                 <p class="text-warning small mb-2">
-                    <i class="fas fa-info-circle"></i> Solo @Model.QuantityAvailable rimasti!
+                    <i class="fas fa-info-circle"></i> Only @Model.QuantityAvailable left!
                 </p>
             }
-            
-            @* Pulsante aggiungi al carrello *@
-            <button class="btn btn-shopverse btn-sm w-100" 
+
+            @* Add-to-cart button *@
+            <button class="btn btn-shopverse btn-sm w-100"
                     onclick="addToCart('@Model.ProductId', 1)"
                     @(!Model.IsInStock ? "disabled" : "")>
-                <i class="fas fa-shopping-cart"></i> 
-                @(Model.IsInStock ? "Aggiungi al carrello" : "Non disponibile")
+                <i class="fas fa-shopping-cart"></i>
+                @(Model.IsInStock ? "Add to Cart" : "Out of Stock")
             </button>
-            
-            @* Badge aggiuntivi *@
+
+            @* Additional badges *@
             <div class="mt-2">
                 @if (Model.FreeShipping)
                 {
                     <span class="badge bg-success me-1">
-                        <i class="fas fa-truck"></i> Spedizione gratuita
+                        <i class="fas fa-truck"></i> Free Shipping
                     </span>
                 }
                 @if (Model.IsPrimeEligible)

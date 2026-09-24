@@ -5,7 +5,7 @@ using CustomerWebsite.Models;
 namespace CustomerWebsite.Services;
 
 /// <summary>
-/// Servizio per la gestione del carrello della spesa
+/// Service for managing the shopping cart
 /// </summary>
 public interface IShoppingCartService
 {
@@ -27,8 +27,8 @@ public class ShoppingCartService : IShoppingCartService
     private readonly string _cartServiceBaseUrl;
 
     public ShoppingCartService(
-        HttpClient httpClient, 
-        IConfiguration configuration, 
+        HttpClient httpClient,
+        IConfiguration configuration,
         ILogger<ShoppingCartService> logger,
         IProductService productService)
     {
@@ -36,7 +36,7 @@ public class ShoppingCartService : IShoppingCartService
         _configuration = configuration;
         _logger = logger;
         _productService = productService;
-        _cartServiceBaseUrl = _configuration.GetValue<string>("Services:GatewayBff:BaseUrl") ?? 
+        _cartServiceBaseUrl = _configuration.GetValue<string>("Services:GatewayBff:BaseUrl") ??
                              "https://localhost:7000";
     }
 
@@ -46,20 +46,20 @@ public class ShoppingCartService : IShoppingCartService
         {
             var url = $"{_cartServiceBaseUrl}/api/cart/{sessionId}";
             var cartData = await _httpClient.GetFromJsonAsync<dynamic>(url);
-            
+
             if (cartData == null)
                 return new ShoppingCartModel();
 
             var cart = new ShoppingCartModel();
-            
-            // Deserializza gli elementi del carrello e arricchisci con i dati del prodotto
+
+            // Deserialize the cart items and enrich them with product data
             if (cartData.items != null)
             {
                 foreach (var item in cartData.items)
                 {
                     var productId = Guid.Parse(item.productId.ToString());
                     var product = await _productService.GetProductByIdAsync(productId);
-                    
+
                     if (product != null)
                     {
                         cart.Items.Add(new CartItemModel
@@ -73,7 +73,7 @@ public class ShoppingCartService : IShoppingCartService
                 }
             }
 
-            // Calcola i costi di spedizione e tasse
+            // Compute shipping cost and taxes
             cart.ShippingCost = CalculateShippingCost(cart);
             cart.TaxAmount = CalculateTaxAmount(cart);
 
@@ -81,7 +81,7 @@ public class ShoppingCartService : IShoppingCartService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero del carrello per sessione {SessionId}", sessionId);
+            _logger.LogError(ex, "Error retrieving cart for session {SessionId}", sessionId);
             return new ShoppingCartModel();
         }
     }
@@ -97,12 +97,12 @@ public class ShoppingCartService : IShoppingCartService
                 Quantity = item.Quantity,
                 VariantId = item.VariantId
             });
-            
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiunta al carrello");
+            _logger.LogError(ex, "Error adding to cart");
             return false;
         }
     }
@@ -118,12 +118,12 @@ public class ShoppingCartService : IShoppingCartService
 
             var url = $"{_cartServiceBaseUrl}/api/cart/{sessionId}/items/{item.CartItemId}";
             var response = await _httpClient.PutAsJsonAsync(url, new { Quantity = item.Quantity });
-            
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiornamento dell'elemento del carrello");
+            _logger.LogError(ex, "Error updating the cart item");
             return false;
         }
     }
@@ -134,12 +134,12 @@ public class ShoppingCartService : IShoppingCartService
         {
             var url = $"{_cartServiceBaseUrl}/api/cart/{sessionId}/items/{cartItemId}";
             var response = await _httpClient.DeleteAsync(url);
-            
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la rimozione dall'elemento del carrello");
+            _logger.LogError(ex, "Error removing the cart item");
             return false;
         }
     }
@@ -150,12 +150,12 @@ public class ShoppingCartService : IShoppingCartService
         {
             var url = $"{_cartServiceBaseUrl}/api/cart/{sessionId}";
             var response = await _httpClient.DeleteAsync(url);
-            
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la pulizia del carrello");
+            _logger.LogError(ex, "Error clearing the cart");
             return false;
         }
     }
@@ -174,23 +174,23 @@ public class ShoppingCartService : IShoppingCartService
 
     private decimal CalculateShippingCost(ShoppingCartModel cart)
     {
-        // Spedizione gratuita per ordini superiori a €25 o per prodotti Prime
+        // Free shipping for orders over €25 or for Prime products
         if (cart.IsEligibleForFreeShipping)
             return 0;
 
-        // Costo di spedizione standard
+        // Standard shipping cost
         return 4.99m;
     }
 
     private decimal CalculateTaxAmount(ShoppingCartModel cart)
     {
-        // IVA italiana al 22%
+        // Italian VAT at 22%
         return cart.Subtotal * 0.22m;
     }
 }
 
 /// <summary>
-/// Servizio per la gestione della wishlist
+/// Service for managing the wishlist
 /// </summary>
 public interface IWishlistService
 {
@@ -210,8 +210,8 @@ public class WishlistService : IWishlistService
     private readonly string _wishlistServiceBaseUrl;
 
     public WishlistService(
-        HttpClient httpClient, 
-        IConfiguration configuration, 
+        HttpClient httpClient,
+        IConfiguration configuration,
         ILogger<WishlistService> logger,
         IProductService productService)
     {
@@ -219,7 +219,7 @@ public class WishlistService : IWishlistService
         _configuration = configuration;
         _logger = logger;
         _productService = productService;
-        _wishlistServiceBaseUrl = _configuration.GetValue<string>("Services:GatewayBff:BaseUrl") ?? 
+        _wishlistServiceBaseUrl = _configuration.GetValue<string>("Services:GatewayBff:BaseUrl") ??
                                   "https://localhost:7000";
     }
 
@@ -229,19 +229,19 @@ public class WishlistService : IWishlistService
         {
             var url = $"{_wishlistServiceBaseUrl}/api/wishlist/{userId}";
             var wishlistData = await _httpClient.GetFromJsonAsync<dynamic>(url);
-            
+
             if (wishlistData == null)
                 return new WishlistModel();
 
             var wishlist = new WishlistModel();
-            
+
             if (wishlistData.items != null)
             {
                 foreach (var item in wishlistData.items)
                 {
                     var productId = Guid.Parse(item.productId.ToString());
                     var product = await _productService.GetProductByIdAsync(productId);
-                    
+
                     if (product != null)
                     {
                         wishlist.Items.Add(new WishlistItemModel
@@ -259,7 +259,7 @@ public class WishlistService : IWishlistService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero della wishlist per utente {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving wishlist for user {UserId}", userId);
             return new WishlistModel();
         }
     }
@@ -274,12 +274,12 @@ public class WishlistService : IWishlistService
                 ProductId = productId,
                 Notes = notes
             });
-            
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiunta alla wishlist");
+            _logger.LogError(ex, "Error adding to wishlist");
             return false;
         }
     }
@@ -290,12 +290,12 @@ public class WishlistService : IWishlistService
         {
             var url = $"{_wishlistServiceBaseUrl}/api/wishlist/{userId}/items/{wishlistItemId}";
             var response = await _httpClient.DeleteAsync(url);
-            
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la rimozione dalla wishlist");
+            _logger.LogError(ex, "Error removing from wishlist");
             return false;
         }
     }
@@ -306,12 +306,12 @@ public class WishlistService : IWishlistService
         {
             var url = $"{_wishlistServiceBaseUrl}/api/wishlist/{userId}/items/{wishlistItemId}/move-to-cart";
             var response = await _httpClient.PostAsJsonAsync(url, new { SessionId = sessionId });
-            
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante lo spostamento nel carrello");
+            _logger.LogError(ex, "Error moving to cart");
             return false;
         }
     }

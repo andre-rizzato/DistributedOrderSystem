@@ -93,10 +93,10 @@ public record PaymentMethodDto(
 public record CreatePaymentMethodRequest(
     [Required] PaymentType Type,
     [Required] string CardHolderName,
-    [Required] string CardNumber, // Será encriptado
+    [Required] string CardNumber, // Will be encrypted
     [Required] string CardBrand,
     [Required] int ExpiryMonth,
     [Required] int ExpiryYear,
-    [Required] string CVV, // Nunca se guarda
+    [Required] string CVV, // Never persisted
     bool IsDefault
 );

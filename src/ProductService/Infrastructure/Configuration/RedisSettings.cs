@@ -1,7 +1,7 @@
 namespace ProductService.Infrastructure.Configuration;
 
 /// <summary>
-/// Configurazione tipizzata per Redis.
+/// Strongly-typed configuration for Redis.
 /// </summary>
 public class RedisSettings
 {

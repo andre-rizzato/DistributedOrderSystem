@@ -1,7 +1,7 @@
 namespace OrderService.Infrastructure.Configuration;
 
 /// <summary>
-/// Configurazione tipizzata per Kafka.
+/// Strongly-typed configuration for Kafka.
 /// </summary>
 public class KafkaSettings
 {

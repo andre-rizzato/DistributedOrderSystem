@@ -6,8 +6,8 @@ using System.ComponentModel.DataAnnotations;
 namespace ChatbotService.Controllers;
 
 /// <summary>
-/// Controller per servire il widget di chat come risorsa statica
-/// Fornisce il file JavaScript del widget e le risorse di configurazione
+/// Controller for serving the chat widget as a static resource
+/// Provides the widget's JavaScript file and configuration resources
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -23,39 +23,39 @@ public class ChatWidgetController : ControllerBase
     }
 
     /// <summary>
-    /// Serve il file JavaScript del widget di chat
-    /// Utilizzato sia per integrazione BFF che per progetti esterni
+    /// Serves the chat widget's JavaScript file
+    /// Used both for BFF integration and for external projects
     /// </summary>
-    /// <returns>File JavaScript del widget</returns>
+    /// <returns>Widget JavaScript file</returns>
     [HttpGet("chat-widget.min.js")]
-    [ResponseCache(Duration = 3600)] // Cache per 1 ora
+    [ResponseCache(Duration = 3600)] // Cache for 1 hour
     public IActionResult GetChatWidget()
     {
         try
         {
             var widgetPath = Path.Combine(_environment.WebRootPath, "chat-widget", "dist", "chat-widget.min.js");
-            
+
             if (!System.IO.File.Exists(widgetPath))
             {
-                _logger.LogError("File del widget non trovato: {WidgetPath}", widgetPath);
-                return NotFound(new { error = "Widget non disponibile" });
+                _logger.LogError("Widget file not found: {WidgetPath}", widgetPath);
+                return NotFound(new { error = "Widget unavailable" });
             }
 
             var widgetContent = System.IO.File.ReadAllText(widgetPath);
-            
+
             return Content(widgetContent, "application/javascript");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore nel servire il widget di chat");
-            return StatusCode(500, new { error = "Errore interno del server" });
+            _logger.LogError(ex, "Error serving the chat widget");
+            return StatusCode(500, new { error = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Serve la pagina demo del widget per test e configurazione
+    /// Serves the widget demo page for testing and configuration
     /// </summary>
-    /// <returns>Pagina HTML di demo</returns>
+    /// <returns>Demo HTML page</returns>
     [HttpGet("demo")]
     [AllowAnonymous]
     public IActionResult GetDemo()
@@ -63,29 +63,29 @@ public class ChatWidgetController : ControllerBase
         try
         {
             var demoPath = Path.Combine(_environment.WebRootPath, "chat-widget", "demo.html");
-            
+
             if (!System.IO.File.Exists(demoPath))
             {
-                _logger.LogError("File demo non trovato: {DemoPath}", demoPath);
-                return NotFound(new { error = "Demo non disponibile" });
+                _logger.LogError("Demo file not found: {DemoPath}", demoPath);
+                return NotFound(new { error = "Demo unavailable" });
             }
 
             var demoContent = System.IO.File.ReadAllText(demoPath);
-            
+
             return Content(demoContent, "text/html");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore nel servire la demo del widget");
-            return StatusCode(500, new { error = "Errore interno del server" });
+            _logger.LogError(ex, "Error serving the widget demo");
+            return StatusCode(500, new { error = "Internal server error" });
         }
     }
 
     /// <summary>
-    /// Genera configurazione dinamica per il widget basata sui parametri della richiesta
+    /// Generates dynamic configuration for the widget based on the request parameters
     /// </summary>
-    /// <param name="request">Parametri di configurazione del widget</param>
-    /// <returns>Configurazione JavaScript per il widget</returns>
+    /// <param name="request">Widget configuration parameters</param>
+    /// <returns>JavaScript configuration for the widget</returns>
     [HttpGet("config")]
     [AllowAnonymous]
     public IActionResult GetWidgetConfig([FromQuery] WidgetConfigRequest request)
@@ -106,21 +106,21 @@ public class ChatWidgetController : ControllerBase
                 showTypingIndicator = request.ShowTypingIndicator ?? true,
                 enableSoundNotifications = request.EnableSoundNotifications ?? false,
                 maxMessages = request.MaxMessages ?? 100,
-                botName = request.BotName ?? "Assistente AI",
+                botName = request.BotName ?? "AI Assistant",
                 botAvatar = string.IsNullOrEmpty(request.BotAvatar) ? GetDefaultBotAvatar() : request.BotAvatar,
-                welcomeMessage = request.WelcomeMessage ?? "Ciao! Come posso aiutarti oggi?",
-                placeholderText = request.PlaceholderText ?? "Scrivi un messaggio..."
+                welcomeMessage = request.WelcomeMessage ?? "Hi! How can I help you today?",
+                placeholderText = request.PlaceholderText ?? "Type a message..."
             };
 
             var configScript = $@"
-// Configurazione generata dinamicamente per il Widget di Chat
-window.chatWidgetConfig = {System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions 
-            { 
+// Dynamically generated configuration for the Chat Widget
+window.chatWidgetConfig = {System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions
+            {
                 PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-                WriteIndented = true 
+                WriteIndented = true
             })};
 
-// Auto-inizializzazione se il widget è già caricato
+// Auto-initialize if the widget is already loaded
 if (window.DistributedChatWidget && !window.chatWidget) {{
     window.chatWidget = new DistributedChatWidget(window.chatWidgetConfig);
 }}
@@ -130,16 +130,16 @@ if (window.DistributedChatWidget && !window.chatWidget) {{
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore nella generazione della configurazione widget");
-            return StatusCode(500, new { error = "Errore nella configurazione" });
+            _logger.LogError(ex, "Error generating the widget configuration");
+            return StatusCode(500, new { error = "Error generating the configuration" });
         }
     }
 
     /// <summary>
-    /// Endpoint per verificare lo stato del servizio widget
-    /// Utilizzato dal widget per testare la connessione
+    /// Endpoint to check the widget service's status
+    /// Used by the widget to test the connection
     /// </summary>
-    /// <returns>Stato del servizio</returns>
+    /// <returns>Service status</returns>
     [HttpGet("health")]
     [AllowAnonymous]
     public IActionResult GetWidgetHealth()
@@ -163,23 +163,23 @@ if (window.DistributedChatWidget && !window.chatWidget) {{
     }
 
     /// <summary>
-    /// Genera snippet di integrazione personalizzato per progetti esterni
+    /// Generates a customized integration snippet for external projects
     /// </summary>
-    /// <param name="request">Parametri per la generazione dello snippet</param>
-    /// <returns>Snippet HTML/JavaScript per l'integrazione</returns>
+    /// <param name="request">Parameters for generating the snippet</param>
+    /// <returns>HTML/JavaScript integration snippet</returns>
     [HttpPost("integration-snippet")]
     [AllowAnonymous]
     public IActionResult GenerateIntegrationSnippet([FromBody] IntegrationSnippetRequest request)
     {
         try
         {
-            var baseUrl = request.UseBffRouting 
+            var baseUrl = request.UseBffRouting
                 ? request.BaseUrl ?? Request.Scheme + "://" + Request.Host
                 : request.ChatbotServiceUrl ?? Request.Scheme + "://" + Request.Host;
 
             var snippet = $@"
 <!-- Chat Widget Integration -->
-<!-- Aggiungi questo snippet prima della chiusura del tag </body> -->
+<!-- Add this snippet before the closing </body> tag -->
 <script src=""{baseUrl}/api/chatwidget/chat-widget.min.js""></script>
 <script>
   window.chatWidgetConfig = {{
@@ -189,8 +189,8 @@ if (window.DistributedChatWidget && !window.chatWidget) {{
     primaryColor: '{request.PrimaryColor ?? "#4299e1"}',
     position: '{request.Position ?? "bottom-right"}',
     autoOpen: {request.AutoOpen.ToString().ToLower()},
-    botName: '{request.BotName ?? "Assistente AI"}',
-    welcomeMessage: '{request.WelcomeMessage ?? "Ciao! Come posso aiutarti oggi?"}'
+    botName: '{request.BotName ?? "AI Assistant"}',
+    welcomeMessage: '{request.WelcomeMessage ?? "Hi! How can I help you today?"}'
   }};
 </script>
 ";
@@ -200,12 +200,12 @@ if (window.DistributedChatWidget && !window.chatWidget) {{
                 snippet = snippet.Trim(),
                 instructions = new[]
                 {
-                    "1. Copia lo snippet sopra nel tuo file HTML",
-                    "2. Posizionalo prima della chiusura del tag </body>",
-                    "3. Modifica i parametri di configurazione secondo le tue esigenze",
-                    request.UseBffRouting 
-                        ? "4. Assicurati che il tuo BFF Gateway sia configurato per instradare le richieste al ChatbotService"
-                        : "4. Verifica che l'URL del ChatbotService sia raggiungibile dal tuo frontend"
+                    "1. Copy the snippet above into your HTML file",
+                    "2. Place it before the closing </body> tag",
+                    "3. Adjust the configuration parameters to fit your needs",
+                    request.UseBffRouting
+                        ? "4. Make sure your BFF Gateway is configured to route requests to ChatbotService"
+                        : "4. Verify that the ChatbotService URL is reachable from your frontend"
                 },
                 configUrl = $"{baseUrl}/api/chatwidget/config",
                 demoUrl = $"{baseUrl}/api/chatwidget/demo",
@@ -214,22 +214,22 @@ if (window.DistributedChatWidget && !window.chatWidget) {{
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore nella generazione dello snippet di integrazione");
-            return StatusCode(500, new { error = "Errore nella generazione dello snippet" });
+            _logger.LogError(ex, "Error generating the integration snippet");
+            return StatusCode(500, new { error = "Error generating the snippet" });
         }
     }
 
     /// <summary>
-    /// Fornisce statistiche di utilizzo del widget (per amministratori)
+    /// Provides widget usage statistics (for administrators)
     /// </summary>
-    /// <returns>Statistiche di utilizzo</returns>
+    /// <returns>Usage statistics</returns>
     [HttpGet("stats")]
     [Authorize(Roles = "Admin")]
     public IActionResult GetWidgetStats()
     {
         try
         {
-            // TODO: Implementare raccolta statistiche reali da database/cache
+            // TODO: Implement real statistics collection from the database/cache
             var stats = new
             {
                 totalDownloads = Random.Shared.Next(1000, 5000),
@@ -255,13 +255,13 @@ if (window.DistributedChatWidget && !window.chatWidget) {{
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore nel recupero delle statistiche widget");
-            return StatusCode(500, new { error = "Errore nel recupero delle statistiche" });
+            _logger.LogError(ex, "Error retrieving widget statistics");
+            return StatusCode(500, new { error = "Error retrieving statistics" });
         }
     }
 
     /// <summary>
-    /// Genera avatar bot predefinito in SVG
+    /// Generates a default bot avatar as SVG
     /// </summary>
     private static string GetDefaultBotAvatar()
     {
@@ -275,7 +275,7 @@ if (window.DistributedChatWidget && !window.chatWidget) {{
 }
 
 /// <summary>
-/// Modello per la richiesta di configurazione del widget
+/// Model for the widget configuration request
 /// </summary>
 public class WidgetConfigRequest
 {
@@ -298,7 +298,7 @@ public class WidgetConfigRequest
 }
 
 /// <summary>
-/// Modello per la richiesta di snippet di integrazione
+/// Model for the integration snippet request
 /// </summary>
 public class IntegrationSnippetRequest
 {
@@ -312,6 +312,6 @@ public class IntegrationSnippetRequest
     public string? PrimaryColor { get; set; } = "#4299e1";
     public string? Position { get; set; } = "bottom-right";
     public bool AutoOpen { get; set; } = false;
-    public string? BotName { get; set; } = "Assistente AI";
-    public string? WelcomeMessage { get; set; } = "Ciao! Come posso aiutarti oggi?";
+    public string? BotName { get; set; } = "AI Assistant";
+    public string? WelcomeMessage { get; set; } = "Hi! How can I help you today?";
 }

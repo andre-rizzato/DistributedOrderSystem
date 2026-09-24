@@ -12,19 +12,19 @@ using Twilio.Types;
 namespace NotificationService.Services.Implementations;
 
 /// <summary>
-/// Implementazione del servizio SMS usando Twilio
+/// SMS service implementation using Twilio
 /// </summary>
 public class TwilioSmsService : ISmsService
 {
     private readonly SmsSettings _settings;
     private readonly ILogger<TwilioSmsService> _logger;
-    
+
     public TwilioSmsService(IOptions<SmsSettings> settings, ILogger<TwilioSmsService> logger)
     {
         _settings = settings.Value;
         _logger = logger;
-        
-        // Inizializza Twilio
+
+        // Initialize Twilio
         TwilioClient.Init(_settings.AccountSid, _settings.AuthToken);
     }
 
@@ -33,21 +33,21 @@ public class TwilioSmsService : ISmsService
     {
         try
         {
-            // Valida numero di telefono
+            // Validate phone number
             if (!ValidatePhoneNumber(request.PhoneNumber))
             {
-                _logger.LogWarning("Numero di telefono non valido: {PhoneNumber}", request.PhoneNumber);
-                return NotificationResponse.CreateError("Numero di telefono non valido");
+                _logger.LogWarning("Invalid phone number: {PhoneNumber}", request.PhoneNumber);
+                return NotificationResponse.CreateError("Invalid phone number");
             }
 
-            // Crea messaggio Twilio
+            // Create Twilio message
             var message = await MessageResource.CreateAsync(
                 body: request.Message,
                 from: new PhoneNumber(_settings.FromPhoneNumber),
                 to: new PhoneNumber(request.PhoneNumber)
             );
 
-            _logger.LogInformation("SMS inviato con successo. SID: {MessageSid}", message.Sid);
+            _logger.LogInformation("SMS sent successfully. SID: {MessageSid}", message.Sid);
 
             return new NotificationResponse
             {
@@ -59,8 +59,8 @@ public class TwilioSmsService : ISmsService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio SMS a {PhoneNumber}", request.PhoneNumber);
-            return NotificationResponse.CreateError($"Errore invio SMS: {ex.Message}");
+            _logger.LogError(ex, "Error sending SMS to {PhoneNumber}", request.PhoneNumber);
+            return NotificationResponse.CreateError($"SMS send error: {ex.Message}");
         }
     }
 
@@ -99,7 +99,7 @@ public class TwilioSmsService : ISmsService
         });
 
         await Task.WhenAll(tasks);
-        
+
         response.Success = response.SuccessCount > 0;
         return response;
     }
@@ -110,7 +110,7 @@ public class TwilioSmsService : ISmsService
         try
         {
             var message = await MessageResource.FetchAsync(pathSid: externalId);
-            
+
             return new NotificationStatusResponse
             {
                 Success = true,
@@ -127,7 +127,7 @@ public class TwilioSmsService : ISmsService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero stato SMS {ExternalId}", externalId);
+            _logger.LogError(ex, "Error retrieving SMS status {ExternalId}", externalId);
             return new NotificationStatusResponse
             {
                 Success = false,
@@ -138,7 +138,7 @@ public class TwilioSmsService : ISmsService
                 Subject = "SMS",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                Error = $"Errore recupero stato: {ex.Message}"
+                Error = $"Error retrieving status: {ex.Message}"
             };
         }
     }
@@ -149,18 +149,18 @@ public class TwilioSmsService : ISmsService
         if (string.IsNullOrWhiteSpace(phoneNumber))
             return false;
 
-        // Regex per validare numeri di telefono internazionali
+        // Regex to validate international phone numbers
         var phoneRegex = new Regex(@"^\+[1-9]\d{6,14}$");
         return phoneRegex.IsMatch(phoneNumber);
     }
 
     /// <summary>
-    /// Mappa gli stati Twilio agli stati interni
+    /// Maps Twilio statuses to internal statuses
     /// </summary>
     private static string MapTwilioStatus(MessageResource.StatusEnum? status)
     {
         if (status == null) return "unknown";
-        
+
         var statusString = status.ToString();
         return statusString switch
         {
@@ -175,12 +175,12 @@ public class TwilioSmsService : ISmsService
     }
 
     /// <summary>
-    /// Mappa gli stati Twilio agli enum NotificationStatus
+    /// Maps Twilio statuses to NotificationStatus enum values
     /// </summary>
     private static NotificationStatus MapTwilioStatusToEnum(MessageResource.StatusEnum? status)
     {
         if (status == null) return NotificationStatus.Failed;
-        
+
         var statusString = status.ToString();
         return statusString switch
         {
@@ -196,13 +196,13 @@ public class TwilioSmsService : ISmsService
 }
 
 /// <summary>
-/// Implementazione mock del servizio SMS per testing
+/// Mock implementation of the SMS service for testing
 /// </summary>
 public class MockSmsService : ISmsService
 {
     private readonly ILogger<MockSmsService> _logger;
     private readonly Dictionary<string, NotificationStatusResponse> _messageStatuses = new();
-    
+
     public MockSmsService(ILogger<MockSmsService> logger)
     {
         _logger = logger;
@@ -213,15 +213,15 @@ public class MockSmsService : ISmsService
     {
         if (!ValidatePhoneNumber(request.PhoneNumber))
         {
-            return Task.FromResult(NotificationResponse.CreateError("Numero di telefono non valido"));
+            return Task.FromResult(NotificationResponse.CreateError("Invalid phone number"));
         }
 
         var messageId = Guid.NewGuid().ToString();
-        
-        // Simula invio SMS
-        _logger.LogInformation("SMS MOCK inviato a {PhoneNumber}: {Message}", request.PhoneNumber, request.Message);
-        
-        // Salva stato messaggio
+
+        // Simulate sending an SMS
+        _logger.LogInformation("MOCK SMS sent to {PhoneNumber}: {Message}", request.PhoneNumber, request.Message);
+
+        // Save message status
         _messageStatuses[messageId] = new NotificationStatusResponse
         {
             Success = true,
@@ -300,7 +300,7 @@ public class MockSmsService : ISmsService
             Subject = "SMS",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
-            Error = "Messaggio non trovato"
+            Error = "Message not found"
         });
     }
 

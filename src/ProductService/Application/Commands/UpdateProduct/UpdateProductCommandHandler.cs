@@ -6,7 +6,7 @@ using ProductService.Application.DTOs;
 using ProductService.Domain.Interfaces;
 
 /// <summary>
-/// Handler per UpdateProductCommand.
+/// Handler for UpdateProductCommand.
 /// </summary>
 public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand, ProductDto?>
 {
@@ -37,7 +37,7 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         await _repository.UpdateAsync(product, ct);
         await _cache.SetProductAsync(product, ct);
 
-        _logger.LogInformation("Prodotto aggiornato: {ProductId}", product.Id);
+        _logger.LogInformation("Product updated: {ProductId}", product.Id);
 
         return new ProductDto(product.Id, product.Name, product.Price, product.Description, product.IsActive);
     }

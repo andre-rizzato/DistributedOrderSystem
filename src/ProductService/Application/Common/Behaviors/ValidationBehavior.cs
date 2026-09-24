@@ -4,9 +4,9 @@ using FluentValidation;
 using MediatR;
 
 /// <summary>
-/// Pipeline Behavior MediatR: valida ogni request usando FluentValidation.
-/// Se la validazione fallisce, lancia ValidationException PRIMA che l'handler venga invocato.
-/// Garantisce che nessun Command/Query invalido raggiunga la logica di business.
+/// MediatR Pipeline Behavior: validates every request using FluentValidation.
+/// If validation fails, it throws ValidationException BEFORE the handler is invoked.
+/// Ensures no invalid Command/Query ever reaches the business logic.
 /// </summary>
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>

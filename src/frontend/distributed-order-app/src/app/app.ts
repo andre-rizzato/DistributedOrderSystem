@@ -2,28 +2,28 @@ import { Component, signal } from '@angular/core';
 import { RouterOutlet, RouterModule } from '@angular/router';
 
 /**
- * App - Componente Root dell'applicazione
+ * App - Root component of the application
  *
- * Questo è il componente principale (root) dell'intera applicazione Angular.
- * Viene caricato per primo e contiene il router outlet che gestisce la navigazione
- * tra le diverse pagine/componenti dell'applicazione.
+ * This is the main (root) component of the entire Angular application.
+ * It's loaded first and contains the router outlet that handles navigation
+ * between the application's different pages/components.
  *
- * Funzionalità:
- * - Fornisce il punto di mount per l'applicazione Angular
- * - Contiene il <router-outlet> che renderizza i componenti in base alla route attiva
- * - Definisce il template principale e gli stili globali dell'app
+ * Responsibilities:
+ * - Provides the mount point for the Angular application
+ * - Contains the <router-outlet> that renders components based on the active route
+ * - Defines the app's main template and global styles
  *
- * Il RouterOutlet è come un "segnaposto" dove Angular inserisce dinamicamente
- * i componenti corrispondenti alla route corrente (es. ProductsComponent, ProductFormComponent).
+ * The RouterOutlet acts like a "placeholder" where Angular dynamically inserts
+ * the components corresponding to the current route (e.g. ProductsComponent, ProductFormComponent).
  */
 @Component({
-  selector: 'app-root',              // Selettore usato nel index.html
-  imports: [RouterOutlet, RouterModule], // Moduli necessari per il routing
-  templateUrl: './app.html',         // Template HTML del componente
-  styleUrl: './app.scss'             // Stili SCSS del componente
+  selector: 'app-root',              // Selector used in index.html
+  imports: [RouterOutlet, RouterModule], // Modules required for routing
+  templateUrl: './app.html',         // Component's HTML template
+  styleUrl: './app.scss'             // Component's SCSS styles
 })
 export class App {
-  // Signal che contiene il titolo dell'applicazione
-  // Può essere utilizzato nel template per visualizzare il nome dell'app
+  // Signal holding the application's title
+  // Can be used in the template to display the app's name
   protected readonly title = signal('distributed-order-app');
 }

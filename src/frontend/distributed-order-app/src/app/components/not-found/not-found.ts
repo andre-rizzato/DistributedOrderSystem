@@ -4,9 +4,9 @@ import { RouterModule } from '@angular/router';
 
 /**
  * NotFoundComponent
- * 
- * Componente visualizzato quando l'utente naviga verso una route inesistente (404).
- * Fornisce un'interfaccia user-friendly per gestire errori di navigazione.
+ *
+ * Component displayed when the user navigates to a nonexistent route (404).
+ * Provides a user-friendly interface for handling navigation errors.
  */
 @Component({
   selector: 'app-not-found',
@@ -162,7 +162,7 @@ import { RouterModule } from '@angular/router';
 })
 export class NotFoundComponent {
   /**
-   * Torna alla pagina precedente usando la cronologia del browser
+   * Goes back to the previous page using the browser history
    */
   goBack(): void {
     try {

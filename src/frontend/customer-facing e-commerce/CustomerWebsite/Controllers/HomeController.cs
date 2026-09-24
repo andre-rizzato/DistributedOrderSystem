@@ -5,24 +5,24 @@ using CustomerWebsite.Services;
 namespace CustomerWebsite.Controllers;
 
 /// <summary>
-/// Controller principale per la gestione dell'homepage e delle funzionalità base di ShopVerse
-/// Gestisce la visualizzazione della pagina principale, ricerca prodotti, categorie e navigazione base
+/// Main controller for the homepage and ShopVerse's base functionality.
+/// Handles the main page display, product search, categories, and basic navigation.
 /// </summary>
 public class HomeController : Controller
 {
-    // Servizi dependency injected per accesso ai dati e funzionalità business
-    private readonly IProductService _productService;      // Servizio per gestione catalogo prodotti
-    private readonly IShoppingCartService _cartService;    // Servizio per gestione carrello della spesa
-    private readonly ILogger<HomeController> _logger;      // Logger per diagnostica e monitoraggio
+    // Dependency-injected services for data access and business functionality
+    private readonly IProductService _productService;      // Service for product catalog management
+    private readonly IShoppingCartService _cartService;    // Service for shopping cart management
+    private readonly ILogger<HomeController> _logger;      // Logger for diagnostics and monitoring
 
     /// <summary>
-    /// Costruttore con dependency injection per inizializzare i servizi necessari
+    /// Constructor with dependency injection to initialize the required services
     /// </summary>
-    /// <param name="productService">Servizio per operazioni sui prodotti (catalogo, ricerca, categorie)</param>
-    /// <param name="cartService">Servizio per gestione carrello e wishlist</param>
-    /// <param name="logger">Logger per tracciamento eventi e errori</param>
+    /// <param name="productService">Service for product operations (catalog, search, categories)</param>
+    /// <param name="cartService">Service for cart and wishlist management</param>
+    /// <param name="logger">Logger for event and error tracking</param>
     public HomeController(
-        IProductService productService, 
+        IProductService productService,
         IShoppingCartService cartService,
         ILogger<HomeController> logger)
     {
@@ -32,10 +32,10 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// Action principale per la homepage di ShopVerse
-    /// Carica e visualizza: prodotti in evidenza, categorie, banner promozionali e dati carrello
+    /// Main action for the ShopVerse homepage.
+    /// Loads and displays: featured products, categories, promotional banners, and cart data.
     /// </summary>
-    /// <returns>Vista homepage con modello dati completo per l'esperienza e-commerce</returns>
+    /// <returns>Homepage view with the full data model for the e-commerce experience</returns>
     public async Task<IActionResult> Index()
     {
         try
@@ -48,7 +48,7 @@ public class HomeController : Controller
                 RecommendedProducts = await _productService.GetRecommendedProductsAsync(count: 10)
             };
 
-            // Aggiungi il numero di elementi nel carrello
+            // Add the number of items in the cart
             var sessionId = HttpContext.Session.Id;
             ViewBag.CartItemCount = await _cartService.GetCartItemCountAsync(sessionId);
 
@@ -56,13 +56,13 @@ public class HomeController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il caricamento della homepage");
+            _logger.LogError(ex, "Error loading the homepage");
             return View(new HomePageViewModel());
         }
     }
 
     /// <summary>
-    /// Pagina di ricerca prodotti
+    /// Product search page
     /// </summary>
     public async Task<IActionResult> Search(ProductSearchModel searchModel)
     {
@@ -72,8 +72,8 @@ public class HomeController : Controller
                 searchModel = new ProductSearchModel();
 
             var results = await _productService.SearchProductsAsync(searchModel);
-            
-            // Carica le opzioni per i filtri
+
+            // Load the filter options
             ViewBag.Categories = await _productService.GetCategoriesAsync();
             ViewBag.Brands = await _productService.GetBrandsAsync();
             ViewBag.CartItemCount = await _cartService.GetCartItemCountAsync(HttpContext.Session.Id);
@@ -82,13 +82,13 @@ public class HomeController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la ricerca prodotti");
+            _logger.LogError(ex, "Error searching products");
             return View(new ProductSearchResultModel { SearchCriteria = searchModel });
         }
     }
 
     /// <summary>
-    /// Pagina delle categorie
+    /// Categories page
     /// </summary>
     public async Task<IActionResult> Categories()
     {
@@ -96,18 +96,18 @@ public class HomeController : Controller
         {
             var categories = await _productService.GetCategoriesAsync();
             ViewBag.CartItemCount = await _cartService.GetCartItemCountAsync(HttpContext.Session.Id);
-            
+
             return View(categories);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il caricamento delle categorie");
+            _logger.LogError(ex, "Error loading categories");
             return View(new List<CategoryModel>());
         }
     }
 
     /// <summary>
-    /// Pagina dei prodotti per categoria
+    /// Products-by-category page
     /// </summary>
     public async Task<IActionResult> Category(string categoryName, int page = 1)
     {
@@ -118,7 +118,7 @@ public class HomeController : Controller
 
             var products = await _productService.GetProductsByCategoryAsync(categoryName, page);
             var categories = await _productService.GetCategoriesAsync();
-            var currentCategory = categories.FirstOrDefault(c => 
+            var currentCategory = categories.FirstOrDefault(c =>
                 string.Equals(c.Name, categoryName, StringComparison.OrdinalIgnoreCase));
 
             var model = new CategoryPageViewModel
@@ -130,18 +130,18 @@ public class HomeController : Controller
             };
 
             ViewBag.CartItemCount = await _cartService.GetCartItemCountAsync(HttpContext.Session.Id);
-            
+
             return View(model);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il caricamento della categoria {CategoryName}", categoryName);
+            _logger.LogError(ex, "Error loading category {CategoryName}", categoryName);
             return RedirectToAction(nameof(Categories));
         }
     }
 
     /// <summary>
-    /// Pagina di informazioni
+    /// About page
     /// </summary>
     public IActionResult About()
     {
@@ -149,7 +149,7 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// Pagina dei contatti
+    /// Contact page
     /// </summary>
     public IActionResult Contact()
     {
@@ -157,7 +157,7 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// Pagina dell'assistenza clienti
+    /// Customer service page
     /// </summary>
     public IActionResult CustomerService()
     {
@@ -165,7 +165,7 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// Gestione degli errori
+    /// Error handling
     /// </summary>
     [Route("Error/{statusCode}")]
     public IActionResult HandleError(int statusCode)
@@ -175,9 +175,9 @@ public class HomeController : Controller
             StatusCode = statusCode,
             Message = statusCode switch
             {
-                404 => "Pagina non trovata",
-                500 => "Errore interno del server",
-                _ => "Si è verificato un errore"
+                404 => "Page not found",
+                500 => "Internal server error",
+                _ => "An error occurred"
             }
         };
 
@@ -185,7 +185,7 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// Endpoint per la ricerca autocomplete
+    /// Autocomplete search endpoint
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> Autocomplete(string term)
@@ -210,14 +210,14 @@ public class HomeController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'autocomplete");
+            _logger.LogError(ex, "Error during autocomplete");
             return Json(new List<string>());
         }
     }
 }
 
 /// <summary>
-/// ViewModel per la homepage
+/// ViewModel for the homepage
 /// </summary>
 public class HomePageViewModel
 {
@@ -229,7 +229,7 @@ public class HomePageViewModel
 }
 
 /// <summary>
-/// ViewModel per la pagina categoria
+/// ViewModel for the category page
 /// </summary>
 public class CategoryPageViewModel
 {
@@ -243,7 +243,7 @@ public class CategoryPageViewModel
 }
 
 /// <summary>
-/// Modello per i banner promozionali
+/// Model for promotional banners
 /// </summary>
 public class BannerModel
 {

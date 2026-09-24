@@ -396,23 +396,23 @@ public class FineTuningController : ControllerBase
                 <h2>📊 Training Data</h2>
                 <div class='input-group'>
                     <label>User Message:</label>
-                    <textarea id='trainingMessage' placeholder='Ciao! Come stai?' rows='2'></textarea>
+                    <textarea id='trainingMessage' placeholder='Hi! How are you?' rows='2'></textarea>
                 </div>
                 <div class='input-group'>
                     <label>Expected Bot Response:</label>
-                    <textarea id='expectedResponse' placeholder='Ciao! Sto bene grazie. Come posso aiutarti oggi?' rows='2'></textarea>
+                    <textarea id='expectedResponse' placeholder=""Hi! I'm doing well, thanks. How can I help you today?"" rows='2'></textarea>
                 </div>
                 <div class='input-group'>
                     <label>Intent Category:</label>
                     <select id='intentCategory'>
-                        <option value='greeting'>Greeting / Saluti</option>
-                        <option value='product_search'>Product Search / Ricerca Prodotti</option>
-                        <option value='order_status'>Order Status / Stato Ordine</option>
-                        <option value='payment_info'>Payment Info / Info Pagamento</option>
-                        <option value='cancel_order'>Cancel Order / Cancellazione</option>
-                        <option value='help'>Help / Aiuto</option>
-                        <option value='goodbye'>Goodbye / Arrivederci</option>
-                        <option value='complaint'>Complaint / Reclamo</option>
+                        <option value='greeting'>Greeting</option>
+                        <option value='product_search'>Product Search</option>
+                        <option value='order_status'>Order Status</option>
+                        <option value='payment_info'>Payment Info</option>
+                        <option value='cancel_order'>Cancel Order</option>
+                        <option value='help'>Help</option>
+                        <option value='goodbye'>Goodbye</option>
+                        <option value='complaint'>Complaint</option>
                     </select>
                 </div>
                 <button class='btn success' onclick='addTrainingExample()'>➕ Add Example</button>
@@ -425,7 +425,7 @@ public class FineTuningController : ControllerBase
                 <h2>💬 Live Model Testing</h2>
                 <div class='input-group'>
                     <label>Test Message:</label>
-                    <input type='text' id='testMessage' placeholder='Ciao, voglio ordinare una pizza...' onkeypress='if(event.key===""Enter"""") testModel()'>
+                    <input type='text' id='testMessage' placeholder='Hi, I want to order a pizza...' onkeypress='if(event.key===""Enter"""") testModel()'>
                 </div>
                 <div id='testResponse' class='status info' style='display:none;'></div>
                 <button class='btn' onclick='testModel()'>🧪 Test Model</button>
@@ -684,12 +684,12 @@ public class FineTuningController : ControllerBase
 
         function generateSample() {{
             const samples = [
-                'Ciao, vorrei ordinare una pizza margherita',
-                'Quanto costa il prodotto X?',
-                'Dov\\'è il mio ordine #12345?',
-                'Voglio cancellare il mio ordine',
-                'Problemi con il pagamento della carta',
-                'Grazie per l\\'aiuto, arrivederci!'
+                'Hi, I would like to order a margherita pizza',
+                'How much does product X cost?',
+                'Where is my order #12345?',
+                'I want to cancel my order',
+                'Problems with the card payment',
+                'Thanks for the help, goodbye!'
             ];
             const sample = samples[Math.floor(Math.random() * samples.length)];
             document.getElementById('testMessage').value = sample;

@@ -1,147 +1,147 @@
 # CustomerWebsite - ShopVerse
 
-## Descrizione
-CustomerWebsite è la piattaforma e-commerce **ShopVerse** sviluppata con ASP.NET Core MVC. Offre un'esperienza shopping moderna e intuitiva con design responsivo, palette colori personalizzata e funzionalità avanzate per il commercio elettronico.
+## Description
+CustomerWebsite is the **ShopVerse** e-commerce platform built with ASP.NET Core MVC. It offers a modern, intuitive shopping experience with responsive design, a custom color palette, and advanced e-commerce features.
 
-## Caratteristiche
+## Features
 
-### 🎨 **Design e UI Moderna**
-- Design unico ShopVerse con palette colori distintiva
-- Gradiente principale: Viola (#7C3AED), Indaco (#4F46E5), Teal (#14B8A6)
-- Design responsivo con Bootstrap 5 e animazioni CSS avanzate
-- Icone FontAwesome per UX moderna e intuitiva
-- Effetti hover e transizioni fluide per interattività ottimale
+### 🎨 **Modern Design and UI**
+- Unique ShopVerse design with a distinctive color palette
+- Main gradient: Purple (#7C3AED), Indigo (#4F46E5), Teal (#14B8A6)
+- Responsive design with Bootstrap 5 and advanced CSS animations
+- FontAwesome icons for a modern, intuitive UX
+- Hover effects and smooth transitions for optimal interactivity
 
-### 🛍️ **Funzionalità E-commerce ShopVerse**
-- Homepage con design hero moderno e call-to-action accattivanti
-- Sistema di navigazione per categorie con icone intuitive
-- Ricerca intelligente con autocomplete e suggerimenti in tempo reale
-- Carrello della spesa con persistenza sessione e AJAX updates
-- Lista desideri per salvare prodotti preferiti
-- Sistema checkout multi-step con validazione avanzata
-- Gestione account utente completa con profili personalizzati
-- Sistema recensioni e valutazioni prodotti con stelle interattive
+### 🛍️ **ShopVerse E-commerce Features**
+- Homepage with a modern hero design and engaging calls-to-action
+- Category navigation system with intuitive icons
+- Smart search with autocomplete and real-time suggestions
+- Shopping cart with session persistence and AJAX updates
+- Wishlist for saving favorite products
+- Multi-step checkout system with advanced validation
+- Complete user account management with personalized profiles
+- Product review and rating system with interactive stars
 
-### 🏗️ **Architettura Tecnica**
-- **Framework**: ASP.NET Core MVC (.NET 9.0) con pattern moderno
-- **Design Pattern**: Model-View-Controller con separation of concerns
-- **Dependency Injection**: Configurazione completa per tutti i servizi
-- **Session Management**: Gestione sicura per carrello e preferenze utente
-- **HTTP Client**: Integrazione seamless con architettura microservizi
+### 🏗️ **Technical Architecture**
+- **Framework**: ASP.NET Core MVC (.NET 9.0) with a modern pattern
+- **Design Pattern**: Model-View-Controller with separation of concerns
+- **Dependency Injection**: Full configuration for all services
+- **Session Management**: Secure handling for cart and user preferences
+- **HTTP Client**: Seamless integration with the microservices architecture
 
-### 📁 **Struttura Progetto**
+### 📁 **Project Structure**
 
 ```
 CustomerWebsite/
 ├── Controllers/
-│   ├── HomeController.cs          # Homepage, ricerca, categorie
-│   ├── ProductController.cs       # Dettagli prodotto, recensioni
-│   ├── CartController.cs          # Gestione carrello
-│   └── CheckoutController.cs      # Processo di acquisto
+│   ├── HomeController.cs          # Homepage, search, categories
+│   ├── ProductController.cs       # Product details, reviews
+│   ├── CartController.cs          # Cart management
+│   └── CheckoutController.cs      # Purchase process
 ├── Models/
-│   ├── ProductModels.cs           # Modelli prodotti e ricerca
-│   ├── ShoppingModels.cs          # Carrello e wishlist
-│   ├── AccountModels.cs           # Utenti e autenticazione
-│   ├── OrderModels.cs             # Ordini e checkout
-│   └── ErrorViewModel.cs          # Gestione errori
+│   ├── ProductModels.cs           # Product and search models
+│   ├── ShoppingModels.cs          # Cart and wishlist
+│   ├── AccountModels.cs           # Users and authentication
+│   ├── OrderModels.cs             # Orders and checkout
+│   └── ErrorViewModel.cs          # Error handling
 ├── Views/
 │   ├── Shared/
-│   │   └── _Layout.cshtml         # Layout principale ShopVerse
+│   │   └── _Layout.cshtml         # Main ShopVerse layout
 │   ├── Home/
-│   │   └── Index.cshtml           # Homepage con prodotti
-│   └── _ViewImports.cshtml        # Import namespaces
+│   │   └── Index.cshtml           # Homepage with products
+│   └── _ViewImports.cshtml        # Namespace imports
 ├── Services/
-│   ├── ProductService.cs          # Integrazione ProductService
-│   ├── ShoppingCartService.cs     # Gestione carrello
-│   └── OrderService.cs            # Gestione ordini
+│   ├── ProductService.cs          # ProductService integration
+│   ├── ShoppingCartService.cs     # Cart management
+│   └── OrderService.cs            # Order management
 ├── wwwroot/
 │   ├── css/
-│   │   ├── shopverse.css           # Stili ShopVerse personalizzati
-│   │   └── site.css                # Stili base applicazione
+│   │   ├── shopverse.css           # Custom ShopVerse styles
+│   │   └── site.css                # Base application styles
 │   ├── js/
-│   │   ├── shopverse.js            # Funzionalità JavaScript avanzate
-│   │   └── site.js                 # Script base
-│   └── images/                     # Asset immagini e icone
-└── Program.cs                     # Configurazione applicazione
+│   │   ├── shopverse.js            # Advanced JavaScript functionality
+│   │   └── site.js                 # Base script
+│   └── images/                     # Image and icon assets
+└── Program.cs                     # Application configuration
 ```
 
-### 🎯 **Modelli di Dati**
+### 🎯 **Data Models**
 
 #### **ProductModels.cs**
-- `ProductDisplayModel`: Visualizzazione prodotti
-- `ProductSearchModel`: Ricerca e filtri
-- `CategoryModel`: Categorie prodotti
-- `ProductImageModel`: Gestione immagini
-- `ProductReviewModel`: Sistema recensioni
+- `ProductDisplayModel`: Product display
+- `ProductSearchModel`: Search and filters
+- `CategoryModel`: Product categories
+- `ProductImageModel`: Image handling
+- `ProductReviewModel`: Review system
 
 #### **ShoppingModels.cs**
-- `ShoppingCartModel`: Carrello acquisti
-- `CartItemModel`: Elementi carrello
-- `WishlistModel`: Lista desideri
-- `HomePageViewModel`: Dati homepage
+- `ShoppingCartModel`: Shopping cart
+- `CartItemModel`: Cart items
+- `WishlistModel`: Wishlist
+- `HomePageViewModel`: Homepage data
 
 #### **AccountModels.cs**
-- `LoginModel`: Autenticazione
-- `RegisterModel`: Registrazione
-- `UserProfileModel`: Profilo utente
-- `AddressModel`: Indirizzi spedizione
+- `LoginModel`: Authentication
+- `RegisterModel`: Registration
+- `UserProfileModel`: User profile
+- `AddressModel`: Shipping addresses
 
 #### **OrderModels.cs**
-- `OrderModel`: Gestione ordini
-- `CheckoutModel`: Processo acquisto
-- `OrderHistoryModel`: Storico ordini
+- `OrderModel`: Order management
+- `CheckoutModel`: Purchase process
+- `OrderHistoryModel`: Order history
 
-### 🔧 **Servizi Integrati**
+### 🔧 **Integrated Services**
 
 #### **ProductService**
-- Ricerca prodotti
-- Gestione categorie
-- Sistema recensioni
-- Comparazione prodotti
+- Product search
+- Category management
+- Review system
+- Product comparison
 
 #### **ShoppingCartService**
-- Gestione carrello sessione
-- Calcolo totali
-- Lista desideri
-- Promozioni e sconti
+- Session cart management
+- Total calculation
+- Wishlist
+- Promotions and discounts
 
 #### **OrderService**
-- Processo checkout
-- Gestione spedizioni
-- Codici promozionali
-- Storico ordini
+- Checkout process
+- Shipping management
+- Promo codes
+- Order history
 
-### 🌐 **Funzionalità Web**
+### 🌐 **Web Features**
 
-#### **Homepage ShopVerse**
-- Hero banner con gradiente moderno e typography accattivante
-- 8 categorie principali con icone FontAwesome intuitive
-- Sezione prodotti in evidenza con placeholder realistici
-- Banner promozionali con animazioni CSS avanzate
-- Ricerca intelligente con dropdown suggerimenti
+#### **ShopVerse Homepage**
+- Hero banner with a modern gradient and eye-catching typography
+- 8 main categories with intuitive FontAwesome icons
+- Featured products section with realistic placeholders
+- Promotional banners with advanced CSS animations
+- Smart search with a suggestions dropdown
 
-#### **Navigazione Moderna**
-- Header ShopVerse con gradiente viola-indaco-teal
-- Menu categorie con hover effects e transitions
-- Ricerca con autocomplete e debouncing ottimizzato
-- Carrello con contatore animato e badge notifiche
-- Footer completo con design a gradiente scuro
+#### **Modern Navigation**
+- ShopVerse header with a purple-indigo-teal gradient
+- Category menu with hover effects and transitions
+- Search with autocomplete and optimized debouncing
+- Cart with animated counter and notification badge
+- Full footer with a dark gradient design
 
-#### **Interattività**
-- AJAX per carrello
-- Ricerca in tempo reale
-- Notifiche utente
-- Animazioni CSS
-- Design responsivo
+#### **Interactivity**
+- AJAX for the cart
+- Real-time search
+- User notifications
+- CSS animations
+- Responsive design
 
-### 🚀 **Setup e Avvio**
+### 🚀 **Setup and Startup**
 
-#### **Prerequisiti**
+#### **Prerequisites**
 - .NET 9.0 SDK
-- Visual Studio 2022 o VS Code
-- Browser moderno
+- Visual Studio 2022 or VS Code
+- Modern browser
 
-#### **Avvio Locale**
+#### **Local Startup**
 ```bash
 cd "src/frontend/customer-facing e-commerce/CustomerWebsite"
 dotnet restore
@@ -149,103 +149,103 @@ dotnet build
 dotnet run
 ```
 
-Il sito sarà disponibile su: `http://localhost:5246`
+The site will be available at: `http://localhost:5246`
 
-#### **Integrazione Microservizi**
-Per funzionalità complete, avviare i microservizi:
-- ProductService (porta 5001)
-- OrderService (porta 5002)
-- InventoryService (porta 5003)
-- PaymentService (porta 5004)
-- NotificationService (porta 5005)
-- ChatbotService (porta 5007)
+#### **Microservices Integration**
+For full functionality, start the microservices:
+- ProductService (port 5001)
+- OrderService (port 5002)
+- InventoryService (port 5003)
+- PaymentService (port 5004)
+- NotificationService (port 5005)
+- ChatbotService (port 5007)
 
-### 🎨 **Personalizzazione Design ShopVerse**
+### 🎨 **ShopVerse Design Customization**
 
-#### **Palette Colori Distintiva**
-Il file `wwwroot/css/shopverse.css` implementa:
-- **Primari**: Viola (#7C3AED), Indaco (#4F46E5), Blu (#3B82F6)
-- **Accenti**: Teal (#14B8A6), Verde (#10B981), Giallo (#FDE047)
-- **Gradienti**: Combinazioni multicolori per header, hero e CTA
-- **Hover Effects**: Trasformazioni 3D e color transitions
-- **Animazioni**: Keyframes personalizzate per sparkle e pulse
+#### **Distinctive Color Palette**
+The `wwwroot/css/shopverse.css` file implements:
+- **Primary**: Purple (#7C3AED), Indigo (#4F46E5), Blue (#3B82F6)
+- **Accents**: Teal (#14B8A6), Green (#10B981), Yellow (#FDE047)
+- **Gradients**: Multicolor combinations for headers, hero sections, and CTAs
+- **Hover Effects**: 3D transforms and color transitions
+- **Animations**: Custom keyframes for sparkle and pulse effects
 
-#### **JavaScript Interattivo**
-Il file `wwwroot/js/shopverse.js` include:
-- Sistema ricerca con debouncing intelligente (300ms)
-- Gestione carrello AJAX con feedback visuale immediato
-- Notifiche toast con auto-dismiss dopo 4 secondi
-- Validazione form in tempo reale con error styling
-- Lazy loading immagini per performance ottimizzate
+#### **Interactive JavaScript**
+The `wwwroot/js/shopverse.js` file includes:
+- Search system with smart debouncing (300ms)
+- AJAX cart management with immediate visual feedback
+- Toast notifications with auto-dismiss after 4 seconds
+- Real-time form validation with error styling
+- Image lazy loading for optimized performance
 
-### 🔗 **Integrazione API**
+### 🔗 **API Integration**
 
-#### **Endpoints Utilizzati**
-- `GET /api/products` - Lista prodotti
-- `GET /api/products/{id}` - Dettagli prodotto
-- `POST /api/cart/add` - Aggiungi al carrello
-- `GET /api/categories` - Categorie
-- `POST /api/orders` - Crea ordine
+#### **Endpoints Used**
+- `GET /api/products` - Product list
+- `GET /api/products/{id}` - Product details
+- `POST /api/cart/add` - Add to cart
+- `GET /api/categories` - Categories
+- `POST /api/orders` - Create order
 
-### 🛡️ **Sicurezza**
+### 🛡️ **Security**
 - Anti-forgery tokens
-- Validazione input
-- Gestione errori
+- Input validation
+- Error handling
 - Session security
 - HTTPS ready
 
 ### 📱 **Responsive Design**
 - Mobile-first approach
-- Breakpoint Bootstrap
+- Bootstrap breakpoints
 - Touch-friendly UI
-- Immagini ottimizzate
-- Performance ottimizzata
+- Optimized images
+- Optimized performance
 
 ### 🧪 **Testing**
-Il progetto include:
-- Placeholder per unit test
-- Mock data per sviluppo
-- Error handling completo
-- Logging integrato
+The project includes:
+- Placeholder for unit tests
+- Mock data for development
+- Complete error handling
+- Integrated logging
 
 ### 📈 **Performance**
-- Lazy loading immagini
-- Minificazione CSS/JS
-- CDN per Bootstrap/FontAwesome
-- Cache HTTP headers
-- Compressione response
+- Image lazy loading
+- CSS/JS minification
+- CDN for Bootstrap/FontAwesome
+- HTTP cache headers
+- Response compression
 
-### 🎯 **Caratteristiche Uniche ShopVerse**
-- **Design Distintivo**: Palette colori originale con gradienti moderni
-- **UX Ottimizzata**: Animazioni fluide e micro-interazioni accattivanti  
-- **Performance**: Lazy loading, debouncing e ottimizzazioni avanzate
-- **Accessibilità**: Design inclusive con focus su usabilità universale
-- **SEO Ready**: Meta tags ottimizzati e struttura HTML semantica
+### 🎯 **Unique ShopVerse Features**
+- **Distinctive Design**: Original color palette with modern gradients
+- **Optimized UX**: Smooth animations and engaging micro-interactions
+- **Performance**: Lazy loading, debouncing, and advanced optimizations
+- **Accessibility**: Inclusive design focused on universal usability
+- **SEO Ready**: Optimized meta tags and semantic HTML structure
 
-### 🚀 **Prossimi Sviluppi ShopVerse**
-- [ ] Integrazione ChatBot AI widget con NLP avanzato
-- [ ] Sistema notifiche push real-time con SignalR
-- [ ] Progressive Web App (PWA) per mobile experience
-- [ ] Analytics avanzate con dashboard amministratore
-- [ ] A/B testing framework per ottimizzazione conversioni
-- [ ] Sistema recommendation AI personalizzato
+### 🚀 **Upcoming ShopVerse Development**
+- [ ] AI ChatBot widget integration with advanced NLP
+- [ ] Real-time push notification system with SignalR
+- [ ] Progressive Web App (PWA) for the mobile experience
+- [ ] Advanced analytics with an admin dashboard
+- [ ] A/B testing framework for conversion optimization
+- [ ] Personalized AI recommendation system
 
-## Tecnologie Avanzate ShopVerse
+## Advanced ShopVerse Technologies
 
-- **Backend**: ASP.NET Core MVC 9.0 con architettura scalabile
-- **Frontend**: HTML5 semantico, CSS3 con custom properties, JavaScript ES6+
-- **Styling**: Bootstrap 5.3 customizzato con design system proprietario
-- **Icons**: FontAwesome 6.0 per iconografia professionale
-- **HTTP**: HttpClientFactory per comunicazioni microservizi ottimizzate
-- **Session**: ASP.NET Core Session con configurazione sicura avanzata
-- **Development**: Visual Studio 2022 con hot reload e IntelliSense
+- **Backend**: ASP.NET Core MVC 9.0 with a scalable architecture
+- **Frontend**: Semantic HTML5, CSS3 with custom properties, JavaScript ES6+
+- **Styling**: Customized Bootstrap 5.3 with a proprietary design system
+- **Icons**: FontAwesome 6.0 for professional iconography
+- **HTTP**: HttpClientFactory for optimized microservice communication
+- **Session**: ASP.NET Core Session with advanced secure configuration
+- **Development**: Visual Studio 2022 with hot reload and IntelliSense
 
 ## Author
-**Rizzato Sistemas** - ShopVerse E-commerce Platform per architettura distribuita
+**Rizzato Sistemas** - ShopVerse E-commerce Platform for distributed architecture
 
-## Licenza
-Progetto proprietario - Implementazione avanzata per sistemi e-commerce enterprise
+## License
+Proprietary project - Advanced implementation for enterprise e-commerce systems
 
 ---
 
-*ShopVerse - La tua piattaforma e-commerce del futuro, dove tecnologia avanzata incontra design eccezionale per creare esperienze shopping uniche e memorabili.*
+*ShopVerse - Your e-commerce platform of the future, where advanced technology meets exceptional design to create unique and memorable shopping experiences.*

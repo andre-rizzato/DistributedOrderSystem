@@ -1,317 +1,307 @@
 /* ================================================================
- * CHATBOT SERVICE - SERVIZIO MICROSERVIZI CHATBOT AI
+ * CHATBOT SERVICE - AI CHATBOT MICROSERVICE
  * ================================================================
- * 
- * Questo è il punto di ingresso principale per il servizio chatbot
- * che fornisce funzionalità di intelligenza artificiale per
- * l'assistenza clienti e il supporto vendite.
- * 
- * Funzionalità principali:
- * - Chat intelligente con classificazione degli intenti
- * - Autenticazione JWT
- * - Fine-tuning del modello AI
- * - Integrazione con altri microservizi
- * - Dashboard amministrativo
- * 
- * Autore: Sistema Distribuito Ordini
- * Data: Dicembre 2025
- * Versione: 1.0.0
+ *
+ * This is the main entry point for the chatbot service, which
+ * provides artificial intelligence features for customer support
+ * and sales assistance.
+ *
+ * Main features:
+ * - Intelligent chat with intent classification
+ * - JWT authentication
+ * - AI model fine-tuning
+ * - Integration with other microservices
+ * - Admin dashboard
+ *
+ * Author: Distributed Order System
+ * Date: December 2025
+ * Version: 1.0.0
  */
 
-// Importazione delle librerie necessarie per Entity Framework (database)
+// Entity Framework imports (database)
 using Microsoft.EntityFrameworkCore;
-// Importazione per l'autenticazione JWT (JSON Web Token)
+// JWT (JSON Web Token) authentication
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-// Importazione per la validazione dei token di sicurezza
+// Security token validation
 using Microsoft.IdentityModel.Tokens;
-// Importazione per la codifica del testo
+// Text encoding
 using System.Text;
-// Importazione per Scalar API documentation
+// Scalar API documentation
 using Scalar.AspNetCore;
-// Importazione del contesto database del chatbot
+// Chatbot database context
 using ChatbotService.Data;
-// Importazione dei servizi del chatbot
+// Chatbot services
 using ChatbotService.Services;
-// Importazione delle interfacce dei servizi
+// Service interfaces
 using ChatbotService.Services.Interfaces;
-// Importazione delle configurazioni del sistema
+// System configuration
 using ChatbotService.Configuration;
-// Importazione di Redis per la gestione delle sessioni
+// Redis for session management
 using StackExchange.Redis;
 
-// Creazione del builder per l'applicazione web con gli argomenti della riga di comando
+// Create the web application builder with command-line arguments
 var builder = WebApplication.CreateBuilder(args);
 
 /* ================================================================
- * CONFIGURAZIONE DATABASE
+ * DATABASE CONFIGURATION
  * ================================================================ */
 
-// Configurazione del contesto database per Entity Framework
-// Utilizza PostgreSQL come database principale per memorizzare:
-// - Sessioni di chat degli utenti
-// - Cronologia dei messaggi
-// - Dati di training per l'AI
-// - Job di fine-tuning del modello
+// Database context configuration for Entity Framework
+// Uses PostgreSQL as the primary database to store:
+// - User chat sessions
+// - Message history
+// - AI training data
+// - Fine-tuning jobs
 builder.Services.AddDbContext<ChatContext>(options =>
-    // Connessione a PostgreSQL utilizzando la stringa di connessione "ChatbotDb"
+    // Connect to PostgreSQL using the "ChatbotDb" connection string
     options.UseNpgsql(builder.Configuration.GetConnectionString("ChatbotDb")));
 
 /* ================================================================
- * CONFIGURAZIONE REDIS
+ * REDIS CONFIGURATION
  * ================================================================ */
 
-// Configurazione di Redis per la gestione delle sessioni chat
-// Redis viene utilizzato come cache distribuita per:
-// - Memorizzazione temporanea delle sessioni utente
-// - Cache delle risposte frequenti del chatbot
-// - Gestione dello stato delle conversazioni in corso
+// Redis configuration for chat session management
+// Redis is used as a distributed cache for:
+// - Temporary storage of user sessions
+// - Caching frequent chatbot responses
+// - Tracking the state of ongoing conversations
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
-    // Connessione a Redis con fallback su localhost porta 6379 se non configurato
+    // Connect to Redis, falling back to localhost port 6379 if not configured
     ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379"));
 
 /* ================================================================
- * SEZIONI DI CONFIGURAZIONE
+ * CONFIGURATION SECTIONS
  * ================================================================ */
 
-// Configurazione delle impostazioni del modello AI
-// Include percorsi dei modelli, parametri di temperatura, token massimi
+// AI model settings
+// Includes model paths, temperature parameters, max tokens
 builder.Services.Configure<ModelSettings>(builder.Configuration.GetSection("ModelSettings"));
 
-// Configurazione degli URL dei microservizi esterni
-// Definisce gli endpoint per OrderService, ProductService, PaymentService, ecc.
+// External microservice URL settings
+// Defines the endpoints for OrderService, ProductService, PaymentService, etc.
 builder.Services.Configure<ServiceUrlsSettings>(builder.Configuration.GetSection("ServiceUrls"));
 
-// Configurazione delle impostazioni di autenticazione JWT
-// Include chiave segreta, issuer, audience, durata token
+// JWT authentication settings
+// Includes secret key, issuer, audience, token lifetime
 builder.Services.Configure<AuthSettings>(builder.Configuration.GetSection("Auth"));
 
-// Configurazione delle impostazioni per il fine-tuning del modello
-// Include parametri di training, learning rate, batch size, epoche
+// Fine-tuning settings
+// Includes training parameters, learning rate, batch size, epochs
 builder.Services.Configure<FineTuningSettings>(builder.Configuration.GetSection("FineTuning"));
 
 /* ================================================================
- * CLIENT HTTP PER INTEGRAZIONE SERVIZI
+ * HTTP CLIENTS FOR SERVICE INTEGRATION
  * ================================================================ */
 
-// Configurazione del client HTTP per l'integrazione con altri microservizi
-// Questo client viene utilizzato per comunicare con:
-// - OrderService (gestione ordini)
-// - ProductService (catalogo prodotti)
-// - PaymentService (pagamenti)
-// - InventoryService (inventario)
+// HTTP client configuration for integrating with other microservices
+// This client is used to communicate with:
+// - OrderService (order management)
+// - ProductService (product catalog)
+// - PaymentService (payments)
+// - InventoryService (inventory)
 builder.Services.AddHttpClient<IServiceIntegration, ServiceIntegrationService>(client =>
 {
-    // Timeout di 30 secondi per le chiamate HTTP ai servizi esterni
+    // 30-second timeout for HTTP calls to external services
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 /* ================================================================
- * REGISTRAZIONE SERVIZI CORE
+ * CORE SERVICE REGISTRATION
  * ================================================================ */
 
-// Servizio chatbot principale (temporaneamente disabilitato per build)
-// Gestisce la logica principale delle conversazioni e l'orchestrazione
-// builder.Services.AddScoped<IChatbotService, Services.ChatbotService>();
+// Main chatbot service - HTTP bridge to AgentService (Python,
+// LangGraph). Replaces the old registration that was left commented
+// out (it never had a real implementation behind it).
+builder.Services.AddHttpClient<IChatbotService, PythonAgentChatbotService>(client =>
+{
+    var agentServiceUrl = builder.Configuration["AgentService:BaseUrl"] ?? "http://localhost:8100";
+    client.BaseAddress = new Uri(agentServiceUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
-// Servizio NLP (Natural Language Processing) Avanzato con DialoGPT
-// Fornisce classificazione degli intenti usando AI conversazionale reale
-// Utilizza Microsoft DialoGPT-small per generare risposte naturali
+// Advanced NLP (Natural Language Processing) service using DialoGPT
+// Provides intent classification using real conversational AI
+// Uses Microsoft DialoGPT-small to generate natural responses
 builder.Services.AddScoped<INLPService, AdvancedNLPService>();
 builder.Services.AddHttpClient<AdvancedNLPService>();
 
-// Servizio di autenticazione per gestire login e registrazione utenti
-// Genera e valida token JWT per l'accesso sicuro alle API
+// Authentication service to handle user login and registration
+// Generates and validates JWT tokens for secure API access
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
-// Servizio di integrazione per comunicare con altri microservizi
-// Fa da ponte tra il chatbot e i servizi di business (ordini, prodotti, ecc.)
+// Integration service to communicate with other microservices
+// Bridges the chatbot with business services (orders, products, etc.)
 builder.Services.AddScoped<IServiceIntegration, ServiceIntegrationService>();
 
-// Servizio di fine-tuning per l'addestramento personalizzato del modello AI
+// Fine-tuning service for custom AI model training
 builder.Services.AddScoped<IFineTuningService, FineTuningService>();
 
-// Servizio di inizializzazione modelli AI in background
-// Scarica automaticamente DialoGPT all'avvio del servizio
+// Background service that initializes AI models
+// Automatically downloads DialoGPT when the service starts
 builder.Services.AddHostedService<ModelInitializationService>();
 
 /* ================================================================
- * CONFIGURAZIONE AUTENTICAZIONE JWT
+ * JWT AUTHENTICATION CONFIGURATION
  * ================================================================ */
 
-// Lettura delle impostazioni di autenticazione dal file di configurazione
-// Se non trovate, utilizza impostazioni di default per evitare errori
+// Read authentication settings from the configuration file
+// Falls back to default settings if not found, to avoid errors
 var authSettings = builder.Configuration.GetSection("Auth").Get<AuthSettings>() ?? new AuthSettings();
 
-// Configurazione del servizio di autenticazione JWT Bearer
+// JWT Bearer authentication service configuration
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // Parametri di validazione del token JWT
+        // JWT token validation parameters
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            // Valida il mittente del token (issuer)
+            // Validate the token issuer
             ValidateIssuer = true,
-            // Valida il destinatario del token (audience)
+            // Validate the token audience
             ValidateAudience = true,
-            // Valida la durata del token (scadenza)
+            // Validate the token lifetime (expiration)
             ValidateLifetime = true,
-            // Valida la chiave di firma del token
+            // Validate the token signing key
             ValidateIssuerSigningKey = true,
-            // Issuer valido (chi emette i token)
+            // Valid issuer (who issues the tokens)
             ValidIssuer = authSettings.Issuer,
-            // Audience valida (per chi sono destinati i token)
+            // Valid audience (who the tokens are intended for)
             ValidAudience = authSettings.Audience,
-            // Chiave segreta per validare la firma del token
+            // Secret key used to validate the token signature
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(authSettings.SecretKey))
         };
     });
 
-// Configurazione dell'autorizzazione con policy per i ruoli
+// Authorization configuration with role-based policies
 builder.Services.AddAuthorization(options =>
 {
-    // Policy "Admin" che richiede il ruolo di amministratore
-    // Gli utenti devono avere il ruolo "Admin" per accedere agli endpoint protetti
+    // "Admin" policy requiring the administrator role
+    // Users must have the "Admin" role to access protected endpoints
     options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
 });
 
 /* ================================================================
- * CONFIGURAZIONE SERVIZI API
+ * API SERVICES CONFIGURATION
  * ================================================================ */
 
-// Registrazione dei controller MVC per gestire le richieste HTTP API
-// Include serializzazione JSON automatica e validazione dei modelli
+// Register MVC controllers to handle HTTP API requests
+// Includes automatic JSON serialization and model validation
 builder.Services.AddControllers();
 
-// Servizio per l'esplorazione degli endpoint API (necessario per Scalar)
+// Service for exploring API endpoints (required for Scalar)
 builder.Services.AddEndpointsApiExplorer();
 
-// Configurazione di OpenAPI per la documentazione interattiva delle API
+// OpenAPI configuration for interactive API documentation
 builder.Services.AddOpenApi();
 
 /* ================================================================
- * CONFIGURAZIONE CORS (Cross-Origin Resource Sharing)
+ * CORS CONFIGURATION (Cross-Origin Resource Sharing)
  * ================================================================ */
 
-// CORS per permettere richieste da domini diversi
-// Necessario per consentire al frontend di comunicare con l'API
+// CORS to allow requests from different origins
+// Required so the frontend can communicate with the API
 builder.Services.AddCors(options =>
 {
-    // Policy CORS di default che specifica quali origini sono permesse
+    // Default CORS policy specifying which origins are allowed
     options.AddDefaultPolicy(policy =>
     {
         policy.WithOrigins(
-                // Frontend Angular in sviluppo (HTTP)
-                "http://localhost:4200", 
-                // Frontend Angular in sviluppo (HTTPS)
-                "https://localhost:4200", 
-                // API Gateway/BFF in sviluppo (HTTP)
+                // Angular frontend in development (HTTP)
+                "http://localhost:4200",
+                // Angular frontend in development (HTTPS)
+                "https://localhost:4200",
+                // API Gateway/BFF in development (HTTP)
                 "http://localhost:5189",
-                // API Gateway/BFF in sviluppo (HTTPS)
+                // API Gateway/BFF in development (HTTPS)
                 "https://localhost:7189"
             )
-              // Permette tutti i metodi HTTP (GET, POST, PUT, DELETE, ecc.)
+              // Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
               .AllowAnyMethod()
-              // Permette tutti gli header nelle richieste
+              // Allow all request headers
               .AllowAnyHeader()
-              // Permette l'invio di credenziali (cookies, token di autorizzazione)
+              // Allow sending credentials (cookies, authorization tokens)
               .AllowCredentials();
     });
 });
 
 /* ================================================================
- * CONFIGURAZIONE LOGGING
+ * LOGGING CONFIGURATION
  * ================================================================ */
 
-// Configurazione del sistema di logging per diagnostica e debugging
-builder.Logging.ClearProviders(); // Rimuove tutti i provider di logging predefiniti
-builder.Logging.AddConsole();     // Aggiunge logging alla console per sviluppo
-builder.Logging.AddDebug();       // Aggiunge logging debug per Visual Studio
+// Logging system configuration for diagnostics and debugging
+builder.Logging.ClearProviders(); // Remove all default logging providers
+builder.Logging.AddConsole();     // Add console logging for development
+builder.Logging.AddDebug();       // Add debug logging for Visual Studio
 
 /* ================================================================
- * COSTRUZIONE DELL'APPLICAZIONE
+ * APPLICATION BUILD
  * ================================================================ */
 
-// Costruzione dell'applicazione web con tutte le configurazioni definite
+// Build the web application with all the configurations defined above
 var app = builder.Build();
 
 /* ================================================================
- * INIZIALIZZAZIONE DATABASE
+ * DATABASE INITIALIZATION
  * ================================================================ */
 
-// Inizializzazione del database in uno scope separato
-// Questo garantisce che le risorse vengano rilasciate correttamente
+// Initialize the database in a separate scope
+// This ensures resources are released correctly
 using (var scope = app.Services.CreateScope())
 {
     try
     {
-        // Ottenimento del contesto database dal contenitore DI
+        // Get the database context from the DI container
         var context = scope.ServiceProvider.GetRequiredService<ChatContext>();
-        
-        // Creazione automatica del database se non esiste
-        // In produzione si utilizzeranno migrations più sophisticated
-        await context.Database.EnsureCreatedAsync();
-        
-        // Logger per registrare eventi di inizializzazione
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("Database inizializzato con successo");
 
-        // Inizializzazione del modello NLP se disponibile
-        // Codice commentato per evitare errori di compilazione durante sviluppo
-        // var nlpService = scope.ServiceProvider.GetRequiredService<INLPService>();
-        // var modelSettings = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ModelSettings>>();
-        
-        // Caricamento del modello fine-tuned personalizzato se esiste
-        // if (File.Exists(modelSettings.Value.FineTunedModelPath))
-        // {
-        //     await nlpService.LoadModelAsync(modelSettings.Value.FineTunedModelPath);
-        //     logger.LogInformation("Modello fine-tuned caricato da {Path}", modelSettings.Value.FineTunedModelPath);
-        // }
-        // else
-        // {
-        //     logger.LogInformation("Nessun modello fine-tuned trovato, utilizzo servizio NLP leggero");
-        // }
+        // Automatically create the database if it doesn't exist
+        // Production will use more sophisticated migrations
+        await context.Database.EnsureCreatedAsync();
+
+        // Logger for recording initialization events
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Database initialized successfully");
     }
     catch (Exception ex)
     {
-        // Gestione degli errori durante l'inizializzazione
+        // Error handling during initialization
         var errorLogger = app.Services.GetRequiredService<ILogger<Program>>();
-        errorLogger.LogError(ex, "Si è verificato un errore durante l'inizializzazione del database o il caricamento dei modelli");
+        errorLogger.LogError(ex, "An error occurred while initializing the database or loading the models");
     }
 }
 
 /* ================================================================
- * CONFIGURAZIONE AMBIENTE DI SVILUPPO
+ * DEVELOPMENT ENVIRONMENT CONFIGURATION
  * ================================================================ */
 
-// Configurazione specifica per l'ambiente di sviluppo
+// Development-specific configuration
 if (app.Environment.IsDevelopment())
 {
-    // Abilita Scalar per documentazione API moderna
+    // Enable Scalar for modern API documentation
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
 
 /* ================================================================
- * PIPELINE DEI MIDDLEWARE
+ * MIDDLEWARE PIPELINE
  * ================================================================ */
 
-// Middleware per servire file statici (widget JavaScript, CSS, immagini)
-// Permette di servire il chat widget e le risorse associate
+// Middleware to serve static files (widget JavaScript, CSS, images)
+// Allows serving the chat widget and its associated resources
 app.UseStaticFiles();
 
-// Reindirizzamento automatico da HTTP a HTTPS per sicurezza
+// Automatic HTTP-to-HTTPS redirection for security
 app.UseHttpsRedirection();
 
-// Applicazione delle policy CORS configurate in precedenza
+// Apply the CORS policy configured above
 app.UseCors();
 
-// Middleware di autenticazione - deve precedere autorizzazione
-// Legge e valida i token JWT dalle richieste
+// Authentication middleware - must precede authorization
+// Reads and validates JWT tokens from requests
 app.UseAuthentication();
 
-// Middleware di autorizzazione - controlla i permessi degli utenti
-// Verifica se l'utente autenticato ha accesso alla risorsa richiesta
+// Authorization middleware - checks user permissions
+// Verifies whether the authenticated user can access the requested resource
 app.UseAuthorization();
 
 // Health check endpoint
@@ -323,84 +313,84 @@ app.MapGet("/health", () => new
     Service = "ChatbotService"
 });
 
-// Reindirizzamento dalla radice alla dashboard admin per facilità di accesso in sviluppo
-// Gli sviluppatori possono navigare direttamente a localhost:porta per accedere all'admin
+// Redirect from root to the admin dashboard for easy access in development
+// Developers can navigate directly to localhost:port to reach the admin panel
 app.MapGet("/", () => Results.Redirect("/api/admin"));
 
-// Mappatura automatica di tutti i controller nell'assembly
-// Include ChatController e SimpleAdminController
+// Automatically map all controllers in the assembly
+// Includes ChatController and SimpleAdminController
 app.MapControllers();
 
 /* ================================================================
- * AVVIO DELL'APPLICAZIONE
+ * APPLICATION STARTUP
  * ================================================================ */
 
-// Logger per messaggi di avvio del servizio
+// Logger for service startup messages
 var appLogger = app.Services.GetRequiredService<ILogger<Program>>();
 
-// Log di avvio con emoji per rendere i log più leggibili
-appLogger.LogInformation("🤖 ChatbotService avviato con successo");
+// Startup log with emoji to make logs easier to read
+appLogger.LogInformation("🤖 ChatbotService started successfully");
 
-// URL della dashboard amministrativa con link specifico per ambiente
-appLogger.LogInformation("📊 Dashboard Admin: {AdminUrl}", 
+// Admin dashboard URL, with a link specific to the environment
+appLogger.LogInformation("📊 Admin Dashboard: {AdminUrl}",
     app.Environment.IsDevelopment() ? "http://localhost:5055/api/admin" : "/api/admin");
 
-// URL della demo chat per test rapidi
-appLogger.LogInformation("🧪 Chat Demo: {DemoUrl}", 
+// Chat demo URL for quick testing
+appLogger.LogInformation("🧪 Chat Demo: {DemoUrl}",
     app.Environment.IsDevelopment() ? "http://localhost:5055/api/chat/demo" : "/api/chat/demo");
 
-// URL della demo widget per integrazione
-appLogger.LogInformation("🎨 Widget Demo: {WidgetDemoUrl}", 
+// Widget demo URL for integration
+appLogger.LogInformation("🎨 Widget Demo: {WidgetDemoUrl}",
     app.Environment.IsDevelopment() ? "http://localhost:5055/api/chatwidget/demo" : "/api/chatwidget/demo");
 
-// URL del widget JavaScript per integrazione
-appLogger.LogInformation("📦 Widget Script: {WidgetScriptUrl}", 
+// Widget JavaScript URL for integration
+appLogger.LogInformation("📦 Widget Script: {WidgetScriptUrl}",
     app.Environment.IsDevelopment() ? "http://localhost:5055/api/chatwidget/chat-widget.min.js" : "/api/chatwidget/chat-widget.min.js");
 
-// URL della documentazione Swagger API
-appLogger.LogInformation("📘 Documentazione API: {SwaggerUrl}", 
+// Swagger API documentation URL
+appLogger.LogInformation("📘 API Documentation: {SwaggerUrl}",
     app.Environment.IsDevelopment() ? "http://localhost:5055/swagger" : "/swagger");
 
-// Avvio asincrono dell'applicazione
-// Mantiene il servizio in esecuzione fino a richiesta di shutdown
+// Asynchronously start the application
+// Keeps the service running until a shutdown is requested
 await app.RunAsync();
 
 /* ================================================================
- * FINE DEL PROGRAMMA
+ * END OF PROGRAM
  * ================================================================
- * 
- * Il ChatbotService è ora completamente configurato e in esecuzione.
- * 
- * Funzionalità disponibili:
- * ✅ Chat API con classificazione intenti
- * ✅ Autenticazione JWT con autorizzazione 
- * ✅ Dashboard amministrativo
- * ✅ Chat Widget JavaScript integrato
- * ✅ Dual routing (BFF e Direct service)
- * ✅ Integrazione con altri microservizi
- * ✅ Health checks per monitoraggio
- * ✅ Documentazione Swagger completa
- * ✅ Cache Redis per performance
- * ✅ Logging strutturato per diagnostica
- * 
- * Per il debugging:
- * - Utilizzare F5 in VS Code con configurazione "🤖 Debug ChatbotService"
- * - Oppure eseguire: dotnet run --project src/ChatbotService
- * - Per watch mode: dotnet watch --project src/ChatbotService
- * 
- * Endpoint principali:
+ *
+ * ChatbotService is now fully configured and running.
+ *
+ * Available features:
+ * ✅ Chat API with intent classification
+ * ✅ JWT authentication with authorization
+ * ✅ Admin dashboard
+ * ✅ Integrated JavaScript chat widget
+ * ✅ Dual routing (BFF and direct service)
+ * ✅ Integration with other microservices
+ * ✅ Health checks for monitoring
+ * ✅ Complete Swagger documentation
+ * ✅ Redis cache for performance
+ * ✅ Structured logging for diagnostics
+ *
+ * For debugging:
+ * - Use F5 in VS Code with the "🤖 Debug ChatbotService" configuration
+ * - Or run: dotnet run --project src/ChatbotService
+ * - For watch mode: dotnet watch --project src/ChatbotService
+ *
+ * Main endpoints:
  * - Chat API: POST /api/chat/message
- * - Autenticazione: POST /api/auth/login
- * - Admin Panel: GET /api/admin  
+ * - Authentication: POST /api/auth/login
+ * - Admin Panel: GET /api/admin
  * - Health Check: GET /health
  * - Swagger UI: GET /swagger
  * - Widget Script: GET /api/chatwidget/chat-widget.min.js
  * - Widget Demo: GET /api/chatwidget/demo
  * - Widget Config: GET /api/chatwidget/config
- * 
- * Integrazione Widget:
- * 
- * 1. Modalità BFF (per DistributedOrderSystem):
+ *
+ * Widget integration:
+ *
+ * 1. BFF mode (for DistributedOrderSystem):
  * <script src="/api/chatwidget/chat-widget.min.js"></script>
  * <script>
  *   window.chatWidgetConfig = {
@@ -409,8 +399,8 @@ await app.RunAsync();
  *     theme: 'light'
  *   };
  * </script>
- * 
- * 2. Modalità Direct (per progetti esterni):
+ *
+ * 2. Direct mode (for external projects):
  * <script src="https://your-chatbot-service.com/api/chatwidget/chat-widget.min.js"></script>
  * <script>
  *   window.chatWidgetConfig = {
@@ -419,9 +409,9 @@ await app.RunAsync();
  *     theme: 'dark'
  *   };
  * </script>
- * 
- * Nota: Alcuni servizi avanzati (ChatbotService completo e FineTuningService)
- * sono temporaneamente commentati per garantire una build pulita durante
- * lo sviluppo. Possono essere abilitati gradualmente man mano che vengono
- * implementate le dipendenze rimanenti.
+ *
+ * Note: Some advanced services (the full ChatbotService and FineTuningService)
+ * are temporarily commented out to keep the build clean during
+ * development. They can be enabled gradually as the remaining
+ * dependencies are implemented.
  */

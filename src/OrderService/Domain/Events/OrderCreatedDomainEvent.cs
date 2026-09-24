@@ -3,7 +3,7 @@ namespace OrderService.Domain.Events;
 using OrderService.Domain.SeedWork;
 
 /// <summary>
-/// Evento di dominio sollevato quando un nuovo ordine viene creato.
+/// Domain event raised when a new order is created.
 /// </summary>
 public record OrderCreatedDomainEvent(DateTime CreatedAt, decimal Total) : IDomainEvent
 {

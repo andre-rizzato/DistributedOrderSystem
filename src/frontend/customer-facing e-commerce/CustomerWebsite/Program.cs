@@ -2,10 +2,10 @@ using CustomerWebsite.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Aggiungi servizi al container
+// Add services to the container
 builder.Services.AddControllersWithViews();
 
-// Configurazione sessioni
+// Session configuration
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -15,21 +15,21 @@ builder.Services.AddSession(options =>
     options.Cookie.Name = ".CustomerWebsite.Session";
 });
 
-// Configurazione HttpClient per i servizi API
+// HttpClient configuration for API services
 builder.Services.AddHttpClient();
 
-// Registrazione servizi applicativi
+// Application service registration
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
 builder.Services.AddScoped<IWishlistService, WishlistService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
-// Configurazione logging
+// Logging configuration
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-// Configurazione CORS per chiamate AJAX
+// CORS configuration for AJAX calls
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultPolicy", policy =>
@@ -40,7 +40,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configurazione compressione response
+// Response compression configuration
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -48,7 +48,7 @@ builder.Services.AddResponseCompression(options =>
 
 var app = builder.Build();
 
-// Configurazione pipeline HTTP
+// HTTP pipeline configuration
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -58,21 +58,21 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// Abilita compressione
+// Enable compression
 app.UseResponseCompression();
 
-// Abilita routing
+// Enable routing
 app.UseRouting();
 
-// Abilita sessioni
+// Enable sessions
 app.UseSession();
 
-// Abilita CORS
+// Enable CORS
 app.UseCors("DefaultPolicy");
 
 app.UseAuthorization();
 
-// Configurazione routing
+// Route configuration
 app.MapControllerRoute(
     name: "productDetails",
     pattern: "Product/{id:guid}",
@@ -105,16 +105,16 @@ app.MapControllerRoute(
 
 app.MapStaticAssets();
 
-// Gestione errori personalizzati
+// Custom error handling
 app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");
 
-// Middleware per l'handling degli errori globali
+// Middleware for global error handling
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.Run();
 
 /// <summary>
-/// Middleware per la gestione globale delle eccezioni
+/// Middleware for global exception handling
 /// </summary>
 public class GlobalExceptionMiddleware
 {
@@ -135,12 +135,12 @@ public class GlobalExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore non gestito: {Message}", ex.Message);
-            
+            _logger.LogError(ex, "Unhandled error: {Message}", ex.Message);
+
             if (!context.Response.HasStarted)
             {
                 context.Response.StatusCode = 500;
-                await context.Response.WriteAsync("Si è verificato un errore interno del server.");
+                await context.Response.WriteAsync("An internal server error occurred.");
             }
         }
     }

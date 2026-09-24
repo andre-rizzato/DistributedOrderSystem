@@ -10,8 +10,8 @@ using System.Text.Json;
 namespace NotificationService.Services.Implementations;
 
 /// <summary>
-/// Implementazione del servizio principale per la gestione delle notifiche
-/// Coordina tutti i provider di notifica e gestisce la logica di business centrale
+/// Implementation of the main notification service.
+/// Coordinates all notification providers and handles the central business logic.
 /// </summary>
 public class NotificationService : INotificationService
 {
@@ -45,21 +45,21 @@ public class NotificationService : INotificationService
     }
 
     /// <summary>
-    /// Invia notifica utilizzando un template predefinito
-    /// Il template viene renderizzato con le variabili fornite prima dell'invio
+    /// Sends a notification using a predefined template.
+    /// The template is rendered with the provided variables before sending.
     /// </summary>
     public async Task<NotificationResponse> SendNotificationAsync(SendTemplateNotificationRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Inizio invio notifica template {TemplateName} a {Recipient}", 
+            _logger.LogInformation("Starting to send template notification {TemplateName} to {Recipient}",
                 request.TemplateName, request.Recipient);
 
-            // Renderizza il template con le variabili
+            // Render the template with the variables
             var renderedTemplate = await _templateService.RenderTemplateAsync(
                 request.TemplateName, request.Variables, cancellationToken);
 
-            // Crea richiesta diretta dal template renderizzato
+            // Build a direct request from the rendered template
             var directRequest = new SendNotificationRequest
             {
                 Type = request.Type ?? renderedTemplate.Type,
@@ -80,50 +80,50 @@ public class NotificationService : INotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica template {TemplateName}", request.TemplateName);
-            return NotificationResponse.CreateError($"Errore template: {ex.Message}");
+            _logger.LogError(ex, "Error sending template notification {TemplateName}", request.TemplateName);
+            return NotificationResponse.CreateError($"Template error: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Invia notifica diretta senza utilizzo di template
-    /// Gestisce la logica di routing verso il provider appropriato
+    /// Sends a direct notification without using a template.
+    /// Handles the routing logic toward the appropriate provider.
     /// </summary>
     public async Task<NotificationResponse> SendDirectNotificationAsync(SendNotificationRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Inizio invio notifica diretta {Type} a {Recipient}", 
+            _logger.LogInformation("Starting to send direct notification {Type} to {Recipient}",
                 request.Type, request.Recipient);
 
-            // Salva la notifica nel database per audit
+            // Save the notification to the database for audit purposes
             var notification = await CreateNotificationEntityAsync(request, cancellationToken);
 
-            // Se è programmata, delega a Hangfire
+            // If scheduled, delegate to Hangfire
             if (request.ScheduledAt.HasValue && request.ScheduledAt > DateTime.UtcNow)
             {
                 return await ScheduleNotificationInternalAsync(notification, request.ScheduledAt.Value);
             }
 
-            // Invio immediato tramite provider specifico
+            // Immediate send through the specific provider
             var result = await SendThroughProviderAsync(request, notification, cancellationToken);
-            
-            // Aggiorna stato notifica in base al risultato
+
+            // Update notification status based on the result
             await UpdateNotificationStatusAsync(notification, result, cancellationToken);
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica diretta {Type} a {Recipient}", 
+            _logger.LogError(ex, "Error sending direct notification {Type} to {Recipient}",
                 request.Type, request.Recipient);
-            return NotificationResponse.CreateError($"Errore invio: {ex.Message}");
+            return NotificationResponse.CreateError($"Send error: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Invia multiple notifiche in batch per ottimizzare le performance
-    /// Raggruppa le notifiche per tipo e utilizza le funzionalità batch dei provider
+    /// Sends multiple notifications in batch to optimize performance.
+    /// Groups notifications by type and uses the providers' batch capabilities.
     /// </summary>
     public async Task<BulkNotificationResponse> SendBulkNotificationsAsync(List<SendNotificationRequest> requests, CancellationToken cancellationToken = default)
     {
@@ -134,32 +134,32 @@ public class NotificationService : INotificationService
 
         try
         {
-            _logger.LogInformation("Inizio invio bulk di {Count} notifiche", requests.Count);
+            _logger.LogInformation("Starting bulk send of {Count} notifications", requests.Count);
 
-            // Raggruppa per tipo per ottimizzare l'invio
+            // Group by type to optimize sending
             var groupedRequests = requests.GroupBy(r => r.Type);
 
             foreach (var group in groupedRequests)
             {
                 var groupResults = await ProcessBulkGroupAsync(group.ToList(), cancellationToken);
-                
+
                 response.SuccessCount += groupResults.SuccessCount;
                 response.FailureCount += groupResults.FailureCount;
                 response.Results.AddRange(groupResults.Results);
             }
 
             response.Success = response.SuccessCount > 0;
-            
-            _logger.LogInformation("Invio bulk completato: {SuccessCount}/{TotalCount}", 
+
+            _logger.LogInformation("Bulk send completed: {SuccessCount}/{TotalCount}",
                 response.SuccessCount, response.TotalRequests);
 
             return response;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio bulk di {Count} notifiche", requests.Count);
-            
-            // Marca tutte come fallite se errore generale
+            _logger.LogError(ex, "Error during bulk send of {Count} notifications", requests.Count);
+
+            // Mark all as failed on a general error
             response.FailureCount = response.TotalRequests;
             response.Results = requests.Select(r => new BulkNotificationResult
             {
@@ -167,51 +167,51 @@ public class NotificationService : INotificationService
                 Success = false,
                 Error = ex.Message
             }).ToList();
-            
+
             return response;
         }
     }
 
     /// <summary>
-    /// Programma una notifica per invio futuro utilizzando Hangfire
+    /// Schedules a notification for future delivery using Hangfire.
     /// </summary>
     public async Task<int> ScheduleNotificationAsync(SendNotificationRequest request, DateTime scheduledAt, CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger.LogInformation("Programmazione notifica {Type} per {ScheduledAt}", 
+            _logger.LogInformation("Scheduling notification {Type} for {ScheduledAt}",
                 request.Type, scheduledAt);
 
-            // Crea entità notifica con stato programmato
+            // Create the notification entity with a scheduled status
             var notification = await CreateNotificationEntityAsync(request, cancellationToken);
             notification.Status = NotificationStatus.Pending;
             notification.ScheduledAt = scheduledAt;
-            
+
             await _context.SaveChangesAsync(cancellationToken);
 
-            // Programma job Hangfire
+            // Schedule the Hangfire job
             var jobId = _backgroundJobClient.Schedule(
                 () => ExecuteScheduledNotificationAsync((int)notification.Id),
                 scheduledAt);
 
-            // Salva l'ID del job per eventuali cancellazioni
+            // Save the job ID for potential cancellation
             notification.ExternalId = jobId;
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Notifica {NotificationId} programmata per {ScheduledAt} con job {JobId}", 
+            _logger.LogInformation("Notification {NotificationId} scheduled for {ScheduledAt} with job {JobId}",
                 notification.Id, scheduledAt, jobId);
 
             return (int)notification.Id;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la programmazione notifica per {ScheduledAt}", scheduledAt);
+            _logger.LogError(ex, "Error scheduling notification for {ScheduledAt}", scheduledAt);
             throw;
         }
     }
 
     /// <summary>
-    /// Annulla una notifica programmata rimuovendo il job da Hangfire
+    /// Cancels a scheduled notification by removing the job from Hangfire.
     /// </summary>
     public async Task<bool> CancelScheduledNotificationAsync(int notificationId, CancellationToken cancellationToken = default)
     {
@@ -225,30 +225,30 @@ public class NotificationService : INotificationService
                 return false;
             }
 
-            // Cancella job Hangfire se presente
+            // Cancel the Hangfire job if present
             if (!string.IsNullOrEmpty(notification.ExternalId))
             {
                 _backgroundJobClient.Delete(notification.ExternalId);
             }
 
-            // Aggiorna stato notifica
+            // Update notification status
             notification.Status = NotificationStatus.Failed;
-            notification.ErrorMessage = "Notifica annullata dall'utente";
-            
+            notification.ErrorMessage = "Notification canceled by the user";
+
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Notifica programmata {NotificationId} annullata", notificationId);
+            _logger.LogInformation("Scheduled notification {NotificationId} canceled", notificationId);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'annullamento notifica {NotificationId}", notificationId);
+            _logger.LogError(ex, "Error canceling notification {NotificationId}", notificationId);
             return false;
         }
     }
 
     /// <summary>
-    /// Ottiene lo stato dettagliato di una notifica specifica
+    /// Gets the detailed status of a specific notification.
     /// </summary>
     public async Task<NotificationStatusResponse?> GetNotificationStatusAsync(int notificationId, CancellationToken cancellationToken = default)
     {
@@ -281,7 +281,7 @@ public class NotificationService : INotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero stato notifica {NotificationId}", notificationId);
+            _logger.LogError(ex, "Error retrieving status for notification {NotificationId}", notificationId);
             return new NotificationStatusResponse
             {
                 Success = false,
@@ -298,7 +298,7 @@ public class NotificationService : INotificationService
     }
 
     /// <summary>
-    /// Ottiene le notifiche di un utente con paginazione
+    /// Gets a user's notifications with pagination.
     /// </summary>
     public async Task<NotificationListResponse> GetUserNotificationsAsync(string userId, int page = 1, int pageSize = 20, CancellationToken cancellationToken = default)
     {
@@ -340,7 +340,7 @@ public class NotificationService : INotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero notifiche utente {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving notifications for user {UserId}", userId);
             return new NotificationListResponse
             {
                 Notifications = new List<NotificationStatusResponse>()
@@ -349,7 +349,7 @@ public class NotificationService : INotificationService
     }
 
     /// <summary>
-    /// Genera statistiche dettagliate sulle notifiche
+    /// Generates detailed notification statistics.
     /// </summary>
     public async Task<NotificationStatsResponse> GetNotificationStatsAsync(string? userId = null, DateTime? fromDate = null, DateTime? toDate = null, CancellationToken cancellationToken = default)
     {
@@ -357,19 +357,19 @@ public class NotificationService : INotificationService
         {
             var query = _context.Notifications.AsQueryable();
 
-            // Filtri opzionali
+            // Optional filters
             if (!string.IsNullOrEmpty(userId))
                 query = query.Where(n => n.UserId == userId);
-            
+
             if (fromDate.HasValue)
                 query = query.Where(n => n.CreatedAt >= fromDate.Value);
-            
+
             if (toDate.HasValue)
                 query = query.Where(n => n.CreatedAt <= toDate.Value);
 
-            // Calcolo statistiche
+            // Compute statistics
             var totalCount = await query.CountAsync(cancellationToken);
-            
+
             var statusStats = await query
                 .GroupBy(n => n.Status)
                 .Select(g => new { Status = g.Key, Count = g.Count() })
@@ -405,7 +405,7 @@ public class NotificationService : INotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il calcolo statistiche notifiche");
+            _logger.LogError(ex, "Error computing notification statistics");
             return new NotificationStatsResponse
             {
                 TotalNotifications = 0
@@ -414,7 +414,7 @@ public class NotificationService : INotificationService
     }
 
     /// <summary>
-    /// Ritenta l'invio di una notifica fallita
+    /// Retries sending a failed notification.
     /// </summary>
     public async Task<NotificationResponse> RetryNotificationAsync(int notificationId, CancellationToken cancellationToken = default)
     {
@@ -425,19 +425,19 @@ public class NotificationService : INotificationService
 
             if (notification == null)
             {
-                return NotificationResponse.CreateError("Notifica non trovata");
+                return NotificationResponse.CreateError("Notification not found");
             }
 
             if (notification.Status == NotificationStatus.Delivered)
             {
-                return NotificationResponse.CreateError("La notifica è già stata consegnata con successo");
+                return NotificationResponse.CreateError("The notification has already been delivered successfully");
             }
 
-            // Incrementa contatore retry
+            // Increment the retry counter
             notification.RetryCount++;
             notification.ErrorMessage = null;
 
-            // Ricrea la richiesta originale
+            // Rebuild the original request
             var request = new SendNotificationRequest
             {
                 Type = notification.Type,
@@ -450,32 +450,32 @@ public class NotificationService : INotificationService
                 Source = notification.Source,
                 ReferenceId = notification.ReferenceId,
                 ReferenceType = notification.ReferenceType,
-                Metadata = string.IsNullOrEmpty(notification.Metadata) ? null : 
+                Metadata = string.IsNullOrEmpty(notification.Metadata) ? null :
                     JsonSerializer.Deserialize<Dictionary<string, string>>(notification.Metadata)
             };
 
-            // Riprova l'invio
+            // Retry the send
             var result = await SendThroughProviderAsync(request, notification, cancellationToken);
-            
-            // Aggiorna stato
+
+            // Update status
             await UpdateNotificationStatusAsync(notification, result, cancellationToken);
 
-            _logger.LogInformation("Retry notifica {NotificationId} completato. Successo: {Success}", 
+            _logger.LogInformation("Retry of notification {NotificationId} completed. Success: {Success}",
                 notificationId, result.Success);
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante retry notifica {NotificationId}", notificationId);
-            return NotificationResponse.CreateError($"Errore retry: {ex.Message}");
+            _logger.LogError(ex, "Error retrying notification {NotificationId}", notificationId);
+            return NotificationResponse.CreateError($"Retry error: {ex.Message}");
         }
     }
 
-    // Metodi privati per la logica interna
+    // Private methods for internal logic
 
     /// <summary>
-    /// Crea entità notifica nel database per audit e tracking
+    /// Creates the notification entity in the database for audit and tracking.
     /// </summary>
     private async Task<Notification> CreateNotificationEntityAsync(SendNotificationRequest request, CancellationToken cancellationToken)
     {
@@ -504,7 +504,7 @@ public class NotificationService : INotificationService
     }
 
     /// <summary>
-    /// Instrada la notifica al provider appropriato in base al tipo
+    /// Routes the notification to the appropriate provider based on its type.
     /// </summary>
     private async Task<NotificationResponse> SendThroughProviderAsync(SendNotificationRequest request, Notification notification, CancellationToken cancellationToken)
     {
@@ -547,18 +547,18 @@ public class NotificationService : INotificationService
                     Data = request.Metadata
                 }, cancellationToken),
 
-                _ => NotificationResponse.CreateError($"Tipo notifica {request.Type} non supportato")
+                _ => NotificationResponse.CreateError($"Notification type {request.Type} not supported")
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio tramite provider {Type}", request.Type);
-            return NotificationResponse.CreateError($"Errore provider: {ex.Message}");
+            _logger.LogError(ex, "Error sending through provider {Type}", request.Type);
+            return NotificationResponse.CreateError($"Provider error: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Aggiorna lo stato della notifica nel database in base al risultato dell'invio
+    /// Updates the notification status in the database based on the send result.
     /// </summary>
     private async Task UpdateNotificationStatusAsync(Notification notification, NotificationResponse result, CancellationToken cancellationToken)
     {
@@ -569,8 +569,8 @@ public class NotificationService : INotificationService
                 notification.Status = NotificationStatus.Sent;
                 notification.SentAt = DateTime.UtcNow;
                 notification.ExternalId = result.ExternalId;
-                
-                // Per notifiche in-app, marca come consegnate immediatamente
+
+                // For in-app notifications, mark as delivered immediately
                 if (notification.Type == NotificationType.InApp)
                 {
                     notification.Status = NotificationStatus.Delivered;
@@ -587,12 +587,12 @@ public class NotificationService : INotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiornamento stato notifica {NotificationId}", notification.Id);
+            _logger.LogError(ex, "Error updating status for notification {NotificationId}", notification.Id);
         }
     }
 
     /// <summary>
-    /// Elabora un gruppo di notifiche dello stesso tipo in batch
+    /// Processes a group of notifications of the same type in batch.
     /// </summary>
     private async Task<BulkNotificationResponse> ProcessBulkGroupAsync(List<SendNotificationRequest> requests, CancellationToken cancellationToken)
     {
@@ -601,7 +601,7 @@ public class NotificationService : INotificationService
             TotalRequests = requests.Count
         };
 
-        // Crea entità per tutte le notifiche del gruppo
+        // Create entities for all notifications in the group
         var notifications = new List<Notification>();
         foreach (var request in requests)
         {
@@ -611,7 +611,7 @@ public class NotificationService : INotificationService
 
         try
         {
-            // Utilizza invio bulk specifico per tipo se disponibile
+            // Use type-specific bulk sending if available
             var firstRequest = requests.First();
             BulkNotificationResponse? bulkResult = null;
 
@@ -638,12 +638,12 @@ public class NotificationService : INotificationService
                     break;
 
                 default:
-                    // Per tipi che non supportano bulk, invia singolarmente
+                    // For types that don't support bulk sending, send individually
                     foreach (var (request, notification) in requests.Zip(notifications))
                     {
                         var singleResult = await SendThroughProviderAsync(request, notification, cancellationToken);
                         await UpdateNotificationStatusAsync(notification, singleResult, cancellationToken);
-                        
+
                         if (singleResult.Success)
                         {
                             response.SuccessCount++;
@@ -669,14 +669,14 @@ public class NotificationService : INotificationService
                     break;
             }
 
-            // Processa risultato bulk se disponibile
+            // Process the bulk result if available
             if (bulkResult != null)
             {
                 response.SuccessCount = bulkResult.SuccessCount;
                 response.FailureCount = bulkResult.FailureCount;
                 response.Results = bulkResult.Results;
 
-                // Aggiorna stati nel database
+                // Update statuses in the database
                 for (int i = 0; i < notifications.Count; i++)
                 {
                     var result = bulkResult.Results[i];
@@ -703,9 +703,9 @@ public class NotificationService : INotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante elaborazione bulk gruppo {Type}", requests.FirstOrDefault()?.Type);
-            
-            // Marca tutte come fallite
+            _logger.LogError(ex, "Error processing bulk group {Type}", requests.FirstOrDefault()?.Type);
+
+            // Mark all as failed
             response.FailureCount = response.TotalRequests;
             response.Results = requests.Select(r => new BulkNotificationResult
             {
@@ -719,7 +719,7 @@ public class NotificationService : INotificationService
     }
 
     /// <summary>
-    /// Programma una notifica per invio futuro
+    /// Schedules a notification for future delivery.
     /// </summary>
     private async Task<NotificationResponse> ScheduleNotificationInternalAsync(Notification notification, DateTime scheduledAt)
     {
@@ -745,31 +745,31 @@ public class NotificationService : INotificationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante programmazione notifica {NotificationId}", notification.Id);
-            return NotificationResponse.CreateError($"Errore programmazione: {ex.Message}");
+            _logger.LogError(ex, "Error scheduling notification {NotificationId}", notification.Id);
+            return NotificationResponse.CreateError($"Scheduling error: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Esegue una notifica programmata (chiamato da Hangfire)
+    /// Executes a scheduled notification (called by Hangfire).
     /// </summary>
     [Queue("notifications")]
     public async Task ExecuteScheduledNotificationAsync(int notificationId)
     {
         try
         {
-            _logger.LogInformation("Esecuzione notifica programmata {NotificationId}", notificationId);
+            _logger.LogInformation("Executing scheduled notification {NotificationId}", notificationId);
 
             var notification = await _context.Notifications
                 .FirstOrDefaultAsync(n => n.Id == notificationId);
 
             if (notification == null || notification.Status != NotificationStatus.Scheduled)
             {
-                _logger.LogWarning("Notifica programmata {NotificationId} non trovata o non in stato scheduled", notificationId);
+                _logger.LogWarning("Scheduled notification {NotificationId} not found or not in scheduled status", notificationId);
                 return;
             }
 
-            // Ricrea richiesta originale
+            // Rebuild the original request
             var request = new SendNotificationRequest
             {
                 Type = notification.Type,
@@ -782,22 +782,22 @@ public class NotificationService : INotificationService
                 Source = notification.Source,
                 ReferenceId = notification.ReferenceId,
                 ReferenceType = notification.ReferenceType,
-                Metadata = string.IsNullOrEmpty(notification.Metadata) ? null : 
+                Metadata = string.IsNullOrEmpty(notification.Metadata) ? null :
                     JsonSerializer.Deserialize<Dictionary<string, string>>(notification.Metadata)
             };
 
-            // Esegue invio
+            // Perform the send
             var result = await SendThroughProviderAsync(request, notification, CancellationToken.None);
             await UpdateNotificationStatusAsync(notification, result, CancellationToken.None);
 
-            _logger.LogInformation("Notifica programmata {NotificationId} eseguita. Successo: {Success}", 
+            _logger.LogInformation("Scheduled notification {NotificationId} executed. Success: {Success}",
                 notificationId, result.Success);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante esecuzione notifica programmata {NotificationId}", notificationId);
-            
-            // Aggiorna stato come fallita
+            _logger.LogError(ex, "Error executing scheduled notification {NotificationId}", notificationId);
+
+            // Update status as failed
             var notification = await _context.Notifications.FindAsync(notificationId);
             if (notification != null)
             {

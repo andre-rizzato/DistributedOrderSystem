@@ -3,7 +3,7 @@ using CustomerWebsite.Models;
 namespace CustomerWebsite.Services;
 
 /// <summary>
-/// Servizio per la gestione degli ordini
+/// Service for order management
 /// </summary>
 public interface IOrderService
 {
@@ -28,7 +28,7 @@ public class OrderService : IOrderService
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
-        _orderServiceBaseUrl = _configuration.GetValue<string>("Services:OrderService:BaseUrl") ?? 
+        _orderServiceBaseUrl = _configuration.GetValue<string>("Services:OrderService:BaseUrl") ??
                                "https://localhost:5001";
     }
 
@@ -39,7 +39,7 @@ public class OrderService : IOrderService
             var orderRequest = new
             {
                 CustomerId = userId,
-                CustomerEmail = checkout.ShippingAddress.FullName, // Usa email dal modello appropriato
+                CustomerEmail = checkout.ShippingAddress.FullName, // Uses email from the appropriate model
                 Items = checkout.Cart.Items.Select(item => new
                 {
                     ProductId = item.Product.ProductId,
@@ -64,18 +64,18 @@ public class OrderService : IOrderService
 
             var url = $"{_orderServiceBaseUrl}/api/orders";
             var response = await _httpClient.PostAsJsonAsync(url, orderRequest);
-            
+
             if (response.IsSuccessStatusCode)
             {
                 var orderData = await response.Content.ReadFromJsonAsync<dynamic>();
                 return MapToOrderModel(orderData);
             }
-            
+
             return null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la creazione dell'ordine");
+            _logger.LogError(ex, "Error creating the order");
             return null;
         }
     }
@@ -86,12 +86,12 @@ public class OrderService : IOrderService
         {
             var url = $"{_orderServiceBaseUrl}/api/orders/{orderId}";
             var orderData = await _httpClient.GetFromJsonAsync<dynamic>(url);
-            
+
             return orderData != null ? MapToOrderModel(orderData) : null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero dell'ordine {OrderId}", orderId);
+            _logger.LogError(ex, "Error retrieving order {OrderId}", orderId);
             return null;
         }
     }
@@ -123,7 +123,7 @@ public class OrderService : IOrderService
             var url = $"{_orderServiceBaseUrl}/api/orders/history?{queryString}";
 
             var response = await _httpClient.GetFromJsonAsync<dynamic>(url);
-            
+
             var orderHistory = new OrderHistoryModel
             {
                 CurrentPage = page,
@@ -134,7 +134,7 @@ public class OrderService : IOrderService
             if (response != null)
             {
                 orderHistory.TotalCount = (int)(response.totalCount ?? 0);
-                
+
                 if (response.orders != null)
                 {
                     foreach (var orderData in response.orders)
@@ -150,7 +150,7 @@ public class OrderService : IOrderService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero della cronologia ordini per utente {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving order history for user {UserId}", userId);
             return new OrderHistoryModel();
         }
     }
@@ -161,12 +161,12 @@ public class OrderService : IOrderService
         {
             var url = $"{_orderServiceBaseUrl}/api/orders/{orderId}/cancel";
             var response = await _httpClient.PostAsync(url, null);
-            
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'annullamento dell'ordine {OrderId}", orderId);
+            _logger.LogError(ex, "Error canceling order {OrderId}", orderId);
             return false;
         }
     }
@@ -182,25 +182,25 @@ public class OrderService : IOrderService
                 {
                     ProductId = item.Product.ProductId,
                     Quantity = item.Quantity,
-                    Weight = 1.0, // Peso fittizio, dovrebbe venire dal prodotto
-                    Dimensions = new { Length = 10, Width = 10, Height = 10 } // Dimensioni fittizie
+                    Weight = 1.0, // Placeholder weight, should come from the product
+                    Dimensions = new { Length = 10, Width = 10, Height = 10 } // Placeholder dimensions
                 }).ToList()
             };
 
             var url = $"{_orderServiceBaseUrl}/api/shipping/options";
             var response = await _httpClient.PostAsJsonAsync(url, request);
-            
+
             if (response.IsSuccessStatusCode)
             {
                 var options = await response.Content.ReadFromJsonAsync<List<ShippingOptionModel>>();
                 return options ?? GetDefaultShippingOptions();
             }
-            
+
             return GetDefaultShippingOptions();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero delle opzioni di spedizione");
+            _logger.LogError(ex, "Error retrieving shipping options");
             return GetDefaultShippingOptions();
         }
     }
@@ -211,13 +211,13 @@ public class OrderService : IOrderService
         {
             var url = $"{_orderServiceBaseUrl}/api/promocodes/{promoCode}/validate";
             var request = new { Subtotal = subtotal };
-            
+
             var response = await _httpClient.PostAsJsonAsync(url, request);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la validazione del codice promozionale {PromoCode}", promoCode);
+            _logger.LogError(ex, "Error validating promo code {PromoCode}", promoCode);
             return false;
         }
     }
@@ -228,20 +228,20 @@ public class OrderService : IOrderService
         {
             var url = $"{_orderServiceBaseUrl}/api/promocodes/{promoCode}/discount";
             var request = new { Subtotal = subtotal };
-            
+
             var response = await _httpClient.PostAsJsonAsync(url, request);
-            
+
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<dynamic>();
                 return (decimal)(result?.discountAmount ?? 0);
             }
-            
+
             return 0;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il calcolo dello sconto per il codice promozionale {PromoCode}", promoCode);
+            _logger.LogError(ex, "Error calculating discount for promo code {PromoCode}", promoCode);
             return 0;
         }
     }
@@ -260,12 +260,12 @@ public class OrderService : IOrderService
                 CustomerName = orderData.customerName?.ToString() ?? string.Empty,
                 CustomerEmail = orderData.customerEmail?.ToString() ?? string.Empty,
                 Total = (decimal)(orderData.total ?? 0),
-                // Aggiungi altri campi secondo necessità
+                // Add other fields as needed
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il mapping dell'ordine");
+            _logger.LogError(ex, "Error mapping the order");
             return null;
         }
     }
@@ -277,8 +277,8 @@ public class OrderService : IOrderService
             new()
             {
                 ShippingOptionId = Guid.NewGuid(),
-                Name = "Spedizione Standard",
-                Description = "Consegna in 3-5 giorni lavorativi",
+                Name = "Standard Shipping",
+                Description = "Delivery in 3-5 business days",
                 Cost = 4.99m,
                 DeliveryDays = 4,
                 IncludesTracking = true
@@ -286,8 +286,8 @@ public class OrderService : IOrderService
             new()
             {
                 ShippingOptionId = Guid.NewGuid(),
-                Name = "Spedizione Express",
-                Description = "Consegna in 1-2 giorni lavorativi",
+                Name = "Express Shipping",
+                Description = "Delivery in 1-2 business days",
                 Cost = 9.99m,
                 DeliveryDays = 2,
                 IsExpress = true,
@@ -297,8 +297,8 @@ public class OrderService : IOrderService
             new()
             {
                 ShippingOptionId = Guid.NewGuid(),
-                Name = "Spedizione Gratuita",
-                Description = "Consegna in 5-7 giorni lavorativi",
+                Name = "Free Shipping",
+                Description = "Delivery in 5-7 business days",
                 Cost = 0,
                 DeliveryDays = 6,
                 IncludesTracking = false

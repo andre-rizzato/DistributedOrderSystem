@@ -7,8 +7,8 @@ using NotificationService.Services;
 namespace NotificationService.Controllers;
 
 /// <summary>
-/// Controller principale per la gestione delle notifiche del sistema
-/// Fornisce endpoint unificati per l'invio di notifiche tramite template e gestione centralizzata
+/// Main controller for managing system notifications.
+/// Provides unified endpoints for sending notifications via templates and centralized management.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -30,12 +30,12 @@ public class NotificationController : ControllerBase
     }
 
     /// <summary>
-    /// Invia notifica usando un template predefinito
-    /// Questo è l'endpoint principale per l'invio di notifiche strutturate
+    /// Sends a notification using a predefined template.
+    /// This is the main endpoint for sending structured notifications.
     /// </summary>
-    /// <param name="request">Richiesta di notifica con template</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'invio</returns>
+    /// <param name="request">Notification request with template</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send result</returns>
     [HttpPost("send-template")]
     [ProducesResponseType(typeof(NotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -51,7 +51,7 @@ public class NotificationController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            // Valida che il template esista e le variabili siano corrette
+            // Validate that the template exists and the variables are correct
             var validation = await _templateService.ValidateTemplateVariablesAsync(request.TemplateName, request.Variables);
             if (!validation.IsValid)
             {
@@ -64,10 +64,10 @@ public class NotificationController : ControllerBase
             }
 
             var result = await _notificationService.SendNotificationAsync(request, cancellationToken);
-            
+
             if (result.Success)
             {
-                _logger.LogInformation("Notifica template {TemplateName} inviata con successo a {Recipient}", 
+                _logger.LogInformation("Template notification {TemplateName} sent successfully to {Recipient}",
                     request.TemplateName, request.Recipient);
                 return Ok(result);
             }
@@ -83,24 +83,24 @@ public class NotificationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica template {TemplateName} a {Recipient}", 
+            _logger.LogError(ex, "Error sending template notification {TemplateName} to {Recipient}",
                 request.TemplateName, request.Recipient);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio della notifica",
+                Detail = "An error occurred while sending the notification",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Invia notifica diretta senza template
-    /// Utile per notifiche ad-hoc o personalizzate
+    /// Sends a direct notification without a template.
+    /// Useful for ad-hoc or customized notifications.
     /// </summary>
-    /// <param name="request">Richiesta di notifica diretta</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'invio</returns>
+    /// <param name="request">Direct notification request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send result</returns>
     [HttpPost("send-direct")]
     [ProducesResponseType(typeof(NotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -117,10 +117,10 @@ public class NotificationController : ControllerBase
             }
 
             var result = await _notificationService.SendDirectNotificationAsync(request, cancellationToken);
-            
+
             if (result.Success)
             {
-                _logger.LogInformation("Notifica diretta {Type} inviata con successo a {Recipient}", 
+                _logger.LogInformation("Direct notification {Type} sent successfully to {Recipient}",
                     request.Type, request.Recipient);
                 return Ok(result);
             }
@@ -136,24 +136,24 @@ public class NotificationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio notifica diretta {Type} a {Recipient}", 
+            _logger.LogError(ex, "Error sending direct notification {Type} to {Recipient}",
                 request.Type, request.Recipient);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio della notifica",
+                Detail = "An error occurred while sending the notification",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Invia notifiche multiple in batch
-    /// Ottimizzato per l'invio di grandi volumi di notifiche
+    /// Sends multiple notifications in batch.
+    /// Optimized for sending large volumes of notifications.
     /// </summary>
-    /// <param name="requests">Lista di richieste notifica</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultati degli invii</returns>
+    /// <param name="requests">List of notification requests</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Send results</returns>
     [HttpPost("send-bulk")]
     [ProducesResponseType(typeof(BulkNotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -166,40 +166,40 @@ public class NotificationController : ControllerBase
         {
             if (!ModelState.IsValid || !requests.Any())
             {
-                return BadRequest("Lista richieste non valida o vuota");
+                return BadRequest("Request list is invalid or empty");
             }
 
-            if (requests.Count > 1000) // Limite di sicurezza
+            if (requests.Count > 1000) // Safety limit
             {
-                return BadRequest("Massimo 1000 notifiche per richiesta bulk");
+                return BadRequest("Maximum 1000 notifications per bulk request");
             }
 
             var result = await _notificationService.SendBulkNotificationsAsync(requests, cancellationToken);
-            
-            _logger.LogInformation("Invio bulk completato: {SuccessCount}/{TotalCount} notifiche inviate", 
+
+            _logger.LogInformation("Bulk send completed: {SuccessCount}/{TotalCount} notifications sent",
                 result.SuccessCount, result.TotalRequests);
-            
+
             return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'invio bulk di {Count} notifiche", requests?.Count ?? 0);
+            _logger.LogError(ex, "Error during bulk send of {Count} notifications", requests?.Count ?? 0);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'invio bulk delle notifiche",
+                Detail = "An error occurred during the bulk notification send",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Programma notifica per invio futuro
-    /// Utilizza Hangfire per gestire la schedulazione
+    /// Schedules a notification for future delivery.
+    /// Uses Hangfire to manage scheduling.
     /// </summary>
-    /// <param name="request">Richiesta di notifica programmata</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>ID della notifica programmata</returns>
+    /// <param name="request">Scheduled notification request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>ID of the scheduled notification</returns>
     [HttpPost("schedule")]
     [ProducesResponseType(typeof(object), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -217,44 +217,44 @@ public class NotificationController : ControllerBase
 
             if (request.ScheduledAt <= DateTime.UtcNow)
             {
-                return BadRequest("La data di programmazione deve essere futura");
+                return BadRequest("The scheduled date must be in the future");
             }
 
             var notificationId = await _notificationService.ScheduleNotificationAsync(
-                request.NotificationRequest, 
-                request.ScheduledAt, 
+                request.NotificationRequest,
+                request.ScheduledAt,
                 cancellationToken);
-            
-            _logger.LogInformation("Notifica programmata per {ScheduledAt}. ID: {NotificationId}", 
+
+            _logger.LogInformation("Notification scheduled for {ScheduledAt}. ID: {NotificationId}",
                 request.ScheduledAt, notificationId);
-            
+
             return Ok(new
             {
                 success = true,
                 notificationId,
                 scheduledAt = request.ScheduledAt,
-                message = "Notifica programmata con successo"
+                message = "Notification scheduled successfully"
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la programmazione notifica per {ScheduledAt}", request.ScheduledAt);
+            _logger.LogError(ex, "Error scheduling notification for {ScheduledAt}", request.ScheduledAt);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante la programmazione della notifica",
+                Detail = "An error occurred while scheduling the notification",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Annulla notifica programmata
-    /// Rimuove la notifica dalla coda di Hangfire
+    /// Cancels a scheduled notification.
+    /// Removes the notification from the Hangfire queue.
     /// </summary>
-    /// <param name="notificationId">ID della notifica da annullare</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato dell'annullamento</returns>
+    /// <param name="notificationId">ID of the notification to cancel</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Cancellation result</returns>
     [HttpDelete("schedule/{notificationId}")]
     [ProducesResponseType(typeof(object), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 404)]
@@ -266,15 +266,15 @@ public class NotificationController : ControllerBase
         try
         {
             var success = await _notificationService.CancelScheduledNotificationAsync(notificationId, cancellationToken);
-            
+
             if (success)
             {
-                _logger.LogInformation("Notifica programmata {NotificationId} annullata", notificationId);
+                _logger.LogInformation("Scheduled notification {NotificationId} canceled", notificationId);
                 return Ok(new
                 {
                     success = true,
                     notificationId,
-                    message = "Notifica programmata annullata con successo"
+                    message = "Scheduled notification canceled successfully"
                 });
             }
             else
@@ -282,30 +282,30 @@ public class NotificationController : ControllerBase
                 return NotFound(new ProblemDetails
                 {
                     Title = "Notification not found",
-                    Detail = "Notifica programmata non trovata o già eseguita",
+                    Detail = "Scheduled notification not found or already executed",
                     Status = 404
                 });
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'annullamento notifica {NotificationId}", notificationId);
+            _logger.LogError(ex, "Error canceling notification {NotificationId}", notificationId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante l'annullamento della notifica",
+                Detail = "An error occurred while canceling the notification",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Ottieni stato di una notifica specifica
-    /// Include informazioni su invio, consegna ed eventuali errori
+    /// Gets the status of a specific notification.
+    /// Includes send, delivery, and error information.
     /// </summary>
-    /// <param name="notificationId">ID della notifica</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Stato dettagliato della notifica</returns>
+    /// <param name="notificationId">Notification ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Detailed notification status</returns>
     [HttpGet("{notificationId}/status")]
     [ProducesResponseType(typeof(NotificationStatusResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 404)]
@@ -317,7 +317,7 @@ public class NotificationController : ControllerBase
         try
         {
             var status = await _notificationService.GetNotificationStatusAsync(notificationId, cancellationToken);
-            
+
             if (status != null)
             {
                 return Ok(status);
@@ -327,34 +327,34 @@ public class NotificationController : ControllerBase
                 return NotFound(new ProblemDetails
                 {
                     Title = "Notification not found",
-                    Detail = $"Notifica con ID {notificationId} non trovata",
+                    Detail = $"Notification with ID {notificationId} not found",
                     Status = 404
                 });
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero stato notifica {NotificationId}", notificationId);
+            _logger.LogError(ex, "Error retrieving status for notification {NotificationId}", notificationId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante il recupero dello stato",
+                Detail = "An error occurred while retrieving the status",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Ottieni notifiche di un utente con paginazione
-    /// Include filtri per tipo e stato delle notifiche
+    /// Gets a user's notifications with pagination.
+    /// Includes filters by notification type and status.
     /// </summary>
-    /// <param name="userId">ID dell'utente</param>
-    /// <param name="page">Numero di pagina (default: 1)</param>
-    /// <param name="pageSize">Dimensione pagina (default: 20, max: 100)</param>
-    /// <param name="type">Filtro per tipo notifica (opzionale)</param>
-    /// <param name="status">Filtro per stato notifica (opzionale)</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Lista paginata delle notifiche utente</returns>
+    /// <param name="userId">User ID</param>
+    /// <param name="page">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 20, max: 100)</param>
+    /// <param name="type">Filter by notification type (optional)</param>
+    /// <param name="status">Filter by notification status (optional)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of user notifications</returns>
     [HttpGet("user/{userId}")]
     [ProducesResponseType(typeof(NotificationListResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -371,45 +371,45 @@ public class NotificationController : ControllerBase
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
-                return BadRequest("User ID è richiesto");
+                return BadRequest("User ID is required");
             }
 
             if (page <= 0)
             {
-                return BadRequest("Il numero di pagina deve essere maggiore di 0");
+                return BadRequest("Page number must be greater than 0");
             }
 
             if (pageSize <= 0 || pageSize > 100)
             {
-                return BadRequest("La dimensione della pagina deve essere tra 1 e 100");
+                return BadRequest("Page size must be between 1 and 100");
             }
 
             var notifications = await _notificationService.GetUserNotificationsAsync(
                 userId, page, pageSize, cancellationToken);
-            
+
             return Ok(notifications);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero notifiche per utente {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving notifications for user {UserId}", userId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante il recupero delle notifiche",
+                Detail = "An error occurred while retrieving notifications",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Ottieni statistiche delle notifiche
-    /// Include conteggi per tipo, stato e trend temporali
+    /// Gets notification statistics.
+    /// Includes counts by type, status, and time trends.
     /// </summary>
-    /// <param name="userId">ID utente per statistiche specifiche (opzionale)</param>
-    /// <param name="fromDate">Data inizio periodo (opzionale)</param>
-    /// <param name="toDate">Data fine periodo (opzionale)</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Statistiche dettagliate delle notifiche</returns>
+    /// <param name="userId">User ID for user-specific statistics (optional)</param>
+    /// <param name="fromDate">Period start date (optional)</param>
+    /// <param name="toDate">Period end date (optional)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Detailed notification statistics</returns>
     [HttpGet("stats")]
     [ProducesResponseType(typeof(NotificationStatsResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -422,42 +422,42 @@ public class NotificationController : ControllerBase
     {
         try
         {
-            // Validazione date
+            // Date validation
             if (fromDate.HasValue && toDate.HasValue && fromDate > toDate)
             {
-                return BadRequest("La data di inizio deve essere precedente alla data di fine");
+                return BadRequest("The start date must be before the end date");
             }
 
-            // Limite periodo massimo (1 anno)
+            // Maximum period limit (1 year)
             if (fromDate.HasValue && toDate.HasValue && (toDate - fromDate).Value.TotalDays > 365)
             {
-                return BadRequest("Il periodo massimo per le statistiche è di 1 anno");
+                return BadRequest("The maximum period for statistics is 1 year");
             }
 
             var stats = await _notificationService.GetNotificationStatsAsync(
                 userId, fromDate, toDate, cancellationToken);
-            
+
             return Ok(stats);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero statistiche notifiche per utente {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving notification statistics for user {UserId}", userId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante il recupero delle statistiche",
+                Detail = "An error occurred while retrieving statistics",
                 Status = 500
             });
         }
     }
 
     /// <summary>
-    /// Ritenta l'invio di una notifica fallita
-    /// Utilizza la stessa configurazione della notifica originale
+    /// Retries sending a failed notification.
+    /// Uses the same configuration as the original notification.
     /// </summary>
-    /// <param name="notificationId">ID della notifica da ritentare</param>
-    /// <param name="cancellationToken">Token di cancellazione</param>
-    /// <returns>Risultato del nuovo tentativo</returns>
+    /// <param name="notificationId">ID of the notification to retry</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of the new attempt</returns>
     [HttpPost("{notificationId}/retry")]
     [ProducesResponseType(typeof(NotificationResponse), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 400)]
@@ -470,13 +470,13 @@ public class NotificationController : ControllerBase
         try
         {
             var result = await _notificationService.RetryNotificationAsync(notificationId, cancellationToken);
-            
+
             if (result.Success)
             {
-                _logger.LogInformation("Retry notifica {NotificationId} completato con successo", notificationId);
+                _logger.LogInformation("Retry of notification {NotificationId} completed successfully", notificationId);
                 return Ok(result);
             }
-            else if (result.Error?.Contains("non trovata") == true)
+            else if (result.Error?.Contains("not found") == true)
             {
                 return NotFound(new ProblemDetails
                 {
@@ -497,11 +497,11 @@ public class NotificationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il retry notifica {NotificationId}", notificationId);
+            _logger.LogError(ex, "Error retrying notification {NotificationId}", notificationId);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal server error",
-                Detail = "Si è verificato un errore durante il retry della notifica",
+                Detail = "An error occurred while retrying the notification",
                 Status = 500
             });
         }
@@ -509,13 +509,13 @@ public class NotificationController : ControllerBase
 }
 
 /// <summary>
-/// DTO per richiesta di notifica programmata
+/// DTO for a scheduled notification request
 /// </summary>
 public class ScheduleNotificationRequest
 {
-    /// <summary>Dati della notifica da programmare</summary>
+    /// <summary>Data of the notification to schedule</summary>
     public required SendNotificationRequest NotificationRequest { get; set; }
-    
-    /// <summary>Data e ora di invio programmato (UTC)</summary>
+
+    /// <summary>Scheduled send date and time (UTC)</summary>
     public DateTime ScheduledAt { get; set; }
 }

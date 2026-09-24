@@ -64,7 +64,7 @@ public class TokenService : ITokenService
         {
             UserId = userId,
             Token = Convert.ToBase64String(randomBytes),
-            ExpiresAt = DateTime.UtcNow.AddDays(7), // 7 días
+            ExpiresAt = DateTime.UtcNow.AddDays(7), // 7 days
             CreatedByIp = ipAddress
         };
     }
@@ -79,7 +79,7 @@ public class TokenService : ITokenService
     {
         _context.RefreshTokens.Add(refreshToken);
         await _context.SaveChangesAsync();
-        _logger.LogInformation("Refresh token salvato per utente {UserId}", refreshToken.UserId);
+        _logger.LogInformation("Refresh token saved for user {UserId}", refreshToken.UserId);
     }
 
     public async Task RevokeRefreshTokenAsync(string token, string? ipAddress)
@@ -94,7 +94,7 @@ public class TokenService : ITokenService
         refreshToken.RevokedByIp = ipAddress;
 
         await _context.SaveChangesAsync();
-        _logger.LogInformation("Refresh token revocato per utente {UserId}", refreshToken.UserId);
+        _logger.LogInformation("Refresh token revoked for user {UserId}", refreshToken.UserId);
     }
 
     public async Task RevokeAllUserTokensAsync(Guid userId)
@@ -110,7 +110,7 @@ public class TokenService : ITokenService
         }
 
         await _context.SaveChangesAsync();
-        _logger.LogInformation("Tutti i refresh token revocati per utente {UserId}", userId);
+        _logger.LogInformation("All refresh tokens revoked for user {UserId}", userId);
     }
 
     public async Task CleanupExpiredTokensAsync()
@@ -122,6 +122,6 @@ public class TokenService : ITokenService
         _context.RefreshTokens.RemoveRange(expiredTokens);
         await _context.SaveChangesAsync();
         
-        _logger.LogInformation("Eliminati {Count} refresh token scaduti", expiredTokens.Count);
+        _logger.LogInformation("Deleted {Count} expired refresh tokens", expiredTokens.Count);
     }
 }

@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 namespace NotificationService.Services.Implementations;
 
 /// <summary>
-/// Implementazione del servizio per la gestione dei template di notifica
+/// Implementation of the notification template management service
 /// </summary>
 public class NotificationTemplateService : INotificationTemplateService
 {
@@ -35,7 +35,7 @@ public class NotificationTemplateService : INotificationTemplateService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero del template {TemplateName}", templateName);
+            _logger.LogError(ex, "Error retrieving template {TemplateName}", templateName);
             return null;
         }
     }
@@ -52,7 +52,7 @@ public class NotificationTemplateService : INotificationTemplateService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il recupero dei template per tipo {Type}", type);
+            _logger.LogError(ex, "Error retrieving templates for type {Type}", type);
             return new List<NotificationTemplate>();
         }
     }
@@ -65,16 +65,16 @@ public class NotificationTemplateService : INotificationTemplateService
             var template = await GetTemplateAsync(templateName, cancellationToken);
             if (template == null)
             {
-                throw new InvalidOperationException($"Template '{templateName}' non trovato");
+                throw new InvalidOperationException($"Template '{templateName}' not found");
             }
 
-            // Renderizza subject
+            // Render subject
             var subject = ReplaceVariables(template.SubjectTemplate, variables);
-            
-            // Renderizza content
+
+            // Render content
             var content = ReplaceVariables(template.ContentTemplate, variables);
-            
-            // Renderizza HTML content se presente
+
+            // Render HTML content if present
             string? htmlContent = null;
             if (!string.IsNullOrEmpty(template.HtmlTemplate))
             {
@@ -90,7 +90,7 @@ public class NotificationTemplateService : INotificationTemplateService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante il rendering del template {TemplateName}", templateName);
+            _logger.LogError(ex, "Error rendering template {TemplateName}", templateName);
             throw;
         }
     }
@@ -100,20 +100,20 @@ public class NotificationTemplateService : INotificationTemplateService
     {
         try
         {
-            // Verifica che non esista già un template con lo stesso nome
+            // Check that a template with the same name doesn't already exist
             var existingTemplate = await _context.NotificationTemplates
                 .FirstOrDefaultAsync(t => t.Name == template.Name, cancellationToken);
 
             if (existingTemplate != null)
             {
-                throw new InvalidOperationException($"Template '{template.Name}' esiste già");
+                throw new InvalidOperationException($"Template '{template.Name}' already exists");
             }
 
-            // Valida variabili
+            // Validate variables
             var validationResult = ValidateTemplateVariables(template);
             if (!validationResult.IsValid)
             {
-                throw new InvalidOperationException($"Template non valido: {string.Join(", ", validationResult.Errors)}");
+                throw new InvalidOperationException($"Invalid template: {string.Join(", ", validationResult.Errors)}");
             }
 
             template.CreatedAt = DateTime.UtcNow;
@@ -122,12 +122,12 @@ public class NotificationTemplateService : INotificationTemplateService
             _context.NotificationTemplates.Add(template);
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Template creato: {TemplateName}", template.Name);
+            _logger.LogInformation("Template created: {TemplateName}", template.Name);
             return template;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la creazione del template {TemplateName}", template.Name);
+            _logger.LogError(ex, "Error creating template {TemplateName}", template.Name);
             throw;
         }
     }
@@ -145,14 +145,14 @@ public class NotificationTemplateService : INotificationTemplateService
                 return null;
             }
 
-            // Valida variabili
+            // Validate variables
             var validationResult = ValidateTemplateVariables(template);
             if (!validationResult.IsValid)
             {
-                throw new InvalidOperationException($"Template non valido: {string.Join(", ", validationResult.Errors)}");
+                throw new InvalidOperationException($"Invalid template: {string.Join(", ", validationResult.Errors)}");
             }
 
-            // Aggiorna campi
+            // Update fields
             existingTemplate.Description = template.Description;
             existingTemplate.Type = template.Type;
             existingTemplate.SubjectTemplate = template.SubjectTemplate;
@@ -164,12 +164,12 @@ public class NotificationTemplateService : INotificationTemplateService
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Template aggiornato: {TemplateName}", templateName);
+            _logger.LogInformation("Template updated: {TemplateName}", templateName);
             return existingTemplate;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'aggiornamento del template {TemplateName}", templateName);
+            _logger.LogError(ex, "Error updating template {TemplateName}", templateName);
             throw;
         }
     }
@@ -190,12 +190,12 @@ public class NotificationTemplateService : INotificationTemplateService
             _context.NotificationTemplates.Remove(template);
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Template eliminato: {TemplateName}", templateName);
+            _logger.LogInformation("Template deleted: {TemplateName}", templateName);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante l'eliminazione del template {TemplateName}", templateName);
+            _logger.LogError(ex, "Error deleting template {TemplateName}", templateName);
             return false;
         }
     }
@@ -211,7 +211,7 @@ public class NotificationTemplateService : INotificationTemplateService
                 return new ValidationResult
                 {
                     IsValid = false,
-                    Errors = { $"Template '{templateName}' non trovato" }
+                    Errors = { $"Template '{templateName}' not found" }
                 };
             }
 
@@ -219,22 +219,22 @@ public class NotificationTemplateService : INotificationTemplateService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la validazione delle variabili per template {TemplateName}", templateName);
+            _logger.LogError(ex, "Error validating variables for template {TemplateName}", templateName);
             return new ValidationResult
             {
                 IsValid = false,
-                Errors = { $"Errore durante la validazione: {ex.Message}" }
+                Errors = { $"Error during validation: {ex.Message}" }
             };
         }
     }
 
     /// <summary>
-    /// Sostituisce le variabili nel testo del template
+    /// Replaces variables in the template text
     /// </summary>
     private static string ReplaceVariables(string template, Dictionary<string, string> variables)
     {
         var result = template;
-        
+
         foreach (var variable in variables)
         {
             var placeholder = "{" + variable.Key + "}";
@@ -245,7 +245,7 @@ public class NotificationTemplateService : INotificationTemplateService
     }
 
     /// <summary>
-    /// Valida un template durante creazione/aggiornamento
+    /// Validates a template during creation/update
     /// </summary>
     private static ValidationResult ValidateTemplateVariables(NotificationTemplate template)
     {
@@ -253,18 +253,18 @@ public class NotificationTemplateService : INotificationTemplateService
 
         try
         {
-            // Verifica che i template non siano vuoti
+            // Check that the templates aren't empty
             if (string.IsNullOrWhiteSpace(template.SubjectTemplate))
             {
-                result.Errors.Add("Subject template non può essere vuoto");
+                result.Errors.Add("Subject template cannot be empty");
             }
 
             if (string.IsNullOrWhiteSpace(template.ContentTemplate))
             {
-                result.Errors.Add("Content template non può essere vuoto");
+                result.Errors.Add("Content template cannot be empty");
             }
 
-            // Estrai variabili dai template
+            // Extract variables from the templates
             var subjectVariables = ExtractVariables(template.SubjectTemplate);
             var contentVariables = ExtractVariables(template.ContentTemplate);
             var htmlVariables = ExtractVariables(template.HtmlTemplate ?? string.Empty);
@@ -275,29 +275,29 @@ public class NotificationTemplateService : INotificationTemplateService
                 .Distinct()
                 .ToList();
 
-            // Valida formato JSON delle variabili definite
+            // Validate the JSON format of the defined variables
             if (!string.IsNullOrEmpty(template.Variables))
             {
                 try
                 {
                     var definedVariables = JsonSerializer.Deserialize<Dictionary<string, string>>(template.Variables);
-                    
-                    // Verifica che tutte le variabili usate siano definite
+
+                    // Check that all used variables are defined
                     var missingVariables = allVariables.Where(v => !definedVariables!.ContainsKey(v)).ToList();
                     if (missingVariables.Any())
                     {
                         result.MissingVariables.AddRange(missingVariables);
-                        result.Errors.Add($"Variabili non definite: {string.Join(", ", missingVariables)}");
+                        result.Errors.Add($"Undefined variables: {string.Join(", ", missingVariables)}");
                     }
                 }
                 catch (JsonException)
                 {
-                    result.Errors.Add("Formato JSON non valido per le variabili");
+                    result.Errors.Add("Invalid JSON format for variables");
                 }
             }
             else if (allVariables.Any())
             {
-                result.Errors.Add("Template contiene variabili ma nessuna definizione JSON fornita");
+                result.Errors.Add("Template contains variables but no JSON definition was provided");
             }
 
             result.IsValid = !result.Errors.Any();
@@ -305,14 +305,14 @@ public class NotificationTemplateService : INotificationTemplateService
         catch (Exception ex)
         {
             result.IsValid = false;
-            result.Errors.Add($"Errore durante la validazione: {ex.Message}");
+            result.Errors.Add($"Error during validation: {ex.Message}");
         }
 
         return result;
     }
 
     /// <summary>
-    /// Valida le variabili fornite contro un template
+    /// Validates the provided variables against a template
     /// </summary>
     private static ValidationResult ValidateVariablesAgainstTemplate(NotificationTemplate template, Dictionary<string, string> variables)
     {
@@ -320,7 +320,7 @@ public class NotificationTemplateService : INotificationTemplateService
 
         try
         {
-            // Estrai variabili richieste dal template
+            // Extract variables required by the template
             var subjectVariables = ExtractVariables(template.SubjectTemplate);
             var contentVariables = ExtractVariables(template.ContentTemplate);
             var htmlVariables = ExtractVariables(template.HtmlTemplate ?? string.Empty);
@@ -331,12 +331,12 @@ public class NotificationTemplateService : INotificationTemplateService
                 .Distinct()
                 .ToList();
 
-            // Verifica variabili mancanti
+            // Check for missing variables
             var missingVariables = requiredVariables.Where(v => !variables.ContainsKey(v)).ToList();
             if (missingVariables.Any())
             {
                 result.MissingVariables.AddRange(missingVariables);
-                result.Errors.Add($"Variabili mancanti: {string.Join(", ", missingVariables)}");
+                result.Errors.Add($"Missing variables: {string.Join(", ", missingVariables)}");
             }
 
             result.IsValid = !result.Errors.Any();
@@ -344,14 +344,14 @@ public class NotificationTemplateService : INotificationTemplateService
         catch (Exception ex)
         {
             result.IsValid = false;
-            result.Errors.Add($"Errore durante la validazione: {ex.Message}");
+            result.Errors.Add($"Error during validation: {ex.Message}");
         }
 
         return result;
     }
 
     /// <summary>
-    /// Estrae le variabili da un testo template usando regex
+    /// Extracts variables from a template text using regex
     /// </summary>
     private static List<string> ExtractVariables(string template)
     {

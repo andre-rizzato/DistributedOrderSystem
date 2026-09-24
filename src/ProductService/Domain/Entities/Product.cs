@@ -1,9 +1,9 @@
 namespace ProductService.Domain.Entities;
 
 /// <summary>
-/// Entità di dominio Product.
-/// Il Domain layer non ha dipendenze esterne (nessun riferimento a EF Core, Redis, ecc.).
-/// Questo è il principio fondamentale della Clean Architecture: il dominio è al centro.
+/// Product domain entity.
+/// The Domain layer has no external dependencies (no reference to EF Core, Redis, etc.).
+/// This is the core principle of Clean Architecture: the domain is at the center.
 /// </summary>
 public class Product
 {

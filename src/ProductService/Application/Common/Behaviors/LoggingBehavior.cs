@@ -3,9 +3,9 @@ namespace ProductService.Application.Common.Behaviors;
 using MediatR;
 
 /// <summary>
-/// Pipeline Behavior MediatR: logga ogni request e il tempo di esecuzione.
-/// Si inserisce automaticamente nella pipeline CQRS per TUTTI i Command e Query.
-/// Questo è un cross-cutting concern gestito tramite il pattern Decorator/Pipeline.
+/// MediatR Pipeline Behavior: logs every request and its execution time.
+/// Automatically inserted into the CQRS pipeline for ALL Commands and Queries.
+/// This is a cross-cutting concern handled via the Decorator/Pipeline pattern.
 /// </summary>
 public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>

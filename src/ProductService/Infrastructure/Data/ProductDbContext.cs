@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using ProductService.Domain.Entities;
 
 /// <summary>
-/// DbContext EF Core per i prodotti.
-/// Risiede nell'Infrastructure layer — il Domain layer non sa nulla di EF Core.
+/// EF Core DbContext for products.
+/// Lives in the Infrastructure layer — the Domain layer knows nothing about EF Core.
 /// </summary>
 public class ProductDbContext : DbContext
 {

@@ -75,7 +75,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-// Assicura che il database sia creato
+// Make sure the database is created
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ProductDbContext>();

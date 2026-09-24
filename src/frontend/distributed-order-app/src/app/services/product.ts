@@ -7,134 +7,134 @@ import { Product, CreateProductRequest, UpdateProductRequest, CatalogItem } from
 /**
  * ProductService
  *
- * Servizio Angular che gestisce tutte le operazioni HTTP relative ai prodotti.
- * Questo servizio è un singleton (providedIn: 'root') condiviso in tutta l'applicazione.
+ * Angular service that handles all HTTP operations related to products.
+ * This service is a singleton (providedIn: 'root') shared across the whole application.
  *
- * Funzionalità principali:
- * - Recuperare tutti i prodotti dal catalogo (con informazioni inventario)
- * - Recuperare un singolo prodotto per ID
- * - Creare un nuovo prodotto
- * - Aggiornare un prodotto esistente
- * - Eliminare un prodotto
- * - Gestione centralizzata degli errori HTTP
+ * Main features:
+ * - Fetch all products from the catalog (with inventory information)
+ * - Fetch a single product by ID
+ * - Create a new product
+ * - Update an existing product
+ * - Delete a product
+ * - Centralized HTTP error handling
  *
- * Tutte le operazioni comunicano con il GatewayBff (Backend for Frontend)
- * in esecuzione su localhost:5189, che funge da mediatore tra il frontend
- * e i microservizi backend (ProductService, InventoryService, ecc.).
+ * All operations talk to the GatewayBff (Backend for Frontend)
+ * running on localhost:5189, which acts as a mediator between the frontend
+ * and the backend microservices (ProductService, InventoryService, etc.).
  */
 @Injectable({
   providedIn: 'root',
 })
 export class ProductService {
-  // URL base del GatewayBff per le query (lettura)
+  // Base URL of the GatewayBff for queries (reads)
   private readonly queryApiUrl = 'http://localhost:5189/api/queries';
-  // URL base del GatewayBff per i comandi (scrittura)
+  // Base URL of the GatewayBff for commands (writes)
   private readonly commandApiUrl = 'http://localhost:5189/api/commands';
 
   /**
-   * Costruttore del servizio
-   * @param http - Client HTTP di Angular per effettuare richieste HTTP
+   * Service constructor
+   * @param http - Angular's HTTP client for making HTTP requests
    */
   constructor(private http: HttpClient) { }
 
   /**
-   * Recupera tutti i prodotti dal catalogo con informazioni inventario
+   * Fetches all products from the catalog with inventory information
    *
-   * Effettua una richiesta GET a /api/queries/catalog tramite il GatewayBff.
-   * Il BFF aggrega dati da ProductService e InventoryService.
+   * Makes a GET request to /api/queries/catalog through the GatewayBff.
+   * The BFF aggregates data from ProductService and InventoryService.
    *
-   * @returns Observable<CatalogItem[]> - Array di elementi del catalogo con quantità disponibile
+   * @returns Observable<CatalogItem[]> - Array of catalog items with available quantity
    */
   getAllProducts(): Observable<CatalogItem[]> {
     return this.http.get<CatalogItem[]>(`${this.queryApiUrl}/catalog`)
       .pipe(
-        tap(products => console.log('Prodotti catalogo recuperati:', products)),
+        tap(products => console.log('Catalog products fetched:', products)),
         catchError(this.handleError)
       );
   }
 
   /**
-   * Recupera un singolo prodotto tramite il suo ID
+   * Fetches a single product by its ID
    *
-   * Effettua una richiesta GET a /api/queries/catalog/{id} tramite il GatewayBff.
-   * @param id - ID del prodotto da recuperare
-   * @returns Observable<CatalogItem> - Il prodotto richiesto con dati inventario
+   * Makes a GET request to /api/queries/catalog/{id} through the GatewayBff.
+   * @param id - ID of the product to fetch
+   * @returns Observable<CatalogItem> - The requested product with inventory data
    */
   getProductById(id: number): Observable<CatalogItem> {
     return this.http.get<CatalogItem>(`${this.queryApiUrl}/catalog/${id}`)
       .pipe(
-        tap(product => console.log('Prodotto recuperato:', product)),
+        tap(product => console.log('Product fetched:', product)),
         catchError(this.handleError)
       );
   }
 
   /**
-   * Crea un nuovo prodotto
+   * Creates a new product
    *
-   * Effettua una richiesta POST a /api/commands/products tramite il GatewayBff.
-   * Il BFF inoltra la richiesta al ProductService.
-   * @param product - Dati del prodotto da creare (senza ID)
-   * @returns Observable<Product> - Il prodotto creato con ID assegnato dal server
+   * Makes a POST request to /api/commands/products through the GatewayBff.
+   * The BFF forwards the request to ProductService.
+   * @param product - Product data to create (without ID)
+   * @returns Observable<Product> - The created product with ID assigned by the server
    */
   createProduct(product: CreateProductRequest): Observable<Product> {
     return this.http.post<Product>(`${this.commandApiUrl}/products`, product)
       .pipe(
-        tap(newProduct => console.log('Prodotto creato:', newProduct)),
+        tap(newProduct => console.log('Product created:', newProduct)),
         catchError(this.handleError)
       );
   }
 
   /**
-   * Aggiorna un prodotto esistente
+   * Updates an existing product
    *
-   * Effettua una richiesta PUT a /api/commands/products/{id} tramite il GatewayBff.
-   * Il BFF inoltra la richiesta al ProductService.
-   * @param id - ID del prodotto da aggiornare
-   * @param product - Nuovi dati del prodotto
-   * @returns Observable<Product> - Il prodotto aggiornato
+   * Makes a PUT request to /api/commands/products/{id} through the GatewayBff.
+   * The BFF forwards the request to ProductService.
+   * @param id - ID of the product to update
+   * @param product - New product data
+   * @returns Observable<Product> - The updated product
    */
   updateProduct(id: number, product: UpdateProductRequest): Observable<Product> {
     return this.http.put<Product>(`${this.commandApiUrl}/products/${id}`, product)
       .pipe(
-        tap(updatedProduct => console.log('Prodotto aggiornato:', updatedProduct)),
+        tap(updatedProduct => console.log('Product updated:', updatedProduct)),
         catchError(this.handleError)
       );
   }
 
   /**
-   * Elimina un prodotto
+   * Deletes a product
    *
-   * Effettua una richiesta DELETE a /api/commands/products/{id} tramite il GatewayBff.
-   * Il BFF inoltra la richiesta al ProductService.
-   * @param id - ID del prodotto da eliminare
-   * @returns Observable<void> - Nessun contenuto di ritorno in caso di successo
+   * Makes a DELETE request to /api/commands/products/{id} through the GatewayBff.
+   * The BFF forwards the request to ProductService.
+   * @param id - ID of the product to delete
+   * @returns Observable<void> - No return content on success
    */
   deleteProduct(id: number): Observable<void> {
     return this.http.delete<void>(`${this.commandApiUrl}/products/${id}`)
       .pipe(
-        tap(() => console.log('Prodotto eliminato con ID:', id)),
+        tap(() => console.log('Product deleted with ID:', id)),
         catchError(this.handleError)
       );
   }
 
   /**
-   * Gestisce gli errori HTTP
+   * Handles HTTP errors
    *
-   * Metodo privato che processa gli errori HTTP e crea messaggi di errore leggibili.
-   * Distingue tra errori lato client (rete, CORS, ecc.) e errori lato server (4xx, 5xx).
+   * Private method that processes HTTP errors and builds readable error messages.
+   * Distinguishes between client-side errors (network, CORS, etc.) and server-side errors (4xx, 5xx).
    *
-   * @param error - Oggetto di errore HTTP ricevuto
-   * @returns Observable<never> - Observable che emette un errore
+   * @param error - The received HTTP error object
+   * @returns Observable<never> - Observable that emits an error
    */
   private handleError(error: HttpErrorResponse): Observable<never> {
-    let errorMessage = 'Si è verificato un errore';
+    let errorMessage = 'An error occurred';
 
     if (error.error instanceof ErrorEvent) {
-      // Errore lato client (rete, CORS, ecc.)
-      errorMessage = `Errore: ${error.error.message}`;
+      // Client-side error (network, CORS, etc.)
+      errorMessage = `Error: ${error.error.message}`;
     } else {
-      // Errore lato server (codici HTTP 4xx, 5xx)
-      errorMessage = `Codice Errore: ${error.status}\nMessaggio: ${error.message}`;
+      // Server-side error (HTTP status codes 4xx, 5xx)
+      errorMessage = `Error code: ${error.status}\nMessage: ${error.message}`;
     }
 
     console.error(errorMessage);

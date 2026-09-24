@@ -4,7 +4,7 @@ using NotificationService.Models;
 namespace NotificationService.Data;
 
 /// <summary>
-/// Contesto database per il servizio notifiche
+/// Database context for the notification service
 /// </summary>
 public class NotificationContext : DbContext
 {
@@ -13,22 +13,22 @@ public class NotificationContext : DbContext
     }
 
     /// <summary>
-    /// Notifiche
+    /// Notifications
     /// </summary>
     public DbSet<Notification> Notifications { get; set; }
-    
+
     /// <summary>
-    /// Template di notifiche
+    /// Notification templates
     /// </summary>
     public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
-    
+
     /// <summary>
-    /// Preferenze utenti per notifiche
+    /// Per-user notification preferences
     /// </summary>
     public DbSet<NotificationPreference> NotificationPreferences { get; set; }
-    
+
     /// <summary>
-    /// Log delle operazioni di notifica
+    /// Notification operation logs
     /// </summary>
     public DbSet<NotificationLog> NotificationLogs { get; set; }
 
@@ -36,12 +36,12 @@ public class NotificationContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configurazione tabella Notifications
+        // Notifications table configuration
         modelBuilder.Entity<Notification>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            
+
             entity.Property(e => e.Type).IsRequired();
             entity.Property(e => e.Recipient).IsRequired().HasMaxLength(500);
             entity.Property(e => e.Subject).IsRequired().HasMaxLength(1000);
@@ -62,7 +62,7 @@ public class NotificationContext : DbContext
             entity.Property(e => e.ErrorMessage);
             entity.Property(e => e.ExternalId).HasMaxLength(200);
 
-            // Indexes per performance
+            // Indexes for performance
             entity.HasIndex(e => e.Type);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.UserId);
@@ -71,12 +71,12 @@ public class NotificationContext : DbContext
             entity.HasIndex(e => new { e.ReferenceId, e.ReferenceType });
         });
 
-        // Configurazione tabella NotificationTemplates
+        // NotificationTemplates table configuration
         modelBuilder.Entity<NotificationTemplate>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            
+
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.Type).IsRequired();
@@ -88,18 +88,18 @@ public class NotificationContext : DbContext
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
 
-            // Index univoco per nome template
+            // Unique index on template name
             entity.HasIndex(e => e.Name).IsUnique();
             entity.HasIndex(e => e.Type);
             entity.HasIndex(e => e.IsActive);
         });
 
-        // Configurazione tabella NotificationPreferences
+        // NotificationPreferences table configuration
         modelBuilder.Entity<NotificationPreference>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            
+
             entity.Property(e => e.UserId).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Type).IsRequired();
             entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
@@ -108,57 +108,57 @@ public class NotificationContext : DbContext
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
 
-            // Index univoco per combinazione utente-tipo-categoria
+            // Unique index on the user-type-category combination
             entity.HasIndex(e => new { e.UserId, e.Type, e.Category }).IsUnique();
         });
 
-        // Configurazione tabella NotificationLogs
+        // NotificationLogs table configuration
         modelBuilder.Entity<NotificationLog>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            
+
             entity.Property(e => e.NotificationId).IsRequired();
             entity.Property(e => e.Action).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Details);
             entity.Property(e => e.Provider).HasMaxLength(50);
             entity.Property(e => e.Timestamp).IsRequired();
 
-            // Foreign key verso Notifications
+            // Foreign key to Notifications
             entity.HasOne(e => e.Notification)
                   .WithMany()
                   .HasForeignKey(e => e.NotificationId)
                   .OnDelete(DeleteBehavior.Cascade);
 
-            // Indexes per performance
+            // Indexes for performance
             entity.HasIndex(e => e.NotificationId);
             entity.HasIndex(e => e.Action);
             entity.HasIndex(e => e.Timestamp);
             entity.HasIndex(e => e.Provider);
         });
 
-        // Seed data per template di base
+        // Seed data for the base templates
         SeedTemplates(modelBuilder);
     }
 
     /// <summary>
-    /// Popola alcuni template di base per il sistema
+    /// Seeds a few base templates for the system
     /// </summary>
     private static void SeedTemplates(ModelBuilder modelBuilder)
     {
         var seedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        
+
         modelBuilder.Entity<NotificationTemplate>().HasData(
             new NotificationTemplate
             {
                 Id = 1,
                 Name = "order_confirmation",
-                Description = "Conferma ordine effettuato",
+                Description = "Order confirmation",
                 Type = NotificationType.Email,
-                SubjectTemplate = "Conferma ordine #{orderId} - {companyName}",
-                ContentTemplate = "Ciao {customerName},\\n\\nGrazie per il tuo ordine #{orderId}!\\n\\nDettagli ordine:\\n{orderDetails}\\n\\nTotale: {total}\\n\\nGrazie per averci scelto!\\n\\n{companyName}",
-                HtmlTemplate = "<h2>Conferma ordine #{orderId}</h2><p>Ciao <strong>{customerName}</strong>,</p><p>Grazie per il tuo ordine!</p><div>{orderDetails}</div><p><strong>Totale: {total}</strong></p>",
-                Variables = @"{""orderId"": ""ID ordine"", ""customerName"": ""Nome cliente"", ""orderDetails"": ""Dettagli ordine"", ""total"": ""Totale ordine"", ""companyName"": ""Nome azienda""}",
+                SubjectTemplate = "Order confirmation #{orderId} - {companyName}",
+                ContentTemplate = "Hi {customerName},\\n\\nThank you for your order #{orderId}!\\n\\nOrder details:\\n{orderDetails}\\n\\nTotal: {total}\\n\\nThanks for choosing us!\\n\\n{companyName}",
+                HtmlTemplate = "<h2>Order confirmation #{orderId}</h2><p>Hi <strong>{customerName}</strong>,</p><p>Thank you for your order!</p><div>{orderDetails}</div><p><strong>Total: {total}</strong></p>",
+                Variables = @"{""orderId"": ""Order ID"", ""customerName"": ""Customer name"", ""orderDetails"": ""Order details"", ""total"": ""Order total"", ""companyName"": ""Company name""}",
                 IsActive = true,
                 CreatedAt = seedDate,
                 UpdatedAt = seedDate
@@ -167,11 +167,11 @@ public class NotificationContext : DbContext
             {
                 Id = 2,
                 Name = "order_shipped",
-                Description = "Notifica spedizione ordine",
+                Description = "Order shipped notification",
                 Type = NotificationType.SMS,
-                SubjectTemplate = "Ordine #{orderId} spedito",
-                ContentTemplate = "Ciao {customerName}! Il tuo ordine #{orderId} è stato spedito. Tracking: {trackingNumber}. Consegna prevista: {deliveryDate}",
-                Variables = @"{""orderId"": ""ID ordine"", ""customerName"": ""Nome cliente"", ""trackingNumber"": ""Codice tracking"", ""deliveryDate"": ""Data consegna""}",
+                SubjectTemplate = "Order #{orderId} shipped",
+                ContentTemplate = "Hi {customerName}! Your order #{orderId} has shipped. Tracking: {trackingNumber}. Expected delivery: {deliveryDate}",
+                Variables = @"{""orderId"": ""Order ID"", ""customerName"": ""Customer name"", ""trackingNumber"": ""Tracking code"", ""deliveryDate"": ""Delivery date""}",
                 IsActive = true,
                 CreatedAt = seedDate,
                 UpdatedAt = seedDate
@@ -180,12 +180,12 @@ public class NotificationContext : DbContext
             {
                 Id = 3,
                 Name = "payment_reminder",
-                Description = "Promemoria pagamento in scadenza",
+                Description = "Payment due reminder",
                 Type = NotificationType.Email,
-                SubjectTemplate = "Promemoria pagamento - Ordine #{orderId}",
-                ContentTemplate = "Ciao {customerName},\\n\\nIl pagamento per l'ordine #{orderId} scadrà il {dueDate}.\\n\\nImporto: {amount}\\n\\nEffettua il pagamento entro la scadenza per evitare interruzioni del servizio.\\n\\nGrazie!",
-                HtmlTemplate = "<h3>Promemoria Pagamento</h3><p>Ciao {customerName},</p><p>Il pagamento per l'ordine <strong>#{orderId}</strong> scadrà il <strong>{dueDate}</strong>.</p><p>Importo: <strong>{amount}</strong></p><p>Ti preghiamo di effettuare il pagamento entro la scadenza.</p>",
-                Variables = @"{""orderId"": ""ID ordine"", ""customerName"": ""Nome cliente"", ""dueDate"": ""Data scadenza"", ""amount"": ""Importo da pagare""}",
+                SubjectTemplate = "Payment reminder - Order #{orderId}",
+                ContentTemplate = "Hi {customerName},\\n\\nPayment for order #{orderId} is due on {dueDate}.\\n\\nAmount: {amount}\\n\\nPlease pay before the due date to avoid service interruption.\\n\\nThanks!",
+                HtmlTemplate = "<h3>Payment Reminder</h3><p>Hi {customerName},</p><p>Payment for order <strong>#{orderId}</strong> is due on <strong>{dueDate}</strong>.</p><p>Amount: <strong>{amount}</strong></p><p>Please pay before the due date.</p>",
+                Variables = @"{""orderId"": ""Order ID"", ""customerName"": ""Customer name"", ""dueDate"": ""Due date"", ""amount"": ""Amount due""}",
                 IsActive = true,
                 CreatedAt = seedDate,
                 UpdatedAt = seedDate
@@ -194,11 +194,11 @@ public class NotificationContext : DbContext
             {
                 Id = 4,
                 Name = "welcome_user",
-                Description = "Messaggio di benvenuto nuovo utente",
+                Description = "New user welcome message",
                 Type = NotificationType.Push,
-                SubjectTemplate = "Benvenuto in {appName}!",
-                ContentTemplate = "Ciao {userName}! Benvenuto in {appName}. Scopri tutte le funzionalità della nostra app e inizia subito a fare shopping!",
-                Variables = @"{""userName"": ""Nome utente"", ""appName"": ""Nome applicazione""}",
+                SubjectTemplate = "Welcome to {appName}!",
+                ContentTemplate = "Hi {userName}! Welcome to {appName}. Discover all our app's features and start shopping right away!",
+                Variables = @"{""userName"": ""User name"", ""appName"": ""Application name""}",
                 IsActive = true,
                 CreatedAt = seedDate,
                 UpdatedAt = seedDate
@@ -207,11 +207,11 @@ public class NotificationContext : DbContext
             {
                 Id = 5,
                 Name = "system_maintenance",
-                Description = "Notifica manutenzione sistema",
+                Description = "System maintenance notification",
                 Type = NotificationType.InApp,
-                SubjectTemplate = "Manutenzione programmata sistema",
-                ContentTemplate = "Attenzione: il sistema sarà in manutenzione il {maintenanceDate} dalle {startTime} alle {endTime}. Alcune funzionalità potrebbero non essere disponibili.",
-                Variables = @"{""maintenanceDate"": ""Data manutenzione"", ""startTime"": ""Ora inizio"", ""endTime"": ""Ora fine""}",
+                SubjectTemplate = "Scheduled system maintenance",
+                ContentTemplate = "Notice: the system will be under maintenance on {maintenanceDate} from {startTime} to {endTime}. Some features may be unavailable.",
+                Variables = @"{""maintenanceDate"": ""Maintenance date"", ""startTime"": ""Start time"", ""endTime"": ""End time""}",
                 IsActive = true,
                 CreatedAt = seedDate,
                 UpdatedAt = seedDate

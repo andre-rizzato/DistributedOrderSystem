@@ -3,9 +3,9 @@ namespace OrderService.Domain.Interfaces;
 using OrderService.Domain.Aggregates;
 
 /// <summary>
-/// Interfaccia del Repository per l'aggregato Order.
-/// Definita nel Domain layer — l'implementazione risiede nell'Infrastructure layer.
-/// Solo gli Aggregate Root hanno il proprio Repository.
+/// Repository interface for the Order aggregate.
+/// Defined in the Domain layer — the implementation lives in the Infrastructure layer.
+/// Only Aggregate Roots have their own Repository.
 /// </summary>
 public interface IOrderRepository
 {

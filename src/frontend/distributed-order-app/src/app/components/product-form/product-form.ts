@@ -8,23 +8,23 @@ import { Product, CreateProductRequest, UpdateProductRequest } from '../../model
 /**
  * ProductFormComponent
  *
- * Componente form per creare e modificare prodotti.
+ * Form component for creating and editing products.
  *
- * Funzionalità:
- * - Crea nuovi prodotti (modalità creazione)
- * - Modifica prodotti esistenti (modalità modifica)
- * - Validazione completa dei campi del form
- * - Messaggi di errore personalizzati per ogni campo
- * - Gestione degli stati di caricamento ed errore
- * - Navigazione automatica alla lista prodotti dopo salvataggio
+ * Features:
+ * - Creates new products (create mode)
+ * - Edits existing products (edit mode)
+ * - Full form field validation
+ * - Custom error messages for each field
+ * - Handles loading and error states
+ * - Automatic navigation back to the product list after saving
  *
- * Il componente utilizza Reactive Forms di Angular per la gestione del form,
- * che offre una validazione robusta e una gestione dello stato più strutturata
- * rispetto ai Template-Driven Forms.
+ * The component uses Angular Reactive Forms for form management,
+ * which offers more robust validation and more structured state handling
+ * than Template-Driven Forms.
  *
- * Modalità:
- * - Se l'URL contiene un ID numerico: modalità MODIFICA (carica prodotto esistente)
- * - Se l'URL contiene 'new': modalità CREAZIONE (form vuoto)
+ * Modes:
+ * - If the URL contains a numeric ID: EDIT mode (loads the existing product)
+ * - If the URL contains 'new': CREATE mode (empty form)
  */
 @Component({
   selector: 'app-product-form',
@@ -33,27 +33,27 @@ import { Product, CreateProductRequest, UpdateProductRequest } from '../../model
   styleUrl: './product-form.scss'
 })
 export class ProductFormComponent implements OnInit {
-  // FormGroup che gestisce tutti i campi del form e la loro validazione
+  // FormGroup that manages all form fields and their validation
   productForm: FormGroup;
 
-  // Signal che indica se siamo in modalità modifica (true) o creazione (false)
+  // Signal indicating whether we're in edit mode (true) or create mode (false)
   isEdit = signal(false);
 
-  // Signal che contiene l'ID del prodotto in modifica (null se in creazione)
+  // Signal holding the ID of the product being edited (null if creating)
   productId = signal<number | null>(null);
 
-  // Signal per gestire lo stato di caricamento
+  // Signal for the loading state
   loading = signal(false);
 
-  // Signal per gestire messaggi di errore
+  // Signal for error messages
   error = signal<string | null>(null);
 
   /**
-   * Costruttore
-   * @param fb - FormBuilder per costruire il form reattivo
-   * @param productService - Servizio per le operazioni sui prodotti
-   * @param route - ActivatedRoute per leggere i parametri dall'URL
-   * @param router - Router per la navigazione programmatica
+   * Constructor
+   * @param fb - FormBuilder for building the reactive form
+   * @param productService - Service for product operations
+   * @param route - ActivatedRoute for reading URL parameters
+   * @param router - Router for programmatic navigation
    */
   constructor(
     private fb: FormBuilder,
@@ -61,42 +61,42 @@ export class ProductFormComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router
   ) {
-    // Inizializza il form con validatori
+    // Initializes the form with validators
     this.productForm = this.fb.group({
       name: ['', [
-        Validators.required,           // Campo obbligatorio
-        Validators.minLength(1),       // Minimo 1 carattere
-        Validators.maxLength(100)      // Massimo 100 caratteri
+        Validators.required,           // Required field
+        Validators.minLength(1),       // Minimum 1 character
+        Validators.maxLength(100)      // Maximum 100 characters
       ]],
       price: [0, [
-        Validators.required,           // Campo obbligatorio
-        Validators.min(0.01)           // Deve essere maggiore di 0
+        Validators.required,           // Required field
+        Validators.min(0.01)           // Must be greater than 0
       ]],
       description: ['', [
-        Validators.maxLength(500)      // Massimo 500 caratteri
+        Validators.maxLength(500)      // Maximum 500 characters
       ]],
-      isActive: [true]                 // Default: attivo
+      isActive: [true]                 // Default: active
     });
   }
 
   /**
-   * Lifecycle hook eseguito all'inizializzazione del componente
-   * Determina se siamo in modalità modifica o creazione basandosi sull'URL
+   * Lifecycle hook run when the component is initialized
+   * Determines whether we're in edit or create mode based on the URL
    */
   ngOnInit(): void {
     const id = this.route.snapshot.params['id'];
     if (id && id !== 'new') {
-      // Modalità MODIFICA: ID numerico presente nell'URL
+      // EDIT mode: numeric ID present in the URL
       this.productId.set(parseInt(id));
       this.isEdit.set(true);
       this.loadProduct();
     }
-    // Altrimenti: modalità CREAZIONE (form rimane vuoto)
+    // Otherwise: CREATE mode (form stays empty)
   }
 
   /**
-   * Carica i dati del prodotto da modificare
-   * Popola il form con i dati esistenti del prodotto
+   * Loads the data of the product being edited
+   * Populates the form with the product's existing data
    */
   loadProduct(): void {
     const id = this.productId();
@@ -107,7 +107,7 @@ export class ProductFormComponent implements OnInit {
 
     this.productService.getProductById(id).subscribe({
       next: (product) => {
-        // Popola il form con i dati del prodotto esistente
+        // Populates the form with the existing product data
         this.productForm.patchValue({
           name: product.name,
           price: product.price,
@@ -117,21 +117,21 @@ export class ProductFormComponent implements OnInit {
         this.loading.set(false);
       },
       error: (error) => {
-        this.error.set('Impossibile caricare il prodotto: ' + error.message);
+        this.error.set('Unable to load the product: ' + error.message);
         this.loading.set(false);
-        console.error('Errore nel caricamento del prodotto:', error);
+        console.error('Error loading product:', error);
       }
     });
   }
 
   /**
-   * Gestisce il submit del form
-   * Valida i dati e chiama il servizio appropriato (create o update)
+   * Handles the form submit
+   * Validates the data and calls the appropriate service (create or update)
    */
   onSubmit(): void {
     if (this.productForm.invalid) {
-      // Se il form non è valido, marca tutti i campi come "toccati"
-      // per mostrare tutti gli errori di validazione
+      // If the form is invalid, mark all fields as "touched"
+      // to display all validation errors
       this.markAllFieldsAsTouched();
       return;
     }
@@ -142,7 +142,7 @@ export class ProductFormComponent implements OnInit {
     const formValue = this.productForm.value;
 
     if (this.isEdit()) {
-      // MODALITÀ MODIFICA: Aggiorna prodotto esistente
+      // EDIT MODE: Update the existing product
       const updateRequest: UpdateProductRequest = {
         name: formValue.name,
         price: formValue.price,
@@ -153,17 +153,17 @@ export class ProductFormComponent implements OnInit {
       this.productService.updateProduct(this.productId()!, updateRequest).subscribe({
         next: (product) => {
           this.loading.set(false);
-          // Naviga alla lista prodotti dopo il successo
+          // Navigates back to the product list on success
           this.router.navigate(['/products']);
         },
         error: (error) => {
-          this.error.set('Impossibile aggiornare il prodotto: ' + error.message);
+          this.error.set('Unable to update the product: ' + error.message);
           this.loading.set(false);
-          console.error('Errore nell\'aggiornamento del prodotto:', error);
+          console.error('Error updating product:', error);
         }
       });
     } else {
-      // MODALITÀ CREAZIONE: Crea nuovo prodotto
+      // CREATE MODE: Create a new product
       const createRequest: CreateProductRequest = {
         name: formValue.name,
         price: formValue.price,
@@ -173,29 +173,29 @@ export class ProductFormComponent implements OnInit {
       this.productService.createProduct(createRequest).subscribe({
         next: (product) => {
           this.loading.set(false);
-          // Naviga alla lista prodotti dopo il successo
+          // Navigates back to the product list on success
           this.router.navigate(['/products']);
         },
         error: (error) => {
-          this.error.set('Impossibile creare il prodotto: ' + error.message);
+          this.error.set('Unable to create the product: ' + error.message);
           this.loading.set(false);
-          console.error('Errore nella creazione del prodotto:', error);
+          console.error('Error creating product:', error);
         }
       });
     }
   }
 
   /**
-   * Gestisce il click sul pulsante Annulla
-   * Torna alla lista prodotti senza salvare
+   * Handles the click on the Cancel button
+   * Returns to the product list without saving
    */
   onCancel(): void {
     this.router.navigate(['/products']);
   }
 
   /**
-   * Marca tutti i campi del form come "toccati"
-   * Utile per mostrare tutti gli errori di validazione al submit
+   * Marks all form fields as "touched"
+   * Useful for showing all validation errors on submit
    */
   private markAllFieldsAsTouched(): void {
     Object.keys(this.productForm.controls).forEach(key => {
@@ -204,51 +204,51 @@ export class ProductFormComponent implements OnInit {
   }
 
   /**
-   * Ottiene il messaggio di errore per un campo specifico
+   * Gets the error message for a specific field
    *
-   * Analizza gli errori di validazione e restituisce un messaggio leggibile.
-   * Supporta: required, minlength, maxlength, min
+   * Inspects validation errors and returns a readable message.
+   * Supports: required, minlength, maxlength, min
    *
-   * @param fieldName - Nome del campo da verificare
-   * @returns Messaggio di errore o null se il campo è valido
+   * @param fieldName - Name of the field to check
+   * @returns Error message, or null if the field is valid
    */
   getFieldError(fieldName: string): string | null {
     const field = this.productForm.get(fieldName);
     if (field && field.invalid && (field.dirty || field.touched)) {
       if (field.errors?.['required']) {
-        return `${this.getFieldDisplayName(fieldName)} è obbligatorio`;
+        return `${this.getFieldDisplayName(fieldName)} is required`;
       }
       if (field.errors?.['minlength']) {
-        return `${this.getFieldDisplayName(fieldName)} deve contenere almeno ${field.errors['minlength'].requiredLength} carattere/i`;
+        return `${this.getFieldDisplayName(fieldName)} must be at least ${field.errors['minlength'].requiredLength} character(s)`;
       }
       if (field.errors?.['maxlength']) {
-        return `${this.getFieldDisplayName(fieldName)} non può superare ${field.errors['maxlength'].requiredLength} caratteri`;
+        return `${this.getFieldDisplayName(fieldName)} cannot exceed ${field.errors['maxlength'].requiredLength} characters`;
       }
       if (field.errors?.['min']) {
-        return `${this.getFieldDisplayName(fieldName)} deve essere maggiore di ${field.errors['min'].min}`;
+        return `${this.getFieldDisplayName(fieldName)} must be greater than ${field.errors['min'].min}`;
       }
     }
     return null;
   }
 
   /**
-   * Converte il nome tecnico del campo in un nome visualizzabile
-   * @param fieldName - Nome tecnico del campo (es. 'name', 'price')
-   * @returns Nome visualizzabile in italiano (es. 'Nome', 'Prezzo')
+   * Converts the technical field name into a display name
+   * @param fieldName - Technical field name (e.g. 'name', 'price')
+   * @returns Display name (e.g. 'Name', 'Price')
    */
   private getFieldDisplayName(fieldName: string): string {
     const displayNames: { [key: string]: string } = {
-      name: 'Nome',
-      price: 'Prezzo',
-      description: 'Descrizione'
+      name: 'Name',
+      price: 'Price',
+      description: 'Description'
     };
     return displayNames[fieldName] || fieldName;
   }
 
   /**
-   * Verifica se un campo è invalido e deve mostrare l'errore
-   * @param fieldName - Nome del campo da verificare
-   * @returns true se il campo è invalido e stato toccato/modificato
+   * Checks whether a field is invalid and should display its error
+   * @param fieldName - Name of the field to check
+   * @returns true if the field is invalid and has been touched/modified
    */
   isFieldInvalid(fieldName: string): boolean {
     const field = this.productForm.get(fieldName);

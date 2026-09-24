@@ -29,7 +29,7 @@ public class AddressesController : ControllerBase
     }
 
     /// <summary>
-    /// Ottieni tutti gli indirizzi dell'utente
+    /// Get all of the user's addresses
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(List<AddressDto>), StatusCodes.Status200OK)]
@@ -50,7 +50,7 @@ public class AddressesController : ControllerBase
     }
 
     /// <summary>
-    /// Ottieni indirizzo per ID
+    /// Get address by ID
     /// </summary>
     [HttpGet("{addressId:guid}")]
     [ProducesResponseType(typeof(AddressDto), StatusCodes.Status200OK)]
@@ -74,7 +74,7 @@ public class AddressesController : ControllerBase
     }
 
     /// <summary>
-    /// Crea nuovo indirizzo
+    /// Create a new address
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(AddressDto), StatusCodes.Status201Created)]
@@ -86,7 +86,7 @@ public class AddressesController : ControllerBase
             return Forbid();
         }
 
-        // Se è default, rimuovi default dagli altri
+        // If this is the default, clear the default flag on the others
         if (request.IsDefault)
         {
             await RemoveDefaultFlag(userId, request.Type);
@@ -110,12 +110,12 @@ public class AddressesController : ControllerBase
         _context.Addresses.Add(address);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Indirizzo creato per utente {UserId}", userId);
+        _logger.LogInformation("Address created for user {UserId}", userId);
         return CreatedAtAction(nameof(GetAddress), new { userId, addressId = address.Id }, MapToDto(address));
     }
 
     /// <summary>
-    /// Aggiorna indirizzo
+    /// Update address
     /// </summary>
     [HttpPut("{addressId:guid}")]
     [ProducesResponseType(typeof(AddressDto), StatusCodes.Status200OK)]
@@ -157,12 +157,12 @@ public class AddressesController : ControllerBase
         address.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Indirizzo {AddressId} aggiornato per utente {UserId}", addressId, userId);
+        _logger.LogInformation("Address {AddressId} updated for user {UserId}", addressId, userId);
         return Ok(MapToDto(address));
     }
 
     /// <summary>
-    /// Elimina indirizzo
+    /// Delete address
     /// </summary>
     [HttpDelete("{addressId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -185,12 +185,12 @@ public class AddressesController : ControllerBase
         _context.Addresses.Remove(address);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Indirizzo {AddressId} eliminato per utente {UserId}", addressId, userId);
+        _logger.LogInformation("Address {AddressId} deleted for user {UserId}", addressId, userId);
         return NoContent();
     }
 
     /// <summary>
-    /// Imposta indirizzo come default
+    /// Set address as default
     /// </summary>
     [HttpPost("{addressId:guid}/set-default")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -214,7 +214,7 @@ public class AddressesController : ControllerBase
         address.IsDefault = true;
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "Indirizzo impostato come default" });
+        return Ok(new { message = "Address set as default" });
     }
 
     private async Task<bool> CanAccessUser(Guid userId)

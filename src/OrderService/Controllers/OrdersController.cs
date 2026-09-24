@@ -5,13 +5,13 @@ using OrderService.Application.Services;
 using OrderService.Domain.Aggregates;
 using OrderService.Domain.Exceptions;
 
-// ── DTOs per mantenere il contratto API identico ──
+// ── DTOs to keep the API contract identical ──
 public record OrderDto(int Id, DateTime CreatedAt, string Status, decimal Total, List<OrderItemResponseDto> Items);
 public record OrderItemResponseDto(int Id, int OrderId, Guid ProductId, int Quantity, decimal UnitPrice);
 
 /// <summary>
-/// Controller thin per le query sugli ordini (read-side).
-/// Delega interamente all'Application Service — nessuna logica di business qui.
+/// Thin controller for order queries (read-side).
+/// Delegates entirely to the Application Service — no business logic here.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -47,9 +47,9 @@ public class OrdersController : ControllerBase
 }
 
 /// <summary>
-/// Controller thin per i comandi sugli ordini (write-side).
-/// L'orchestrazione (persistenza + evento Kafka) è nell'Application Service.
-/// Le regole di business (invarianti, transizioni di stato) sono nel Domain layer.
+/// Thin controller for order commands (write-side).
+/// Orchestration (persistence + Kafka event) lives in the Application Service.
+/// Business rules (invariants, state transitions) live in the Domain layer.
 /// </summary>
 [ApiController]
 [Route("api/commands")]

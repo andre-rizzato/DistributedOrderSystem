@@ -1,16 +1,16 @@
 namespace OrderService.Domain.SeedWork;
 
 /// <summary>
-/// Classe base per gli Aggregate Root.
-/// Gestisce la raccolta e il dispatching degli eventi di dominio.
-/// Solo gli Aggregate Root possono essere persistiti direttamente tramite i Repository.
+/// Base class for Aggregate Roots.
+/// Handles collecting and dispatching domain events.
+/// Only Aggregate Roots can be persisted directly through Repositories.
 /// </summary>
 public abstract class AggregateRoot : Entity
 {
     private readonly List<IDomainEvent> _domainEvents = new();
 
     /// <summary>
-    /// Eventi di dominio accumulati, da dispatchare dopo la persistenza.
+    /// Accumulated domain events, to be dispatched after persistence.
     /// </summary>
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
