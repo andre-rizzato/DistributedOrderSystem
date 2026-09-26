@@ -33,18 +33,22 @@ public class PythonAgentChatbotService : IChatbotService
         _logger = logger;
     }
 
-    public async Task<ChatResponse> ProcessMessageAsync(ChatRequest request, UserContext? userContext = null)
+    public async Task<ChatResponse> ProcessMessageAsync(ChatRequest request, UserContext? userContext = null, CancellationToken ct = default)
     {
         var session = await CreateOrGetSessionAsync(request.SessionId, userContext);
 
         AgentResponseDto? agentResponse;
         try
         {
+            // Propagate the caller's CancellationToken (ultimately the browser's request,
+            // via GatewayBff) so a client giving up cancels this call immediately instead of
+            // it only ever dying via its own 30s HttpClient.Timeout (see Program.cs).
             var httpResponse = await _httpClient.PostAsJsonAsync(
                 "/agent/message",
-                new AgentRequestDto { Message = request.Message, SessionId = session.SessionId });
+                new AgentRequestDto { Message = request.Message, SessionId = session.SessionId },
+                ct);
             httpResponse.EnsureSuccessStatusCode();
-            agentResponse = await httpResponse.Content.ReadFromJsonAsync<AgentResponseDto>();
+            agentResponse = await httpResponse.Content.ReadFromJsonAsync<AgentResponseDto>(cancellationToken: ct);
         }
         catch (Exception ex)
         {

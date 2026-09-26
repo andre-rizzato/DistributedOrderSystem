@@ -4,7 +4,7 @@ using ChatbotService.Models;
 
 public interface IChatbotService
 {
-    Task<ChatResponse> ProcessMessageAsync(ChatRequest request, UserContext? userContext = null);
+    Task<ChatResponse> ProcessMessageAsync(ChatRequest request, UserContext? userContext = null, CancellationToken ct = default);
     Task<string> GenerateResponseAsync(Intent intent, UserContext? userContext, Dictionary<string, string> parameters);
     Task SaveChatHistoryAsync(string sessionId, string userMessage, string botResponse, string intent, float confidence, string? userId = null);
     Task<List<ChatMessage>> GetChatHistoryAsync(string sessionId, int limit = 10);
