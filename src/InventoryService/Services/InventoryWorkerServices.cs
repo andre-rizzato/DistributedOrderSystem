@@ -30,7 +30,7 @@ public class InventoryWorkerService : IInventoryWorkerService
             return false;
         }
         var newQuantity = item.AvailableQuantity + delta;
-        if (newQuantity <= 0)
+        if (newQuantity < 0)
         {
             _logger.LogWarning("Insufficient inventory for product {ProductId}. Requested adjustment: {Delta}, Available: {AvailableQuantity}", productId, delta, item.AvailableQuantity);
             return false;

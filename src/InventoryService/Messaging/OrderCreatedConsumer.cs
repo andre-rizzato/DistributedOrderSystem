@@ -132,34 +132,23 @@ public class OrderCreatedConsumer : BackgroundService
 
         using var scope = _serviceProvider.CreateScope();
         var inventoryService = scope.ServiceProvider.GetRequiredService<IInventoryWorkerService>();
+        var eventProducer = scope.ServiceProvider.GetRequiredService<IInventoryEventProducer>();
 
-        // Update inventory for each item in the order
+        // Saga participant: reserve stock for every line item, all-or-nothing for this order.
+        // A technical failure (DB unreachable, etc.) still throws so the message is redelivered.
+        // "Insufficient stock" is a business outcome, not a technical one - it stops the loop,
+        // rolls back whatever was already reserved for this same order, and reports failure back
+        // to OrderService instead of leaving a half-decremented order with no compensation.
+        var reserved = new List<(Guid ProductId, int Quantity)>();
+        string? failureReason = null;
+
         foreach (var item in orderEvent.Items)
         {
+            var productId = Guid.Parse(item.ProductId);
+            bool success;
             try
             {
-                // Reduce inventory by the ordered quantity (negative delta)
-                var success = await inventoryService.AdjustInventoryQuantityAsync(
-                    Guid.Parse(item.ProductId),
-                    -item.Quantity,
-                    ct);
-
-                if (success)
-                {
-                    _logger.LogInformation(
-                        "Reduced inventory for Product {ProductId} by {Quantity} units (Order {OrderId})",
-                        item.ProductId,
-                        item.Quantity,
-                        orderEvent.OrderId);
-                }
-                else
-                {
-                    _logger.LogWarning(
-                        "Unable to reduce inventory for Product {ProductId} by {Quantity} units (Order {OrderId}) - insufficient inventory or product not found",
-                        item.ProductId,
-                        item.Quantity,
-                        orderEvent.OrderId);
-                }
+                success = await inventoryService.AdjustInventoryQuantityAsync(productId, -item.Quantity, ct);
             }
             catch (Exception ex)
             {
@@ -169,7 +158,58 @@ public class OrderCreatedConsumer : BackgroundService
                     orderEvent.OrderId);
                 throw; // Rethrow to prevent commit - the message will be reprocessed
             }
+
+            if (success)
+            {
+                reserved.Add((productId, item.Quantity));
+                _logger.LogInformation(
+                    "Reduced inventory for Product {ProductId} by {Quantity} units (Order {OrderId})",
+                    item.ProductId, item.Quantity, orderEvent.OrderId);
+            }
+            else
+            {
+                failureReason = $"Insufficient inventory for product {item.ProductId}";
+                _logger.LogWarning(
+                    "Unable to reduce inventory for Product {ProductId} by {Quantity} units (Order {OrderId}) - insufficient inventory or product not found",
+                    item.ProductId, item.Quantity, orderEvent.OrderId);
+                break;
+            }
         }
+
+        if (failureReason is not null)
+        {
+            // Compensating action: undo every reservation already made for this order.
+            foreach (var (productId, quantity) in reserved)
+            {
+                var rolledBack = await inventoryService.AdjustInventoryQuantityAsync(productId, quantity, ct);
+                if (!rolledBack)
+                {
+                    _logger.LogError(
+                        "Rollback failed for Product {ProductId} (Order {OrderId}) - inventory may now be inconsistent and needs manual reconciliation",
+                        productId, orderEvent.OrderId);
+                }
+            }
+
+            await eventProducer.PublishReservationResultAsync(new InventoryReservationResultEvent
+            {
+                OrderId = orderEvent.OrderId,
+                Success = false,
+                Reason = failureReason,
+                ProcessedAt = DateTime.UtcNow
+            }, ct);
+
+            _logger.LogWarning(
+                "Inventory reservation failed for Order {OrderId}: {Reason}. Rolled back {Count} already-reserved item(s).",
+                orderEvent.OrderId, failureReason, reserved.Count);
+            return; // Handled (a business outcome, not a fault) - commit the offset.
+        }
+
+        await eventProducer.PublishReservationResultAsync(new InventoryReservationResultEvent
+        {
+            OrderId = orderEvent.OrderId,
+            Success = true,
+            ProcessedAt = DateTime.UtcNow
+        }, ct);
 
         _logger.LogInformation(
             "Completed inventory updates for Order {OrderId}",
