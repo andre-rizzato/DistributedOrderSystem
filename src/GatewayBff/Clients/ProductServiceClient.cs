@@ -59,4 +59,66 @@ public class ProductServiceClient : IProductServiceClient
 
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<List<ProductDto>> SearchProductsAsync(string? searchTerm, string? category, decimal? minPrice, decimal? maxPrice, CancellationToken ct)
+    {
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(searchTerm)) query.Add($"searchTerm={Uri.EscapeDataString(searchTerm)}");
+        if (!string.IsNullOrWhiteSpace(category)) query.Add($"category={Uri.EscapeDataString(category)}");
+        if (minPrice.HasValue) query.Add($"minPrice={minPrice.Value}");
+        if (maxPrice.HasValue) query.Add($"maxPrice={maxPrice.Value}");
+
+        var url = "api/products/search" + (query.Count > 0 ? $"?{string.Join("&", query)}" : string.Empty);
+        return await _http.GetFromJsonAsync<List<ProductDto>>(url, ct) ?? new();
+    }
+
+    public async Task<List<ProductDto>> GetFeaturedProductsAsync(int count, CancellationToken ct) =>
+        await _http.GetFromJsonAsync<List<ProductDto>>($"api/products/featured?count={count}", ct) ?? new();
+
+    public async Task<List<ProductDto>> GetBestsellersAsync(int count, CancellationToken ct) =>
+        await _http.GetFromJsonAsync<List<ProductDto>>($"api/products/bestsellers?count={count}", ct) ?? new();
+
+    public async Task<List<ProductDto>> GetRecommendedProductsAsync(int count, CancellationToken ct) =>
+        await _http.GetFromJsonAsync<List<ProductDto>>($"api/products/recommended?count={count}", ct) ?? new();
+
+    public async Task<List<ProductDto>?> GetRelatedProductsAsync(Guid productId, int count, CancellationToken ct)
+    {
+        var response = await _http.GetAsync($"api/products/{productId}/related?count={count}", ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<List<ProductDto>>(ct) ?? new();
+    }
+
+    public async Task<List<ProductDto>> GetProductsByCategoryAsync(string category, CancellationToken ct) =>
+        await _http.GetFromJsonAsync<List<ProductDto>>($"api/categories/{Uri.EscapeDataString(category)}/products", ct) ?? new();
+
+    public async Task<List<string>> GetCategoriesAsync(CancellationToken ct) =>
+        await _http.GetFromJsonAsync<List<string>>("api/categories", ct) ?? new();
+
+    public async Task<List<string>> GetBrandsAsync(CancellationToken ct) =>
+        await _http.GetFromJsonAsync<List<string>>("api/products/brands", ct) ?? new();
+
+    public async Task<List<ReviewDto>?> GetProductReviewsAsync(Guid productId, CancellationToken ct)
+    {
+        var response = await _http.GetAsync($"api/products/{productId}/reviews", ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<List<ReviewDto>>(ct) ?? new();
+    }
+
+    public async Task<ReviewDto?> AddProductReviewAsync(Guid productId, int rating, string comment, string reviewerName, CancellationToken ct)
+    {
+        var payload = new { Rating = rating, Comment = comment, ReviewerName = reviewerName };
+        var response = await _http.PostAsJsonAsync($"api/products/{productId}/reviews", payload, ct);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<ReviewDto>(ct);
+    }
 }
