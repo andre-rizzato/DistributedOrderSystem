@@ -72,6 +72,22 @@ public class CommandsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("catalog/{id:guid}/reviews")]
+    public async Task<ActionResult<ReviewDto>> AddProductReview(
+        Guid id,
+        [FromBody] AddReviewRequest request,
+        CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _mediator.Send(new AddProductReviewCommand(id, request.Rating, request.Comment, request.ReviewerName), ct);
+        if (result is null)
+            return NotFound($"Product with ID {id} not found");
+
+        return Ok(result);
+    }
+
     [HttpDelete("products/{id:guid}")]
     public async Task<ActionResult> DeleteProduct(Guid id, CancellationToken ct)
     {
@@ -122,6 +138,7 @@ public class CommandsController : ControllerBase
 
 
 public record CreateProductRequest(string Name, decimal Price, string? Description);
+public record AddReviewRequest(int Rating, string Comment, string ReviewerName);
 public record UpdateProductRequest(string Name, decimal Price, string? Description, bool IsActive);
 public record AdjustInventoryRequest(Guid ProductId, int Delta);
 public record SetInventoryRequest(Guid ProductId, int Quantity);
