@@ -114,4 +114,23 @@ public class OrderCommandsController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
+
+    public record CancelOrderResponse(int OrderId, bool IsCanceled);
+
+    [HttpPut("orders/{id:int}/cancel")]
+    public async Task<ActionResult<CancelOrderResponse>> CancelOrder(int id, CancellationToken ct)
+    {
+        try
+        {
+            var canceled = await _appService.CancelOrderAsync(id, ct);
+            if (canceled is null)
+                return NotFound($"Order {id} not found");
+
+            return Ok(new CancelOrderResponse(id, canceled.Value));
+        }
+        catch (OrderDomainException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }

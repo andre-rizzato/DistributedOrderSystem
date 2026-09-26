@@ -1,37 +1,20 @@
 namespace GatewayBff.Queries;
 
 using MediatR;
+using GatewayBff.Clients;
 using GatewayBff.Contracts;
 
 public record GetOrderByIdQuery(int OrderId) : IRequest<OrderDto?>;
 
 public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, OrderDto?>
 {
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<GetOrderByIdQueryHandler> _logger;
+    private readonly IOrderServiceClient _orders;
 
-    public GetOrderByIdQueryHandler(
-        IHttpClientFactory httpClientFactory,
-        ILogger<GetOrderByIdQueryHandler> logger)
+    public GetOrderByIdQueryHandler(IOrderServiceClient orders)
     {
-        _httpClient = httpClientFactory.CreateClient("OrderService");
-        _logger = logger;
+        _orders = orders;
     }
 
-    public async Task<OrderDto?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Retrieving order {OrderId}", request.OrderId);
-
-        var response = await _httpClient.GetAsync($"api/orders/{request.OrderId}", cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogWarning("Order {OrderId} not found", request.OrderId);
-            return null;
-        }
-        
-        var order = await response.Content.ReadFromJsonAsync<OrderDto>(cancellationToken);
-        
-        return order;
-    }
+    public Task<OrderDto?> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken) =>
+        _orders.GetOrderAsync(request.OrderId, cancellationToken);
 }

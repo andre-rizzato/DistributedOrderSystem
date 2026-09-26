@@ -15,8 +15,9 @@ class AgentState(TypedDict):
     order_number: Optional[str]
     confidence: Optional[float]
 
-    # filled in by whichever worker ran (today only order_info_agent_node is real)
+    # filled in by whichever worker ran (order_info_agent_node and cancel_order_agent_node are real)
     order_data: Optional[dict]
+    cancel_result: Optional[dict]
 
     # filled in by generate_reply_node or clarify_node - this is what goes back to C#
     final_reply: Optional[str]

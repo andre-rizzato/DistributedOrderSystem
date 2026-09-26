@@ -1,8 +1,8 @@
 # src/AgentService/graph.py
 # Order Orchestrator Agent - the LangGraph graph from Week 10. Skeleton
 # agreed with Andre before writing it: Orchestrator (classify_intent)
-# + conditional-edge routing (route_by_confidence) + 1 real worker
-# (order_info_agent) + 4 stub workers (cancel/create/update/product_info),
+# + conditional-edge routing (route_by_confidence) + 2 real workers
+# (order_info_agent, cancel_order_agent) + 3 stub workers (create/update/product_info),
 # all converging on generate_reply or ending directly at END.
 #
 # Week 10 principle (verification question answered): the routing
@@ -12,7 +12,7 @@
 from anthropic import Anthropic
 from langgraph.graph import END, START, StateGraph
 
-from gateway_client import get_order_by_id
+from gateway_client import cancel_order_by_id, get_order_by_id
 from intent_classifier import classify_intent_node
 from state import AgentState
 
@@ -20,17 +20,19 @@ anthropic_client = Anthropic()
 
 
 def order_info_agent_node(state: AgentState) -> dict:
-    # The only worker with a real body today - the others only get a
-    # real GatewayBff endpoint once one exists (Create/Cancel/Update).
     order_number = state.get("order_number")
     data = get_order_by_id(order_number) if order_number else None
     print(f"  [NODE order_info_agent] order_number={order_number} -> order_data={data}")
     return {"order_data": data}
 
 
-def cancel_stub_node(state: AgentState) -> dict:
-    print("  [NODE cancel_stub] (stub - no real GatewayBff endpoint yet)")
-    return {"final_reply": "Cancelling orders through the assistant isn't available yet - please contact human support."}
+def cancel_order_agent_node(state: AgentState) -> dict:
+    # Real worker, same shape as order_info_agent_node: routing already
+    # guarantees order_number is set before this node runs.
+    order_number = state.get("order_number")
+    result = cancel_order_by_id(order_number) if order_number else None
+    print(f"  [NODE cancel_order_agent] order_number={order_number} -> cancel_result={result}")
+    return {"cancel_result": result}
 
 
 def create_stub_node(state: AgentState) -> dict:
@@ -57,11 +59,25 @@ def generate_reply_node(state: AgentState) -> dict:
     # Grounding (same principle as Weeks 3-4): the LLM only formats what's
     # already in the state, it never makes up a policy or data it wasn't given.
     data = state.get("order_data")
+    cancel_result = state.get("cancel_result")
     order_number = state.get("order_number")
-    print(f"  [NODE generate_reply] order_data={'present' if data else 'absent'}, order_number={order_number}")
+    print(
+        f"  [NODE generate_reply] order_data={'present' if data else 'absent'}, "
+        f"cancel_result={'present' if cancel_result else 'absent'}, order_number={order_number}"
+    )
 
-    if data is not None:
+    if cancel_result is not None:
+        if cancel_result.get("isCanceled"):
+            context = f"Order {order_number} was successfully canceled: {cancel_result}"
+        else:
+            context = (
+                f"Order {order_number} could NOT be canceled (e.g. it may already be "
+                f"shipped, delivered, or already canceled): {cancel_result}"
+            )
+    elif data is not None:
         context = f"Real data for the order looked up in the system: {data}"
+    elif order_number and state.get("intent") == "cancel_order":
+        context = f"Order number {order_number} was not found in the system, so it could not be canceled."
     elif order_number:
         context = f"Order number {order_number} was not found in the system."
     else:
@@ -93,7 +109,7 @@ def route_by_confidence(state: AgentState) -> str:
     if confidence is None or confidence <= 0.70:
         destination = "clarify"
     elif intent == "cancel_order":
-        destination = "cancel_stub"
+        destination = "cancel_order_agent" if state.get("order_number") else "clarify"
     elif intent == "create_order":
         destination = "create_stub"
     elif intent == "update_order":
@@ -114,7 +130,7 @@ def build_graph():
 
     graph.add_node("classify_intent", classify_intent_node)
     graph.add_node("order_info_agent", order_info_agent_node)
-    graph.add_node("cancel_stub", cancel_stub_node)
+    graph.add_node("cancel_order_agent", cancel_order_agent_node)
     graph.add_node("create_stub", create_stub_node)
     graph.add_node("update_stub", update_stub_node)
     graph.add_node("product_info_stub", product_info_stub_node)
@@ -129,7 +145,7 @@ def build_graph():
         {
             "clarify": "clarify",
             "order_info": "order_info_agent",
-            "cancel_stub": "cancel_stub",
+            "cancel_order_agent": "cancel_order_agent",
             "create_stub": "create_stub",
             "update_stub": "update_stub",
             "product_info_stub": "product_info_stub",
@@ -138,9 +154,9 @@ def build_graph():
     )
 
     graph.add_edge("order_info_agent", "generate_reply")
+    graph.add_edge("cancel_order_agent", "generate_reply")
     graph.add_edge("generate_reply", END)
     graph.add_edge("clarify", END)
-    graph.add_edge("cancel_stub", END)
     graph.add_edge("create_stub", END)
     graph.add_edge("update_stub", END)
     graph.add_edge("product_info_stub", END)

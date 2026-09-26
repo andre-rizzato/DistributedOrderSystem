@@ -1,7 +1,7 @@
 namespace OrderService.Domain.Exceptions;
 
 /// <summary>
-/// Eccezione lanciata quando un invariante di dominio viene violato.
+/// Thrown when a domain invariant is violated.
 /// </summary>
 public class OrderDomainException : Exception
 {

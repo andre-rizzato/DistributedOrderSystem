@@ -1,35 +1,19 @@
 namespace GatewayBff.Commands;
 
+using GatewayBff.Clients;
 using MediatR;
 
 public record ClearCartCommand(string SessionId) : IRequest<bool>;
 
 public class ClearCartCommandHandler : IRequestHandler<ClearCartCommand, bool>
 {
-    private readonly IHttpClientFactory _clients;
-    private readonly ILogger<ClearCartCommandHandler> _logger;
+    private readonly ICustomerServiceClient _customer;
 
-    public ClearCartCommandHandler(IHttpClientFactory clients, ILogger<ClearCartCommandHandler> logger)
+    public ClearCartCommandHandler(ICustomerServiceClient customer)
     {
-        _clients = clients;
-        _logger = logger;
+        _customer = customer;
     }
 
-    public async Task<bool> Handle(ClearCartCommand request, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = _clients.CreateClient();
-            var response = await client.DeleteAsync(
-                $"http://localhost:5009/api/cart/{request.SessionId}",
-                cancellationToken);
-
-            return response.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error clearing cart");
-            return false;
-        }
-    }
+    public Task<bool> Handle(ClearCartCommand request, CancellationToken cancellationToken) =>
+        _customer.ClearCartAsync(request.SessionId, cancellationToken);
 }

@@ -1,6 +1,6 @@
 namespace GatewayBff.Queries;
 
-using System.Net.Http.Json;
+using GatewayBff.Clients;
 using GatewayBff.Contracts;
 using MediatR;
 
@@ -8,23 +8,22 @@ public record GetProductByIdQuery(Guid Id) : IRequest<CatalogItemDto?>;
 
 public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, CatalogItemDto?>
 {
-    private readonly IHttpClientFactory _clients;
+    private readonly IProductServiceClient _products;
+    private readonly IInventoryServiceClient _inventory;
     private readonly ILogger<GetProductByIdQueryHandler> _logger;
 
-    public GetProductByIdQueryHandler(IHttpClientFactory clients, ILogger<GetProductByIdQueryHandler> logger)
+    public GetProductByIdQueryHandler(IProductServiceClient products, IInventoryServiceClient inventory, ILogger<GetProductByIdQueryHandler> logger)
     {
-        _clients = clients;
+        _products = products;
+        _inventory = inventory;
         _logger = logger;
     }
 
     public async Task<CatalogItemDto?> Handle(GetProductByIdQuery request, CancellationToken ct)
     {
-        var productClient = _clients.CreateClient("ProductService");
-        var inventoryClient = _clients.CreateClient("InventoryService");
-
         try
         {
-            var product = await productClient.GetFromJsonAsync<ProductDto>($"api/products/{request.Id}", ct);
+            var product = await _products.GetProductAsync(request.Id, ct);
             if (product == null)
             {
                 _logger.LogWarning("Product {ProductId} not found", request.Id);
@@ -34,7 +33,7 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, C
             int availableQuantity = 0;
             try
             {
-                var inv = await inventoryClient.GetFromJsonAsync<InventoryDto>($"api/inventory/{product.Id}", ct);
+                var inv = await _inventory.GetInventoryAsync(product.Id, ct);
                 availableQuantity = inv?.AvailableQuantity ?? 0;
             }
             catch (Exception ex)
@@ -43,11 +42,11 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, C
             }
 
             return new CatalogItemDto(
-                product.Id, 
-                product.Name, 
-                product.Description, 
-                product.Price, 
-                product.IsActive, 
+                product.Id,
+                product.Name,
+                product.Description,
+                product.Price,
+                product.IsActive,
                 availableQuantity
             );
         }
@@ -57,7 +56,4 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, C
             return null;
         }
     }
-
-    private record ProductDto(Guid Id, string Name, string? Description, decimal Price, bool IsActive);
-    private record InventoryDto(Guid ProductId, int AvailableQuantity, int ReservedQuantity);
 }

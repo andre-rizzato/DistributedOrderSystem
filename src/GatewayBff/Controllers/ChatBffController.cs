@@ -1,6 +1,6 @@
 namespace GatewayBff.Controllers;
 
-using System.Net.Http.Json;
+using GatewayBff.Clients;
 using Microsoft.AspNetCore.Mvc;
 
 /// <summary>
@@ -27,12 +27,12 @@ using Microsoft.AspNetCore.Mvc;
 [Produces("application/json")]
 public class ChatBffController : ControllerBase
 {
-    private readonly IHttpClientFactory _clients;
+    private readonly IChatbotServiceClient _chatbot;
     private readonly ILogger<ChatBffController> _logger;
 
-    public ChatBffController(IHttpClientFactory clients, ILogger<ChatBffController> logger)
+    public ChatBffController(IChatbotServiceClient chatbot, ILogger<ChatBffController> logger)
     {
-        _clients = clients;
+        _chatbot = chatbot;
         _logger = logger;
     }
 
@@ -47,8 +47,7 @@ public class ChatBffController : ControllerBase
     [HttpGet("health")]
     public async Task<IActionResult> GetHealth(CancellationToken ct)
     {
-        var client = _clients.CreateClient("ChatbotService");
-        var response = await client.GetAsync("/api/chatwidget/health", ct);
+        var response = await _chatbot.GetHealthAsync(ct);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -72,12 +71,10 @@ public class ChatBffController : ControllerBase
     [HttpPost("message")]
     public async Task<IActionResult> SendMessage([FromBody] object request, CancellationToken ct)
     {
-        var client = _clients.CreateClient("ChatbotService");
-
         HttpResponseMessage response;
         try
         {
-            response = await client.PostAsJsonAsync("/api/chat/message", request, ct);
+            response = await _chatbot.SendMessageAsync(request, ct);
         }
         catch (Exception ex)
         {
