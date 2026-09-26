@@ -27,6 +27,13 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 // ── Infrastructure: Messaging (Kafka) ──
 builder.Services.AddSingleton<IOrderEventProducer, OrderEventProducer>();
 
+// Transactional outbox dispatcher: publishes OrderCreatedEvent rows written by
+// OrderApplicationService.CreateOrderAsync, with its own retry/poll loop.
+builder.Services.AddHostedService<OutboxDispatcherService>();
+
+// Saga participant: applies InventoryService's reservation outcome (Confirmed/Cancelled).
+builder.Services.AddHostedService<InventoryReservationResultConsumer>();
+
 // ── Application: Application service ──
 builder.Services.AddScoped<IOrderApplicationService, OrderApplicationService>();
 

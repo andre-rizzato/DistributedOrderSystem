@@ -3,6 +3,7 @@ namespace OrderService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using OrderService.Domain.Aggregates;
 using OrderService.Domain.ValueObjects;
+using OrderService.Infrastructure.Outbox;
 
 /// <summary>
 /// EF Core DbContext for the orders bounded context.
@@ -15,6 +16,7 @@ public class OrderContext : DbContext
 
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,6 +67,15 @@ public class OrderContext : DbContext
 
             entity.Property(e => e.Quantity);
             entity.Property(e => e.ProductId);
+        });
+
+        modelBuilder.Entity<OutboxMessage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Type).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Payload).IsRequired();
+            entity.Property(e => e.OccurredOnUtc).IsRequired();
+            entity.HasIndex(e => new { e.ProcessedOnUtc, e.OccurredOnUtc });
         });
     }
 }

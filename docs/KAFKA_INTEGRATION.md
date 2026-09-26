@@ -1,9 +1,11 @@
 # Kafka Integration for Asynchronous Inventory Updates
 
 > Updated to match the real code. The previous version of this document had `OrderCreatedEvent.OrderId`/`OrderItemEvent.ProductId` typed as `int`, `Acks.Leader` on the producer, and a single-listener Kafka config. Every discrepancy below was checked against the source directly. Note: as of 2026-09-24 all log messages across the codebase were translated from Italian to English — the log lines quoted in the [Observability](#observability) section below are current.
+>
+> **2026-09-26 update**: the publish-and-swallow-on-failure behavior and the "insufficient stock is committed silently, with no compensating action" behavior described below have both been replaced — OrderService now uses a transactional outbox to publish, and InventoryService now rolls back partial reservations and reports the outcome back to OrderService via a new `InventoryReservationResultEvent`, which OrderService uses to confirm or cancel the order. See `docs/SERVICE_COMMUNICATION_AND_CONSISTENCY.md` for the full design; this file is left in place for the parts that are still accurate (message shapes, dual-listener setup, testing guide) with the changed sections corrected below.
 
 ## Overview
-Kafka-based event-driven architecture that asynchronously updates inventory when orders are created. This keeps OrderService and InventoryService loosely coupled while still reaching eventual consistency.
+Kafka-based event-driven architecture that asynchronously updates inventory when orders are created. This keeps OrderService and InventoryService loosely coupled while still reaching eventual consistency, and (as of 2026-09-26) closes the loop with a compensating-transaction saga instead of leaving a partially-failed reservation with no follow-up.
 
 ## Architecture
 
@@ -11,16 +13,21 @@ Kafka-based event-driven architecture that asynchronously updates inventory when
 ```
 1. User creates order via Frontend / GatewayBff / any HTTP client
 2. Frontend → GatewayBff → OrderService (POST /api/commands/orders)
-3. OrderService saves the order to OrderDb (PostgreSQL)
-4. OrderService publishes OrderCreatedEvent to Kafka topic "order-created"
-   — if this publish fails, the order is still returned successfully to the caller
-     (see OrderApplicationService.CreateOrderAsync — the Kafka call is wrapped in
-     try/catch and only logged on failure, never rethrown to the controller)
+3. OrderService saves the order (status: Pending) AND an outbox row describing
+   OrderCreatedEvent, in one DB transaction (OrderRepository.AddAsync)
+4. OutboxDispatcherService (a BackgroundService, polling every 5s) picks up the
+   outbox row and publishes OrderCreatedEvent to Kafka topic "order-created" —
+   if Kafka is unreachable, the row just stays unprocessed and is retried on
+   the next poll (up to 5 attempts) instead of the event being lost
 5. InventoryService's OrderCreatedConsumer (a BackgroundService) consumes the event
-6. InventoryService reduces AvailableQuantity for each item — but see the
-   ⚠️ note under "InventoryService - Consumer" below: an insufficient-stock
-   result does NOT block the Kafka commit, only a thrown exception does
-7. InventoryService updates InventoryDb (PostgreSQL) and the Redis cache
+6. InventoryService reserves (decrements) AvailableQuantity for each item, all-or-nothing
+   per order — if any item can't be reserved, every item already reserved for that same
+   order is rolled back (see the corrected "InventoryService - Consumer" section below)
+7. InventoryService updates InventoryDb (PostgreSQL) and the Redis cache, then publishes
+   exactly one InventoryReservationResultEvent per order to topic
+   "inventory-reservation-result" (Success=true, or Success=false with a Reason)
+8. OrderService's InventoryReservationResultConsumer applies the outcome to the order:
+   Confirmed on success, Cancelled (a compensating action) on failure
 ```
 
 ## Components Implemented
@@ -102,17 +109,26 @@ var config = new ConsumerConfig
 };
 ```
 
-Real per-message flow:
+Real per-message flow (as of 2026-09-26 — see the update note at the top of this file):
 1. Consume message, log partition/offset.
 2. Deserialize `OrderCreatedEvent`.
 3. For each item in the event, call `AdjustInventoryQuantityAsync(Guid.Parse(item.ProductId), -item.Quantity)`:
-   - Returns `true` → logs success, loop continues.
-   - Returns `false` (item not found, or the adjustment would leave stock `<= 0` — see `INVENTORY_SERVICE_DOCUMENTATION.md` for the exact `<=` vs `<` detail) → logs a **warning**, loop continues.
-   - Throws → logs an **error**, then `throw;` propagates out of `ProcessMessageAsync`.
-4. If the foreach completes without an exception (even if some items logged step-3 warnings), the offset is committed and stored — the message is considered fully processed.
-5. If an exception propagated, the offset is **not** committed; the consumer loop catches it, waits 5 seconds, and the message is redelivered on the next poll.
+   - Returns `true` → logs success, item added to a `reserved` list, loop continues.
+   - Returns `false` (item not found, or insufficient stock — the reject condition is now `newQuantity < 0`, so reserving the exact last unit in stock is allowed, unlike before) → logs a **warning**, loop **stops** (`break`, not `continue`).
+   - Throws (a technical failure, e.g. DB unreachable) → logs an **error**, then `throw;` propagates out of `ProcessMessageAsync`, same as before.
+4. If step 3 stopped early on insufficient stock: every item in `reserved` (i.e. everything already decremented for this same order) is rolled back with a compensating `AdjustInventoryQuantityAsync(productId, +quantity)` call, then `InventoryReservationResultEvent { Success = false, Reason }` is published, and the method returns normally — the offset **is** committed (this is a handled business outcome, not a fault).
+5. If step 3 completed without stopping: `InventoryReservationResultEvent { Success = true }` is published, offset committed as before.
+6. If an exception propagated in step 3: the offset is **not** committed; the consumer loop catches it, waits 5 seconds, and the message is redelivered on the next poll — unchanged from before.
 
-⚠️ **The most important correction in this document**: an insufficient-stock result is a normal, committed outcome — it is not retried. Only a technical failure (e.g. the database being unreachable) blocks the commit and forces redelivery. If you're testing "what happens when stock runs out," expect a warning log and a moved-forward offset, not a stuck consumer.
+⚠️ **Correction to the previous version of this document**: insufficient stock is still a
+normal, committed outcome — it is still not retried by Kafka redelivery — but it is no
+longer silent. It now triggers a rollback of any partial reservation for the same order and
+a published `InventoryReservationResultEvent(Success=false)`, which OrderService consumes to
+cancel the order (see `docs/SERVICE_COMMUNICATION_AND_CONSISTENCY.md` §4b). If you're testing
+"what happens when stock runs out," expect: a warning log, a moved-forward offset, any other
+items in that same order rolled back, and the order itself transitioning to `Cancelled`
+shortly after (not immediately — it depends on `InventoryReservationResultConsumer`'s poll of
+that topic).
 
 ### 4. PaymentService — not part of this flow (yet)
 `appsettings.Development.json` for PaymentService already has Kafka settings scaffolded:
@@ -133,10 +149,13 @@ But `PaymentService/Program.cs` is still the unmodified ASP.NET template — the
 {
   "Kafka": {
     "BootstrapServers": "localhost:29092",
-    "OrderCreatedTopic": "order-created"
+    "OrderCreatedTopic": "order-created",
+    "InventoryReservationResultTopic": "inventory-reservation-result",
+    "ConsumerGroupId": "order-service"
   }
 }
 ```
+`InventoryReservationResultTopic`/`ConsumerGroupId` are new as of 2026-09-26 — consumed by `InventoryReservationResultConsumer`.
 
 ### InventoryService — `appsettings.Development.json`
 ```json
@@ -144,10 +163,12 @@ But `PaymentService/Program.cs` is still the unmodified ASP.NET template — the
   "Kafka": {
     "BootstrapServers": "localhost:29092",
     "OrderCreatedTopic": "order-created",
+    "InventoryReservationResultTopic": "inventory-reservation-result",
     "ConsumerGroupId": "inventory-service"
   }
 }
 ```
+`InventoryReservationResultTopic` is new as of 2026-09-26 — published by `InventoryEventProducer`.
 
 Both use `29092`, not `9092` — see the dual-listener explanation below. This is a value added this session; previously both files pointed at `9092`, which only works when the service itself is also running inside the Docker network.
 
@@ -187,9 +208,10 @@ kafka:
 ## Reliability & Guarantees — precisely, not generically
 
 - **At-least-once delivery for technical failures**: manual commit means a crash or exception mid-processing causes redelivery.
-- **No delivery guarantee beyond "committed" for business failures**: as detailed above, insufficient stock is logged and committed, not retried.
-- **Idempotent producer** (`EnableIdempotence = true`) prevents the *producer* from creating duplicate messages on retry — this says nothing about whether the *consumer's* effect (decrementing stock) is idempotent, and it currently is not guarded against reprocessing the same message twice after a technical-failure redelivery.
-- **Order creation never blocks on Kafka** — verified in `OrderApplicationService.CreateOrderAsync`.
+- **The publish side no longer loses events on a Kafka outage**: `OrderCreatedEvent` is now written to a transactional outbox table in the same DB transaction as the order (`OrderRepository.AddAsync`), and `OutboxDispatcherService` retries unprocessed rows (up to 5 attempts) instead of the previous inline publish-and-swallow. See `docs/SERVICE_COMMUNICATION_AND_CONSISTENCY.md` §4a.
+- **Business failures now trigger a compensating action, not silence**: insufficient stock is still committed (not redelivered) on the InventoryService side, but it now rolls back any partial reservation for the order and reports `Success=false` back to OrderService, which cancels the order. See §4b of the same document.
+- **Idempotent producer** (`EnableIdempotence = true`) prevents the *producer* from creating duplicate messages on retry — this says nothing about whether the *consumer's* effect (decrementing stock) is idempotent, and it currently is not guarded against reprocessing the same message twice after a technical-failure redelivery. This gap is unchanged by the outbox/saga work.
+- **Order creation never blocks on Kafka** — still true; `CreateOrderAsync` only writes to Postgres (order + outbox row), Kafka is only touched by the separate `OutboxDispatcherService` background loop.
 
 ## Observability
 
@@ -228,8 +250,10 @@ SASL/SCRAM or mTLS, TLS in transit, ACLs per topic, network isolation, security 
 The Kafka integration provides asynchronous inventory updates decoupled from order creation, with the caveats documented above:
 - ✅ Order creation never blocks on Kafka being reachable.
 - ✅ At-least-once delivery for technical failures via manual commit.
-- ⚠️ No retry for the business condition "insufficient stock" — that message is committed regardless.
-- ⚠️ Consumer-side idempotency is not explicitly guarded; only the producer is idempotent.
+- ✅ (as of 2026-09-26) The publish side is a transactional outbox — no event is lost to a Kafka outage at request time, only delayed.
+- ✅ (as of 2026-09-26) Insufficient stock is no longer a silent dead end — it rolls back any partial reservation and cancels the order via a compensating saga step.
+- ⚠️ No retry for the business condition "insufficient stock" — that message is still committed regardless (by design: it's a handled outcome, not a fault).
+- ⚠️ Consumer-side idempotency is not explicitly guarded; only the producer is idempotent. Unchanged by this update.
 - ⚠️ PaymentService is not part of this flow despite having Kafka settings scaffolded.
 
-Treat this as a working development-mode integration with known gaps, not a production-hardened pipeline — there's no dead-letter queue, no schema validation, no metrics/health endpoint for Kafka connectivity, and no authentication on the broker.
+Treat this as a working development-mode integration with known gaps, not a production-hardened pipeline — there's still no dead-letter queue, no schema validation, no metrics/health endpoint for Kafka connectivity, and no authentication on the broker. See `docs/SERVICE_COMMUNICATION_AND_CONSISTENCY.md` for the full design rationale, the saga diagram, and what's still open.

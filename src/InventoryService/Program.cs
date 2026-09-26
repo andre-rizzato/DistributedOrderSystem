@@ -44,6 +44,9 @@ builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafk
 builder.Services.AddSingleton<IInventoryCache, RedisInventoryCache>();
 builder.Services.AddScoped<IInventoryWorkerService, InventoryWorkerService>();
 
+// Kafka Producer (publishes the saga's compensating/confirming result back to OrderService)
+builder.Services.AddSingleton<IInventoryEventProducer, InventoryEventProducer>();
+
 // Kafka Consumer (Background Service)
 builder.Services.AddHostedService<OrderCreatedConsumer>();
 

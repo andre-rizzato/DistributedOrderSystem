@@ -1,9 +1,9 @@
 namespace OrderService.Application.Services;
 
+using System.Text.Json;
 using OrderService.Domain.Aggregates;
 using OrderService.Domain.Interfaces;
 using OrderService.Domain.ValueObjects;
-using OrderService.Infrastructure.Messaging;
 using Shared.Messages;
 
 /// <summary>
@@ -28,16 +28,13 @@ public interface IOrderApplicationService
 public class OrderApplicationService : IOrderApplicationService
 {
     private readonly IOrderRepository _repository;
-    private readonly IOrderEventProducer _eventProducer;
     private readonly ILogger<OrderApplicationService> _logger;
 
     public OrderApplicationService(
         IOrderRepository repository,
-        IOrderEventProducer eventProducer,
         ILogger<OrderApplicationService> logger)
     {
         _repository = repository;
-        _eventProducer = eventProducer;
         _logger = logger;
     }
 
@@ -54,31 +51,24 @@ public class OrderApplicationService : IOrderApplicationService
         // The Domain creates the aggregate (with invariants guaranteed by the factory method)
         var order = Order.Create(items);
 
-        // Persistence via repository
-        var created = await _repository.AddAsync(order, ct);
-
-        // Publish integration event to Kafka (asynchronous, fire-and-forget-safe)
-        try
-        {
-            var integrationEvent = new OrderCreatedEvent
+        // Persistence + outbox message in one atomic transaction (transactional outbox) -
+        // the event is durably queued in the same commit as the order, so it can no longer
+        // be silently lost the way an inline "publish and swallow on failure" could lose it
+        // if Kafka happened to be unreachable at this exact moment. OutboxDispatcherService
+        // is what actually publishes it to Kafka, with retries, on its own schedule.
+        var created = await _repository.AddAsync(order, o => (
+            nameof(OrderCreatedEvent),
+            JsonSerializer.Serialize(new OrderCreatedEvent
             {
-                OrderId = created.Id.ToString(),
-                CreatedAt = created.CreatedAt,
-                Items = created.Items.Select(i => new OrderItemEvent
+                OrderId = o.Id.ToString(),
+                CreatedAt = o.CreatedAt,
+                Items = o.Items.Select(i => new OrderItemEvent
                 {
                     ProductId = i.ProductId.ToString(),
                     Quantity = i.Quantity
                 }).ToList()
-            };
-
-            await _eventProducer.PublishOrderCreatedAsync(integrationEvent, ct);
-            _logger.LogInformation("Published OrderCreated event for Order {OrderId}", created.Id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to publish OrderCreated event for Order {OrderId}", created.Id);
-            // Do not fail the request if publishing the event fails
-        }
+            })
+        ), ct);
 
         return created;
     }

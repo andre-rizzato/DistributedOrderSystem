@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using OrderService.Domain.Aggregates;
 using OrderService.Domain.Interfaces;
 using OrderService.Infrastructure.Data;
+using OrderService.Infrastructure.Outbox;
 
 /// <summary>
 /// Repository implementation for the Order aggregate.
@@ -35,13 +36,31 @@ public class OrderRepository : IOrderRepository
             .ToListAsync(ct);
     }
 
-    public async Task<Order> AddAsync(Order order, CancellationToken ct = default)
+    public async Task<Order> AddAsync(Order order, Func<Order, (string Type, string Payload)> buildOutboxMessage, CancellationToken ct = default)
     {
-        _context.Orders.Add(order);
-        await _context.SaveChangesAsync(ct);
+        // Two SaveChanges calls wrapped in one transaction: the first assigns the order's
+        // DB-generated Id (needed to build the event payload), the second persists the
+        // outbox row alongside it. Either both commit or neither does.
+        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        try
+        {
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync(ct);
+
+            var (type, payload) = buildOutboxMessage(order);
+            _context.OutboxMessages.Add(new OutboxMessage { Type = type, Payload = payload });
+            await _context.SaveChangesAsync(ct);
+
+            await transaction.CommitAsync(ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
 
         _logger.LogInformation(
-            "Order {OrderId} persisted with {ItemCount} items",
+            "Order {OrderId} persisted with {ItemCount} items and a queued outbox message",
             order.Id, order.Items.Count);
 
         return order;
