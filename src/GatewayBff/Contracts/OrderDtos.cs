@@ -6,6 +6,8 @@ public record CreateOrderRequest(List<OrderItemDto> Items);
 
 public record CreateOrderResponse(int OrderId, string Status, decimal Total);
 
+public record CancelOrderResponse(int OrderId, bool IsCanceled);
+
 public record OrderDto(
     int Id,
     DateTime CreatedAt,

@@ -2,6 +2,7 @@ namespace OrderService.Application.Services;
 
 using OrderService.Domain.Aggregates;
 using OrderService.Domain.Interfaces;
+using OrderService.Domain.ValueObjects;
 using OrderService.Infrastructure.Messaging;
 using Shared.Messages;
 
@@ -15,6 +16,7 @@ public interface IOrderApplicationService
     Task<List<Order>> GetAllOrdersAsync(CancellationToken ct = default);
     Task<Order> CreateOrderAsync(IEnumerable<(Guid productId, int quantity, decimal unitPrice)> items, CancellationToken ct = default);
     Task<bool> UpdateOrderStatusAsync(int orderId, string newStatus, CancellationToken ct = default);
+    Task<bool?> CancelOrderAsync(int orderId, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -95,6 +97,24 @@ public class OrderApplicationService : IOrderApplicationService
 
         await _repository.UpdateAsync(order, ct);
         _logger.LogInformation("Order {OrderId} status updated to {Status}", orderId, newStatus);
+
+        return true;
+    }
+
+    public async Task<bool?> CancelOrderAsync(int orderId, CancellationToken ct)
+    {
+        var order = await _repository.GetByIdAsync(orderId, ct);
+        if (order is null)
+        {
+            _logger.LogWarning("Order {OrderId} not found for cancellation", orderId);
+            return null;
+        }
+
+        // The Domain enforces which states can transition to Cancelled
+        order.ChangeStatus(OrderStatus.Cancelled.Value);
+
+        await _repository.UpdateAsync(order, ct);
+        _logger.LogInformation("Order {OrderId} canceled", orderId);
 
         return true;
     }

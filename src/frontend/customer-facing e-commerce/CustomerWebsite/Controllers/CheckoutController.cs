@@ -204,7 +204,7 @@ public class CheckoutController : Controller
     /// <summary>
     /// Order confirmation page
     /// </summary>
-    public async Task<IActionResult> OrderConfirmation(Guid orderId)
+    public async Task<IActionResult> OrderConfirmation(int orderId)
     {
         try
         {

@@ -1,34 +1,32 @@
 namespace GatewayBff.Queries;
 
-using System.Net.Http.Json;
+using GatewayBff.Clients;
 using GatewayBff.Contracts;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 public class GetCatalogQueryHandler : IRequestHandler<GetCatalogQuery, List<CatalogItemDto>>
 {
-    private readonly IHttpClientFactory _clients;
+    private readonly IProductServiceClient _products;
+    private readonly IInventoryServiceClient _inventory;
     private readonly ILogger<GetCatalogQueryHandler> _logger;
 
-    public GetCatalogQueryHandler(IHttpClientFactory clients, ILogger<GetCatalogQueryHandler> logger)
+    public GetCatalogQueryHandler(IProductServiceClient products, IInventoryServiceClient inventory, ILogger<GetCatalogQueryHandler> logger)
     {
-        _clients = clients;
+        _products = products;
+        _inventory = inventory;
         _logger = logger;
     }
 
     public async Task<List<CatalogItemDto>> Handle(GetCatalogQuery request, CancellationToken ct)
     {
-        var productClient = _clients.CreateClient("ProductService");
-        var inventoryClient = _clients.CreateClient("InventoryService");
-
-        var products = await productClient.GetFromJsonAsync<List<ProductDto>>("api/products", ct) ?? new();
+        var products = await _products.GetProductsAsync(ct);
 
         var inventory = new Dictionary<Guid, int>();
         foreach (var p in products)
         {
             try
             {
-                var inv = await inventoryClient.GetFromJsonAsync<InventoryDto>($"api/inventory/{p.Id}", ct);
+                var inv = await _inventory.GetInventoryAsync(p.Id, ct);
                 inventory[p.Id] = inv?.AvailableQuantity ?? 0;
             }
             catch (Exception ex)
@@ -42,7 +40,4 @@ public class GetCatalogQueryHandler : IRequestHandler<GetCatalogQuery, List<Cata
             new CatalogItemDto(p.Id, p.Name, p.Description, p.Price, p.IsActive, inventory.GetValueOrDefault(p.Id, 0))
         ).ToList();
     }
-
-    private record ProductDto(Guid Id, string Name, string? Description, decimal Price, bool IsActive);
-    private record InventoryDto(Guid ProductId, int AvailableQuantity, int ReservedQuantity);
 }

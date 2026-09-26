@@ -33,7 +33,7 @@ public class ProductService : IProductService
         _configuration = configuration;
         _logger = logger;
         _productServiceBaseUrl = _configuration.GetValue<string>("Services:ProductService:BaseUrl") ??
-                                "https://localhost:5003";
+                                "http://localhost:5198";
     }
 
     public async Task<ProductSearchResultModel> SearchProductsAsync(ProductSearchModel searchModel)

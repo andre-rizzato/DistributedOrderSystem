@@ -129,10 +129,6 @@ builder.Services.AddHttpClient<AdvancedNLPService>();
 // Generates and validates JWT tokens for secure API access
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
-// Integration service to communicate with other microservices
-// Bridges the chatbot with business services (orders, products, etc.)
-builder.Services.AddScoped<IServiceIntegration, ServiceIntegrationService>();
-
 // Fine-tuning service for custom AI model training
 builder.Services.AddScoped<IFineTuningService, FineTuningService>();
 

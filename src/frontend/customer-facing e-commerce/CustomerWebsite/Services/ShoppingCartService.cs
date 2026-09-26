@@ -37,39 +37,43 @@ public class ShoppingCartService : IShoppingCartService
         _logger = logger;
         _productService = productService;
         _cartServiceBaseUrl = _configuration.GetValue<string>("Services:GatewayBff:BaseUrl") ??
-                             "https://localhost:7000";
+                             "http://localhost:5189";
     }
 
     public async Task<ShoppingCartModel> GetCartAsync(string sessionId)
     {
         try
         {
+            // GatewayBff.Contracts.CartDto/CartItemDto shape (Id, ProductId, Quantity, UnitPrice -
+            // no CartItemId or AddedAt fields, unlike what this used to assume via `dynamic`,
+            // which would have thrown a RuntimeBinderException on any successful response since
+            // JsonElement doesn't support arbitrary dynamic member access at all).
             var url = $"{_cartServiceBaseUrl}/api/cart/{sessionId}";
-            var cartData = await _httpClient.GetFromJsonAsync<dynamic>(url);
+            var response = await _httpClient.GetAsync(url);
 
+            if (!response.IsSuccessStatusCode)
+                return new ShoppingCartModel();
+
+            var cartData = await response.Content.ReadFromJsonAsync<GatewayCartDto>();
             if (cartData == null)
                 return new ShoppingCartModel();
 
             var cart = new ShoppingCartModel();
 
-            // Deserialize the cart items and enrich them with product data
-            if (cartData.items != null)
+            // Enrich each line with the product data the cart service doesn't store itself
+            foreach (var item in cartData.Items)
             {
-                foreach (var item in cartData.items)
-                {
-                    var productId = Guid.Parse(item.productId.ToString());
-                    var product = await _productService.GetProductByIdAsync(productId);
+                var product = await _productService.GetProductByIdAsync(item.ProductId);
 
-                    if (product != null)
+                if (product != null)
+                {
+                    cart.Items.Add(new CartItemModel
                     {
-                        cart.Items.Add(new CartItemModel
-                        {
-                            CartItemId = Guid.Parse(item.cartItemId.ToString()),
-                            Product = product,
-                            Quantity = (int)item.quantity,
-                            AddedAt = DateTime.Parse(item.addedAt.ToString())
-                        });
-                    }
+                        CartItemId = item.Id,
+                        Product = product,
+                        Quantity = item.Quantity,
+                        AddedAt = cartData.UpdatedAt
+                    });
                 }
             }
 
@@ -85,6 +89,11 @@ public class ShoppingCartService : IShoppingCartService
             return new ShoppingCartModel();
         }
     }
+
+    // Local mirror of GatewayBff.Contracts.CartDto/CartItemDto - CustomerWebsite doesn't
+    // reference GatewayBff's project, so this is duplicated rather than shared.
+    private record GatewayCartDto(string SessionId, List<GatewayCartItemDto> Items, DateTime CreatedAt, DateTime UpdatedAt, decimal Total, int TotalItems);
+    private record GatewayCartItemDto(Guid Id, Guid ProductId, int Quantity, decimal UnitPrice);
 
     public async Task<bool> AddToCartAsync(string sessionId, AddToCartModel item)
     {
@@ -220,38 +229,41 @@ public class WishlistService : IWishlistService
         _logger = logger;
         _productService = productService;
         _wishlistServiceBaseUrl = _configuration.GetValue<string>("Services:GatewayBff:BaseUrl") ??
-                                  "https://localhost:7000";
+                                  "http://localhost:5189";
     }
 
     public async Task<WishlistModel> GetWishlistAsync(Guid userId)
     {
         try
         {
+            // GatewayBff.Contracts.WishlistDto/WishlistItemDto shape (Id, ProductId, CreatedAt -
+            // no Notes field on the backend at all, unlike what this used to assume via
+            // `dynamic`, which would have thrown a RuntimeBinderException on any successful
+            // response since JsonElement doesn't support arbitrary dynamic member access).
             var url = $"{_wishlistServiceBaseUrl}/api/wishlist/{userId}";
-            var wishlistData = await _httpClient.GetFromJsonAsync<dynamic>(url);
+            var response = await _httpClient.GetAsync(url);
 
+            if (!response.IsSuccessStatusCode)
+                return new WishlistModel();
+
+            var wishlistData = await response.Content.ReadFromJsonAsync<GatewayWishlistDto>();
             if (wishlistData == null)
                 return new WishlistModel();
 
             var wishlist = new WishlistModel();
 
-            if (wishlistData.items != null)
+            foreach (var item in wishlistData.Items)
             {
-                foreach (var item in wishlistData.items)
-                {
-                    var productId = Guid.Parse(item.productId.ToString());
-                    var product = await _productService.GetProductByIdAsync(productId);
+                var product = await _productService.GetProductByIdAsync(item.ProductId);
 
-                    if (product != null)
+                if (product != null)
+                {
+                    wishlist.Items.Add(new WishlistItemModel
                     {
-                        wishlist.Items.Add(new WishlistItemModel
-                        {
-                            WishlistItemId = Guid.Parse(item.wishlistItemId.ToString()),
-                            Product = product,
-                            AddedAt = DateTime.Parse(item.addedAt.ToString()),
-                            Notes = item.notes?.ToString()
-                        });
-                    }
+                        WishlistItemId = item.Id,
+                        Product = product,
+                        AddedAt = item.CreatedAt
+                    });
                 }
             }
 
@@ -263,6 +275,11 @@ public class WishlistService : IWishlistService
             return new WishlistModel();
         }
     }
+
+    // Local mirror of GatewayBff.Contracts.WishlistDto/WishlistItemDto - CustomerWebsite doesn't
+    // reference GatewayBff's project, so this is duplicated rather than shared.
+    private record GatewayWishlistDto(Guid UserId, List<GatewayWishlistItemDto> Items, DateTime CreatedAt, DateTime UpdatedAt);
+    private record GatewayWishlistItemDto(Guid Id, Guid ProductId, DateTime CreatedAt);
 
     public async Task<bool> AddToWishlistAsync(Guid userId, Guid productId, string? notes = null)
     {

@@ -1,37 +1,19 @@
 namespace GatewayBff.Commands;
 
+using GatewayBff.Clients;
 using MediatR;
 
 public record DeleteProductCommand(Guid Id) : IRequest<bool>;
 
 public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand, bool>
 {
-    private readonly IHttpClientFactory _clients;
-    private readonly ILogger<DeleteProductCommandHandler> _logger;
+    private readonly IProductServiceClient _products;
 
-    public DeleteProductCommandHandler(IHttpClientFactory clients, ILogger<DeleteProductCommandHandler> logger)
+    public DeleteProductCommandHandler(IProductServiceClient products)
     {
-        _clients = clients;
-        _logger = logger;
+        _products = products;
     }
 
-    public async Task<bool> Handle(DeleteProductCommand request, CancellationToken ct)
-    {
-        var client = _clients.CreateClient("ProductService");
-
-        _logger.LogInformation("Deleting product: {ProductId}", request.Id);
-
-        var response = await client.DeleteAsync($"api/products/{request.Id}", ct);
-
-        if (response.IsSuccessStatusCode)
-        {
-            _logger.LogInformation("Product deleted: {ProductId}", request.Id);
-            return true;
-        }
-
-        _logger.LogWarning("Failed to delete product: {ProductId}, Status: {StatusCode}",
-            request.Id, response.StatusCode);
-        
-        return false;
-    }
+    public Task<bool> Handle(DeleteProductCommand request, CancellationToken ct) =>
+        _products.DeleteProductAsync(request.Id, ct);
 }

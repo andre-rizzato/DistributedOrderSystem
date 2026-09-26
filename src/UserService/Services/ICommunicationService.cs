@@ -13,10 +13,15 @@ public interface ICommunicationService
 
 public class CommunicationService : ICommunicationService
 {
+    // NotificationType.Email in NotificationService (src/NotificationService/Models/NotificationModels.cs) -
+    // that service isn't referenced as a project here, so the numeric value is duplicated rather than
+    // shared. NotificationService has no JsonStringEnumConverter registered, so this must be sent as a number.
+    private const int NotificationTypeEmail = 1;
+
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<CommunicationService> _logger;
-    private readonly string _communicationServiceUrl;
+    private readonly string _notificationServiceUrl;
 
     public CommunicationService(
         HttpClient httpClient,
@@ -26,97 +31,59 @@ public class CommunicationService : ICommunicationService
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
-        _communicationServiceUrl = _configuration.GetValue<string>("Services:CommunicationService:BaseUrl")
-            ?? "https://localhost:5011";
+        // Despite the "CommunicationService" name (kept for the interface UserService talks to),
+        // there is no standalone CommunicationService in this repo - email actually goes out through
+        // NotificationService (Hangfire + MailKit), so this must point there.
+        _notificationServiceUrl = _configuration.GetValue<string>("Services:CommunicationService:BaseUrl")
+            ?? "http://localhost:5246";
     }
 
-    public async Task SendEmailVerificationAsync(string email, string verificationUrl)
+    public Task SendEmailVerificationAsync(string email, string verificationUrl) => SendDirectAsync(
+        email,
+        "Verify your email address",
+        $"Please verify your email by visiting the following link: {verificationUrl}");
+
+    public Task SendPasswordResetAsync(string email, string resetUrl) => SendDirectAsync(
+        email,
+        "Reset your password",
+        $"You requested a password reset. Visit the following link to choose a new password: {resetUrl}");
+
+    public Task SendWelcomeEmailAsync(string email, string firstName) => SendDirectAsync(
+        email,
+        "Welcome!",
+        $"Hi {firstName}, welcome! Your account is ready to use.");
+
+    public Task SendPasswordChangedNotificationAsync(string email) => SendDirectAsync(
+        email,
+        "Password changed",
+        "Your password was just changed. If this wasn't you, please contact support immediately.");
+
+    private async Task SendDirectAsync(string email, string subject, string content)
     {
         try
         {
+            // NotificationService/Controllers/NotificationController.cs -> [Route("api/[controller]")],
+            // POST "send-direct" takes a SendNotificationRequest with no pre-registered template needed
+            // (unlike "send-template", whose seeded templates don't cover auth emails).
             var payload = new
             {
-                To = email,
-                Subject = "Verify your email address",
-                TemplateName = "EmailVerification",
-                TemplateData = new { VerificationUrl = verificationUrl }
+                Type = NotificationTypeEmail,
+                Recipient = email,
+                Subject = subject,
+                Content = content,
+                Source = "UserService"
             };
 
-            var response = await _httpClient.PostAsJsonAsync($"{_communicationServiceUrl}/api/emails/send", payload);
+            var response = await _httpClient.PostAsJsonAsync($"{_notificationServiceUrl}/api/notification/send-direct", payload);
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Error sending verification email to {Email}: {StatusCode}", email, response.StatusCode);
+                _logger.LogWarning("Error sending email to {Email}: {StatusCode}", email, response.StatusCode);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending verification email to {Email}", email);
-        }
-    }
-
-    public async Task SendPasswordResetAsync(string email, string resetUrl)
-    {
-        try
-        {
-            var payload = new
-            {
-                To = email,
-                Subject = "Reset your password",
-                TemplateName = "PasswordReset",
-                TemplateData = new { ResetUrl = resetUrl }
-            };
-
-            var response = await _httpClient.PostAsJsonAsync($"{_communicationServiceUrl}/api/emails/send", payload);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Error sending password reset email to {Email}: {StatusCode}", email, response.StatusCode);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending password reset email to {Email}", email);
-        }
-    }
-
-    public async Task SendWelcomeEmailAsync(string email, string firstName)
-    {
-        try
-        {
-            var payload = new
-            {
-                To = email,
-                Subject = "Welcome!",
-                TemplateName = "Welcome",
-                TemplateData = new { FirstName = firstName }
-            };
-
-            await _httpClient.PostAsJsonAsync($"{_communicationServiceUrl}/api/emails/send", payload);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending welcome email to {Email}", email);
-        }
-    }
-
-    public async Task SendPasswordChangedNotificationAsync(string email)
-    {
-        try
-        {
-            var payload = new
-            {
-                To = email,
-                Subject = "Password changed",
-                TemplateName = "PasswordChanged",
-                TemplateData = new { }
-            };
-
-            await _httpClient.PostAsJsonAsync($"{_communicationServiceUrl}/api/emails/send", payload);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending password change notification to {Email}", email);
+            _logger.LogError(ex, "Error sending email to {Email}", email);
         }
     }
 }

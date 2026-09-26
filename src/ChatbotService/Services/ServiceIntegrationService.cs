@@ -104,8 +104,11 @@ public class ServiceIntegrationService : IServiceIntegration
     {
         try
         {
+            // Route confirmed by reading GatewayBff's source code:
+            // GatewayBff/Controllers/CommandsController.cs -> [Route("api/commands")],
+            // PUT "orders/cancel/{id:int}" -> GatewayBff/Commands/CancelOrderCommand.cs.
             var response = await _httpClient.PutAsync(
-                $"{_serviceUrls.GatewayBff}/api/commands/orders/{orderId}/cancel",
+                $"{_serviceUrls.GatewayBff}/api/commands/orders/cancel/{orderId}",
                 new StringContent("", System.Text.Encoding.UTF8, "application/json"));
 
             return response.IsSuccessStatusCode;
@@ -117,7 +120,7 @@ public class ServiceIntegrationService : IServiceIntegration
         }
     }
 
-    public async Task<dynamic?> GetInventoryAsync(int productId)
+    public async Task<dynamic?> GetInventoryAsync(Guid productId)
     {
         try
         {

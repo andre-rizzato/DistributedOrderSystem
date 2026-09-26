@@ -7,7 +7,9 @@ namespace CustomerWebsite.Models;
 /// </summary>
 public class OrderModel
 {
-    public Guid OrderId { get; set; }
+    // OrderService's real primary key is an int (EF Core identity), not a Guid -
+    // this has to match GatewayBff's contract for order ids to be usable at all.
+    public int OrderId { get; set; }
     public string OrderNumber { get; set; } = string.Empty;
     public DateTime OrderDate { get; set; }
     public OrderStatus Status { get; set; }

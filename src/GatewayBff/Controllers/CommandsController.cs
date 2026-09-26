@@ -27,6 +27,17 @@ public class CommandsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPut("orders/cancel/{id:int}")]
+    public async Task<ActionResult<CancelOrderResponse>> CancelOrder(int id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new CancelOrdersCommand(id), ct);
+        if (result is null)
+            return NotFound($"Order with ID {id} not found");
+
+        return Ok(result);
+    }
+
+
     [HttpPost("products")]
     public async Task<ActionResult<ProductDto>> CreateProduct(
         [FromBody] CreateProductRequest request,
@@ -107,6 +118,8 @@ public class CommandsController : ControllerBase
         return Ok();
     }
 }
+
+
 
 public record CreateProductRequest(string Name, decimal Price, string? Description);
 public record UpdateProductRequest(string Name, decimal Price, string? Description, bool IsActive);
