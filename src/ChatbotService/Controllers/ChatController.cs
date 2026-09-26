@@ -30,7 +30,7 @@ public class ChatController : ControllerBase
     /// <param name="request">Chat request containing message and session info</param>
     /// <returns>Bot response</returns>
     [HttpPost("message")]
-    public async Task<ActionResult<ChatResponse>> SendMessage([FromBody] ChatRequest request)
+    public async Task<ActionResult<ChatResponse>> SendMessage([FromBody] ChatRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Message))
         {
@@ -39,7 +39,7 @@ public class ChatController : ControllerBase
 
         try
         {
-            var response = await _chatbotService.ProcessMessageAsync(request);
+            var response = await _chatbotService.ProcessMessageAsync(request, ct: ct);
             return Ok(response);
         }
         catch (Exception ex)
