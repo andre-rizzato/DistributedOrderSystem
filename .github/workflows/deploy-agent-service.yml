@@ -1,0 +1,56 @@
+# Redeploys AgentService only - the one piece of this repo actually running
+# on the test VM (rg-agente-atendimento) today. The rest of the solution
+# (OrderService, GatewayBff, etc.) runs local-only (see CLAUDE.md), so there
+# is nothing else here for this pipeline to touch; a path filter keeps it
+# from firing on unrelated .NET changes.
+#
+# Triggers on `dev` (not `master`) because that's the branch actual commits
+# land on day to day - change this if that changes. Never touches the VM's
+# agent-service/.env (KEY_VAULT_ENABLED=true means no secret needs to be a
+# GitHub secret here either - DEPLOY_SSH_KEY, a dedicated deploy-only key,
+# is the only one this workflow uses).
+name: Deploy AgentService to test VM
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "src/AgentService/**"
+      - ".github/workflows/deploy-agent-service.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Rsync AgentService to the VM
+        # .env excluded on purpose - ORDER_API_BASE_URL/KEY_VAULT_* are
+        # VM-local config (today pointed at the dummyjson.com test fallback,
+        # see connectors/README.md), not something a deploy should overwrite.
+        run: |
+          rsync -az --delete \
+            --exclude __pycache__ \
+            --exclude .venv \
+            --exclude .env \
+            --exclude .pytest_cache \
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
+            ./src/AgentService/ "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/home/${{ secrets.VM_USER }}/agent-service/"
+
+      - name: Install deps, run tests, restart
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" '
+            set -e
+            cd ~/agent-service
+            .venv/bin/pip install -q -r requirements.txt
+            .venv/bin/python -m pytest tests/ -q
+            pm2 restart agent-service --update-env
+            pm2 save
+          '
