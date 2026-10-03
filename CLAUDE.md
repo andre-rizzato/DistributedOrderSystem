@@ -120,7 +120,7 @@ Other services (ProductService, InventoryService, etc.) use simpler layering wit
 
 ### Infrastructure
 
-- **PostgreSQL 16** — primary database; EF Core 9 + Npgsql; each service has its own DB
+- **PostgreSQL 16** — primary database; EF Core 10 + Npgsql; each service has its own DB
 - **Redis** — distributed cache (TTL 30 min for products/inventory) and session/cart storage
 - **Kafka 7.4 KRaft** — no Zookeeper; single broker; Kafka UI at port 8080
 - **Hangfire** — background job scheduler in NotificationService, backed by PostgreSQL
