@@ -1,0 +1,40 @@
+# src\AppHost\AppHost.csproj
+
+[← Back to the assessment index](../../assessment.md)
+
+## Project Info
+
+- **Current Target Framework:** net10.0✅
+- **SDK-style**: True
+- **Project Kind:** DotNetCoreApp
+- **Dependencies**: 0
+- **Dependants**: 0
+- **Number of Files**: 1
+- **Lines of Code**: 22
+- **Estimated LOC to modify**: 0+ (at least 0,0% of the project)
+
+## Dependency Graph
+
+Legend:
+📦 SDK-style project
+⚙️ Classic project
+
+```mermaid
+flowchart TB
+    subgraph current["AppHost.csproj"]
+        MAIN["<b>📦&nbsp;AppHost.csproj</b><br/><small>net10.0</small>"]
+        click MAIN "../projects/AppHost.md"
+    end
+
+```
+
+## API Compatibility
+
+| Category | Count | Impact |
+| :--- | :---: | :--- |
+| 🔴 Binary Incompatible | 0 | High - Require code changes |
+| 🟡 Source Incompatible | 0 | Medium - Needs re-compilation and potential conflicting API error fixing |
+| 🔵 Behavioral change | 0 | Low - Behavioral changes that may require testing at runtime |
+| ✅ Compatible | 0 |  |
+| ***Total APIs Analyzed*** | ***0*** |  |
+

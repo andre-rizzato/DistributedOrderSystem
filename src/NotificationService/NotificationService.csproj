@@ -1,44 +1,42 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- ASP.NET Core -->
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.11.6" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.8.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi"  />
+    <PackageReference Include="Scalar.AspNetCore"  />
+    <PackageReference Include="Swashbuckle.AspNetCore"  />
     
     <!-- Entity Framework -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore"  />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"  />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools"  />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design"  />
     
     <!-- SMS Provider (Twilio) -->
-    <PackageReference Include="Twilio" Version="7.5.2" />
+    <PackageReference Include="Twilio"  />
     
     <!-- Email Provider (MailKit) -->
-    <PackageReference Include="MailKit" Version="4.7.1.1" />
-    <PackageReference Include="MimeKit" Version="4.7.1" />
+    <PackageReference Include="MailKit"  />
+    <PackageReference Include="MimeKit"  />
     
     <!-- Push Notifications -->
-    <PackageReference Include="FirebaseAdmin" Version="3.0.0" />
+    <PackageReference Include="FirebaseAdmin"  />
     
     <!-- Background Services -->
-    <PackageReference Include="Hangfire" Version="1.8.16" />
-    <PackageReference Include="Hangfire.PostgreSql" Version="1.20.9" />
+    <PackageReference Include="Hangfire"  />
+    <PackageReference Include="Hangfire.PostgreSql"  />
     
     <!-- Redis for real-time notifications -->
-    <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
+    <PackageReference Include="StackExchange.Redis"  />
     
     <!-- Utilities -->
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
+    <PackageReference Include="Newtonsoft.Json"  />
   </ItemGroup>
 
   <ItemGroup>

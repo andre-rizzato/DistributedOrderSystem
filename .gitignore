@@ -43,3 +43,10 @@ commit_backup.txt
 # Scripts
 *.ps1
 *.sh
+
+# Python cache
+__pycache__/
+*.pyc
+
+# MSBuild binary logs
+*.binlog

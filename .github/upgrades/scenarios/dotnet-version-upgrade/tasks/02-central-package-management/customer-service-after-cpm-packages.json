@@ -1,0 +1,31 @@
+﻿{
+  "version": 1,
+  "parameters": "",
+  "projects": [
+    {
+      "path": "E:/WorkFiles/Repos/DistributedOrderSystem/src/CustomerService/CustomerService.csproj",
+      "frameworks": [
+        {
+          "framework": "net9.0",
+          "topLevelPackages": [
+            {
+              "id": "Microsoft.AspNetCore.OpenApi",
+              "requestedVersion": "9.0.0",
+              "resolvedVersion": "9.0.0"
+            },
+            {
+              "id": "Scalar.AspNetCore",
+              "requestedVersion": "2.11.6",
+              "resolvedVersion": "2.11.6"
+            },
+            {
+              "id": "StackExchange.Redis",
+              "requestedVersion": "2.10.1",
+              "resolvedVersion": "2.10.1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
