@@ -12,16 +12,22 @@
 from anthropic import Anthropic
 from langgraph.graph import END, START, StateGraph
 
-from gateway_client import cancel_order_by_id, get_order_by_id
+from connectors import get_order_backend
 from intent_classifier import classify_intent_node
 from state import AgentState
 
 anthropic_client = Anthropic()
+# Built once at import time, same lifetime as anthropic_client above - the
+# concrete class (RestOrderBackend today, pointed at GatewayBff by default)
+# is decided by connectors/factory.py reading ORDER_BACKEND /
+# ORDER_API_BASE_URL, not by anything in this file. Swapping which client
+# system this graph talks to is a .env change, never a code change here.
+order_backend = get_order_backend()
 
 
 def order_info_agent_node(state: AgentState) -> dict:
     order_number = state.get("order_number")
-    data = get_order_by_id(order_number) if order_number else None
+    data = order_backend.get_status(order_number) if order_number else None
     print(f"  [NODE order_info_agent] order_number={order_number} -> order_data={data}")
     return {"order_data": data}
 
@@ -30,7 +36,7 @@ def cancel_order_agent_node(state: AgentState) -> dict:
     # Real worker, same shape as order_info_agent_node: routing already
     # guarantees order_number is set before this node runs.
     order_number = state.get("order_number")
-    result = cancel_order_by_id(order_number) if order_number else None
+    result = order_backend.cancel(order_number) if order_number else None
     print(f"  [NODE cancel_order_agent] order_number={order_number} -> cancel_result={result}")
     return {"cancel_result": result}
 

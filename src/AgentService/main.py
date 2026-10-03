@@ -13,7 +13,15 @@ from pydantic import BaseModel
 
 load_dotenv()
 
-from graph import build_graph  # noqa: E402 - needs to come after load_dotenv()
+from config import load_secrets_from_key_vault  # noqa: E402 - needs load_dotenv() first
+
+# Must run before `from graph import build_graph` below - graph.py builds
+# anthropic_client = Anthropic() and the connectors at import time, both of
+# which read os.environ immediately. If this ran after that import, it
+# would be too late to matter.
+load_secrets_from_key_vault()
+
+from graph import build_graph  # noqa: E402 - needs secrets already loaded
 
 app = FastAPI(title="AgentService - Order Orchestrator Agent")
 compiled_graph = build_graph()

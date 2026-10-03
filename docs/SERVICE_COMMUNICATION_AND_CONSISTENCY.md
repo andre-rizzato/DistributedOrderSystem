@@ -24,7 +24,7 @@ It also documents the outbox + saga implementation added to answer (3) concretel
 | **UserService** | Identity (ASP.NET Identity + JWT) | Auth, registration, password reset. Calls NotificationService directly (see [§2](#2-when-to-call-directly-vs-through-gatewaybff) below) to send transactional email. | — |
 | **NotificationService** | Notification delivery (SMS/Email/Push) + Hangfire jobs | Receiving `send-direct`/`send-template` requests and dispatching them. | — |
 | **ChatbotService** | NLP/intent inference | Chat inference. When the chat needs real order data, it calls **GatewayBff**, never OrderService directly (see `ServiceIntegrationService.CancelOrderAsync`). | Call downstream business services directly. |
-| **AgentService** (Python/LangGraph) | Order-support agent | Same rule as ChatbotService: `gateway_client.py` only ever calls GatewayBff. | Call downstream business services directly. |
+| **AgentService** (Python/LangGraph) | Order-support agent | Same rule as ChatbotService, now via `src/AgentService/connectors/`: the default `RestOrderBackend`/`RestCatalogBackend` point at GatewayBff, same as the old `gateway_client.py`, but the connector interface is generic — other clients plug in a different REST API, Google Calendar, or a payment processor without GatewayBff knowing anything changed. | Call downstream business services directly. |
 | **PaymentService** | (stub, not implemented yet) | — | — |
 
 ---
