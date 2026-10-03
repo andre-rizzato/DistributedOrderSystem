@@ -4,6 +4,8 @@ Pluggable backends for the four domain capabilities from the "Mapa de
 Capacidades" design doc (lives in the sibling `ai-customer-service-agent`
 repo at `docs/artifacts/mapa-capacidades.html`) — `OrderBackend`,
 `SchedulingBackend`, `CatalogBackend`, `CheckoutBackend` (`base.py`).
+Full done/pending checklist across both repos: `ai-customer-service-agent`'s
+`docs/STATUS.md`.
 `graph.py` (and any future scheduling/sales graph) builds them via
 `get_*_backend()` in `factory.py`, never by importing a concrete class
 directly — swapping which system a client talks to is a `.env` change, not a
