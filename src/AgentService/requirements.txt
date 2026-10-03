@@ -6,3 +6,8 @@ instructor
 pydantic
 python-dotenv
 httpx
+google-auth
+requests
+azure-identity
+azure-keyvault-secrets
+pytest
