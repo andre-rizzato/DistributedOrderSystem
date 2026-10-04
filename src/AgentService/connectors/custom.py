@@ -24,7 +24,16 @@ class ExampleCustomOrderBackend:
     neither a REST API (use RestOrderBackend) nor something you can wrap
     quickly - a legacy system, a spreadsheet-backed process, etc."""
 
-    def get_status(self, order_id: str) -> dict | None:
+    def get_status(self, order_id: str, requester_phone: str | None = None) -> dict | None:
+        # requester_phone (security review 2026-10-04, item #4): this is
+        # the right layer to do real identity verification, since you
+        # (unlike the generic RestOrderBackend) know this client's actual
+        # order schema. Pattern to follow once implemented: look up the
+        # order, compare requester_phone against the phone registered on
+        # it, and return None (or a distinct "not authorized" shape your
+        # generate_reply_node handles) on mismatch instead of the real data
+        # - never return another customer's order details just because the
+        # order_id guess happened to be right.
         raise NotImplementedError("Implement against the client's real order system.")
 
     def cancel(self, order_id: str) -> dict | None:
