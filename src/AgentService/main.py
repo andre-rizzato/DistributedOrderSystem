@@ -30,6 +30,13 @@ compiled_graph = build_graph()
 class AgentRequest(BaseModel):
     message: str
     session_id: str
+    # Security review 2026-10-04, item #4: the phone number of whoever is
+    # texting, when the channel has a verified one to offer. The Node
+    # orchestrator (agentServiceClient.ts) sends the WhatsApp sender's wa_id
+    # here; it's None for Telegram and for anything older than this field,
+    # since a Telegram chat id isn't a verified phone number - Optional with
+    # a default so existing callers that don't send it don't break.
+    requester_phone: Optional[str] = None
 
 
 class AgentResponse(BaseModel):
@@ -44,6 +51,7 @@ def handle_message(request: AgentRequest) -> AgentResponse:
     initial_state = {
         "message": request.message,
         "session_id": request.session_id,
+        "requester_phone": request.requester_phone,
         "intent": None,
         "order_number": None,
         "confidence": None,

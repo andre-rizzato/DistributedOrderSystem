@@ -27,18 +27,41 @@ order_backend = get_order_backend()
 
 def order_info_agent_node(state: AgentState) -> dict:
     order_number = state.get("order_number")
-    data = order_backend.get_status(order_number) if order_number else None
+    # requester_phone threaded through for whichever OrderBackend is wired
+    # in to optionally verify the requester owns this order before handing
+    # back real data (security review 2026-10-04, item #4) - see
+    # connectors/base.py's OrderBackend.get_status docstring for why no
+    # generic connector enforces this today.
+    requester_phone = state.get("requester_phone")
+    data = order_backend.get_status(order_number, requester_phone=requester_phone) if order_number else None
     print(f"  [NODE order_info_agent] order_number={order_number} -> order_data={data}")
     return {"order_data": data}
 
 
 def cancel_order_agent_node(state: AgentState) -> dict:
-    # Real worker, same shape as order_info_agent_node: routing already
-    # guarantees order_number is set before this node runs.
+    # Security review 2026-10-04 (docs/SECURITY_REVIEW.md item #4): a
+    # cancellation must ALWAYS become a human handoff - the agent never
+    # calls order_backend.cancel() itself, no matter how confident the
+    # intent classification is. Two reasons: canceling is destructive and
+    # hard to undo for the customer, and even the requester_phone check
+    # order_info_agent_node above is starting to grow (see
+    # connectors/base.py) wouldn't be enough by itself here - a destructive
+    # action deserves a human in the loop regardless of how confident the
+    # identity check is.
+    # Deliberately ends the graph here (see build_graph: this node routes
+    # straight to END, not through generate_reply_node) instead of calling
+    # the LLM - there is nothing for a model to decide, the outcome is
+    # always the same message, so skipping the model call is both cheaper
+    # and more predictable.
     order_number = state.get("order_number")
-    result = order_backend.cancel(order_number) if order_number else None
-    print(f"  [NODE cancel_order_agent] order_number={order_number} -> cancel_result={result}")
-    return {"cancel_result": result}
+    print(f"  [NODE cancel_order_agent] order_number={order_number} -> human handoff (agent never cancels directly)")
+    return {
+        "final_reply": (
+            "I understand you'd like to cancel this order. To make sure this is "
+            "handled correctly and securely, I'm connecting you with a human agent "
+            "who will confirm the cancellation with you directly."
+        )
+    }
 
 
 def create_stub_node(state: AgentState) -> dict:
@@ -64,26 +87,22 @@ def clarify_node(state: AgentState) -> dict:
 def generate_reply_node(state: AgentState) -> dict:
     # Grounding (same principle as Weeks 3-4): the LLM only formats what's
     # already in the state, it never makes up a policy or data it wasn't given.
+    #
+    # No cancel_result branch here anymore (security review 2026-10-04,
+    # item #4): cancel_order_agent_node now ends the graph directly (see
+    # build_graph's "cancel_order_agent" -> END edge) instead of routing
+    # here, since it never calls the backend and always returns the same
+    # fixed handoff message - there's nothing left for this node to decide
+    # about a cancellation. For the same reason, intent=="cancel_order"
+    # never reaches this node: route_by_confidence only sends it to
+    # cancel_order_agent (order_number set) or clarify (order_number
+    # missing), never here.
     data = state.get("order_data")
-    cancel_result = state.get("cancel_result")
     order_number = state.get("order_number")
-    print(
-        f"  [NODE generate_reply] order_data={'present' if data else 'absent'}, "
-        f"cancel_result={'present' if cancel_result else 'absent'}, order_number={order_number}"
-    )
+    print(f"  [NODE generate_reply] order_data={'present' if data else 'absent'}, order_number={order_number}")
 
-    if cancel_result is not None:
-        if cancel_result.get("isCanceled"):
-            context = f"Order {order_number} was successfully canceled: {cancel_result}"
-        else:
-            context = (
-                f"Order {order_number} could NOT be canceled (e.g. it may already be "
-                f"shipped, delivered, or already canceled): {cancel_result}"
-            )
-    elif data is not None:
+    if data is not None:
         context = f"Real data for the order looked up in the system: {data}"
-    elif order_number and state.get("intent") == "cancel_order":
-        context = f"Order number {order_number} was not found in the system, so it could not be canceled."
     elif order_number:
         context = f"Order number {order_number} was not found in the system."
     else:
@@ -160,7 +179,11 @@ def build_graph():
     )
 
     graph.add_edge("order_info_agent", "generate_reply")
-    graph.add_edge("cancel_order_agent", "generate_reply")
+    # cancel_order_agent routes straight to END, not generate_reply (security
+    # review 2026-10-04, item #4) - it never calls the model, since the
+    # outcome (human handoff) never depends on any data generate_reply_node
+    # would otherwise format.
+    graph.add_edge("cancel_order_agent", END)
     graph.add_edge("generate_reply", END)
     graph.add_edge("clarify", END)
     graph.add_edge("create_stub", END)

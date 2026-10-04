@@ -24,12 +24,44 @@ from typing import Protocol
 class OrderBackend(Protocol):
     """Status/cancellation against a client's order system (post-purchase)."""
 
-    def get_status(self, order_id: str) -> dict | None:
-        """Returns the order's current state, or None if not found."""
+    def get_status(self, order_id: str, requester_phone: str | None = None) -> dict | None:
+        """Returns the order's current state, or None if not found.
+
+        requester_phone (security review 2026-10-04, item #4): the phone
+        number/channel identity of whoever is ASKING, threaded in from the
+        Node orchestrator's InboundMessage (WhatsApp: the sender's wa_id;
+        Telegram: None today - a Telegram chat id isn't a verified phone
+        number, so there's nothing trustworthy to compare yet). This
+        parameter is accepted everywhere in the OrderBackend hierarchy so
+        the plumbing exists end-to-end, but NO generic implementation here
+        (RestOrderBackend) actually enforces a match - a generic REST client
+        config has no agreed-upon field name for "the phone on file for this
+        order", so guessing one would either silently never match (false
+        rejections) or silently never check anything (no real protection).
+        A real verification check belongs in a client-specific
+        implementation (see ExampleCustomOrderBackend in custom.py) that
+        knows its own order schema and can compare requester_phone against
+        the order's registered phone before returning real data. Until a
+        client needs this enforced, the parameter is forward-compatible
+        plumbing only - see docs/SECURITY_REVIEW.md item #4 for the fallback
+        (verification question) that still needs designing for channels
+        with no phone binding.
+        """
         ...
 
     def cancel(self, order_id: str) -> dict | None:
-        """Attempts to cancel the order; returns the result, or None if not found."""
+        """Attempts to cancel the order; returns the result, or None if not found.
+
+        NOTE (security review 2026-10-04, item #4): the chatbot's own graph
+        (see graph.py's cancel_order_agent_node) deliberately NEVER calls
+        this method - cancellation always becomes a human handoff instead,
+        because canceling is destructive and this service has no reliable
+        way to confirm the requester owns the order. This method stays on
+        the Protocol for whatever DOES need to cancel an order on purpose
+        (an admin tool, a human-operator panel) once a human has confirmed
+        the request - it's the chatbot's automatic path to it that is
+        removed, not the capability itself.
+        """
         ...
 
 

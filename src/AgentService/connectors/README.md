@@ -76,6 +76,45 @@ of their own system over querying it directly; a custom connector that skips
 that is exactly the fragile coupling the generic connectors above exist to
 avoid.
 
+## Processo na VM (PM2) — bind em 127.0.0.1, não 0.0.0.0
+
+Revisão de segurança de 04/10/2026 (item #6, ver `ai-customer-service-agent`'s
+`docs/SECURITY_REVIEW.md`): até essa data, o processo `agent-service` do PM2
+na VM `vm-agente` rodava com `--host 0.0.0.0`, expondo a porta 8100
+diretamente pra internet pública (a única proteção era o NSG do Azure — uma
+única camada, sem defesa em profundidade). O Node (`agente-atendimento`) e o
+`agent-service` sempre rodaram na MESMA VM e o Node já fala com ele via
+`AGENT_SERVICE_URL=http://localhost:8100` (ver `.env` do Node) — não existe
+nenhum motivo real pra essa porta ser alcançável de fora da própria VM, então
+o bind correto é só em loopback.
+
+Comando usado para (re)criar o processo do zero na VM (não existe um
+`ecosystem.config.js` neste repo — o processo foi criado direto via `pm2
+start`, documentado aqui pra ser reproduzível sem precisar reconstruir esse
+comando por tentativa e erro de novo):
+
+```bash
+cd /home/azureuser/agent-service
+pm2 start .venv/bin/uvicorn --name agent-service --cwd /home/azureuser/agent-service --interpreter none -- main:app --host 127.0.0.1 --port 8100
+pm2 save
+```
+
+`--interpreter none` é obrigatório — sem ele, o PM2 tenta rodar o binário do
+uvicorn (um script Python com shebang) através do interpretador Node.js
+embutido e falha com `SyntaxError: Invalid or unexpected token` logo na
+primeira linha do arquivo (`# -*- coding: utf-8 -*-`), entrando em loop de
+restart. Esse é o mesmo valor que o processo já tinha antes dessa mudança
+(confirmado via `pm2 describe agent-service` antes de recriá-lo) — só o
+`--host` mudou de `0.0.0.0` pra `127.0.0.1`.
+
+O deploy automático (`.github/workflows/deploy-agent-service.yml`) só roda
+`pm2 restart agent-service --update-env` — ele NUNCA re-especifica
+`--host`/`--interpreter`, porque só reinicia um processo que o PM2 já
+conhece (flags ficam gravadas no `dump.pm2` salvo por `pm2 save`). Se esse
+processo for deletado por qualquer motivo no futuro (`pm2 delete`, VM
+recriada do zero), ele precisa ser recriado com o comando acima — não com o
+`--host 0.0.0.0` antigo.
+
 ## Environments
 
 `rg-agente-atendimento` on Azure is a **test environment only** — one VM,

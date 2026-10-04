@@ -43,7 +43,17 @@ class RestOrderBackend:
     def _client(self) -> httpx.Client:
         return httpx.Client(base_url=self.base_url, headers=self._headers, timeout=self.timeout_seconds)
 
-    def get_status(self, order_id: str) -> dict | None:
+    def get_status(self, order_id: str, requester_phone: str | None = None) -> dict | None:
+        # requester_phone is accepted (see OrderBackend.get_status's
+        # docstring, security review 2026-10-04 item #4) but intentionally
+        # unused here: a generic REST client config has no agreed field name
+        # for "the phone on file for this order" to compare it against, so
+        # this generic connector can't safely enforce a match - it would
+        # either always pass (no protection) or always fail (false
+        # rejections) depending on a guess. A client whose API DOES expose
+        # that field should move to a thin CustomBackend subclass (see
+        # custom.py) that knows the real response shape and can do the
+        # comparison for real.
         path = self.get_path_template.format(id=order_id)
         with self._client() as client:
             response = client.get(path)
