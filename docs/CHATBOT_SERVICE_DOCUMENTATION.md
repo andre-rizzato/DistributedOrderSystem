@@ -4,20 +4,20 @@
 
 ## Overview
 
-**ChatbotService** is a microservice that exposes a complete chatbot infrastructure (controllers, JWT authentication, admin dashboard, embeddable JS widget, fine-tuning framework) — but **the AI part is entirely simulated** and **the main chat endpoint doesn't work** due to an unresolved dependency-injection problem. The service starts up and responds on many routes, but the chatbot's "brain," as described in previous versions of this document, doesn't exist in the code.
+**ChatbotService** is a microservice that exposes a complete chatbot infrastructure (controllers, JWT authentication, admin dashboard, embeddable JS widget, fine-tuning framework). **Update (04/10/2026): the DI gap described below has been fixed** — `IChatbotService` is now registered against `PythonAgentChatbotService` (`Program.cs`), a real HTTP bridge to `AgentService` (Python/FastAPI/LangGraph, `POST /agent/message`). The main chat endpoint (`POST /api/chat/message`) and its session/history/intents/feedback siblings work, backed by a real EF Core `ChatContext`. What's still true from the original audit: the **admin dashboard, fine-tuning framework, and "DialoGPT/ONNX" NLP engine remain entirely simulated** (see below) — only the chat-to-AgentService path was fixed. `AgentService` itself is narrow (order status/cancel only, English-hardcoded, no RAG/tone) — see `ai-customer-service-agent` repo's `docs/artifacts/widget-embarcavel.html` for the decision on which backend the embeddable widget should actually target.
 
 ## ⚠️ What Works and What Doesn't — Summary
 
 | Component | Real status |
 |---|---|
-| `POST /api/chat/message`, `GET /api/chat/history/{sessionId}`, `POST /api/chat/session`, `DELETE /api/chat/session/{sessionId}`, `GET /api/chat/intents`, `POST /api/chat/feedback` | ❌ **Not working**: `ChatController` requires `IChatbotService` in its constructor, but **no class in the repository implements this interface**, and its registration in `Program.cs` is commented out (`// builder.Services.AddScoped<IChatbotService, Services.ChatbotService>();`). Every request to these endpoints fails with a DI resolution error. |
+| `POST /api/chat/message`, `GET /api/chat/history/{sessionId}`, `POST /api/chat/session`, `DELETE /api/chat/session/{sessionId}`, `GET /api/chat/intents`, `POST /api/chat/feedback` | ✅ **Fixed (04/10/2026)**: `IChatbotService` is registered against `PythonAgentChatbotService`, a real HTTP bridge to `AgentService` (`POST /agent/message`), with chat history persisted in `ChatContext`. Reply quality is bounded by `AgentService` itself — narrow order-status/cancel scope, English-hardcoded prompt, no RAG — not by this layer. |
 | `POST /api/chat/login`, `/api/chat/register`, `GET /api/chat/profile` | ⚠️ Respond, but `AuthenticationService` is purely a demo: hardcoded credentials (`admin@example.com`/`password123`, `user@example.com`/`password123`), no database check, `RegisterAsync` persists nothing. |
 | NLP engine / DialoGPT | ❌ **Fully simulated** — see the dedicated section below. No ONNX inference ever happens. |
 | Fine-tuning (`FineTuningController`, `AiDashboardController`) | ❌ **Fully simulated** — "training" is a client-side JavaScript timer using `Math.random()`; the server-side endpoints just do `Task.Delay(...)` and return `success`. |
 | Admin dashboard at the root (`/` → `/api/admin`) | ❌ **Broken route**: the redirect points to `/api/admin`, but the only controller with dashboard-redirect logic (`SimpleAdminController`) uses `[Route("api/[controller]")]`, which resolves to `api/SimpleAdmin`, not `api/admin`. The redirect results in a 404. |
 | `GET /api/aidashboard`, `GET /api/finetuning` | ✅ Respond (the routes match), but only show the simulated HTML interface described above. |
-| Chat Widget (static files, `ChatWidgetController`) | ✅ **File serving is genuinely implemented** — the files really exist (see the Widget section), but the widget itself, when it tries to chat, calls endpoints that are either broken (see above) or don't exist on the GatewayBff side. |
-| `ServiceIntegrationService` (calls to other microservices) | ⚠️ Partially real: `GetOrderByIdAsync`/`GetUserOrdersAsync`/`SearchProductsAsync` call real GatewayBff routes (`/api/queries/orders`, `/api/queries/catalog`); `CancelOrderAsync` and `GetPaymentInfoAsync` call routes that **don't exist** on GatewayBff (`/api/commands/orders/{id}/cancel`, `/api/queries/payments/order/{id}`). None of this is invoked by any real chat path anyway, since `ChatController` is unreachable. |
+| Chat Widget (static files, `ChatWidgetController`) | ✅ File serving genuinely implemented, **and its Direct-mode chat call (`/api/chat/message`) now works end-to-end** since the DI fix above — reply quality still limited by `AgentService`'s narrow order-only scope, not by this layer. BFF-mode (`useBffRouting: true`) still depends on `GatewayBff` chat routes, unverified here. |
+| `ServiceIntegrationService` (calls to other microservices) | ⚠️ Partially real: `GetOrderByIdAsync`/`GetUserOrdersAsync`/`SearchProductsAsync` call real GatewayBff routes (`/api/queries/orders`, `/api/queries/catalog`); `CancelOrderAsync` and `GetPaymentInfoAsync` call routes that **don't exist** on GatewayBff (`/api/commands/orders/{id}/cancel`, `/api/queries/payments/order/{id}`). Not invoked by the `AgentService`-backed chat path (that path doesn't go through `ServiceIntegrationService`) — whatever calls this class directly is still exposed to those two missing routes. |
 | JWT authentication (middleware) | ✅ Correctly configured and working as a mechanism — it's the logic *behind* login that's a demo, not the JWT middleware itself. |
 | Persistence (PostgreSQL `ChatbotDb_Dev`, Redis) | ✅ Real, correct configuration (see Configuration section). |
 
@@ -107,15 +107,15 @@ Note: `EmbeddingModelName: "sentence-transformers/all-MiniLM-L6-v2"` is present 
 ### 🤖 Chat API — `ChatController`, base route `/api/chat`
 All routes exist and are reachable by the router, but **the ones that depend on `IChatbotService` fail at runtime**:
 - `POST /api/chat/message` ❌ (DI can't be resolved)
-- `GET /api/chat/history/{sessionId}` ❌
-- `POST /api/chat/session` ❌
-- `DELETE /api/chat/session/{sessionId}` ❌
-- `GET /api/chat/intents` ❌
-- `POST /api/chat/feedback` ❌
+- `GET /api/chat/history/{sessionId}` ✅ real, backed by `ChatContext`
+- `POST /api/chat/session` ✅ real
+- `DELETE /api/chat/session/{sessionId}` ✅ real
+- `GET /api/chat/intents` ✅ real (static list, matches `AgentService`'s classifier)
+- `POST /api/chat/feedback` ✅ logs via `ILogger` (no dedicated feedback table yet)
 - `POST /api/chat/login` ⚠️ works, but it's demo authentication (see above)
 - `POST /api/chat/register` ⚠️ works, but doesn't persist the user
 - `GET /api/chat/profile` ⚠️ works if authenticated, but always returns the same fake profile
-- `GET /api/chat/interface` ✅ returns a simple HTML test page that calls `POST /api/chat/message` — so even this page never actually gets a real response from the bot
+- `GET /api/chat/interface` — **removed (04/10/2026)**: was a legacy hardcoded demo HTML page, redundant with the real widget (`wwwroot/chat-widget/`), deleted along with `ChatController.GetChatInterfaceHtml()`
 
 ### 🎨 Widget API — `ChatWidgetController`, base route `/api/chatwidget`
 All of these routes are real and working as file/config *serving* (they don't generate AI responses):
