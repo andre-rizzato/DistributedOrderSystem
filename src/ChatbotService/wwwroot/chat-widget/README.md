@@ -83,6 +83,45 @@ The **Chat Widget** is a standalone JavaScript library that makes it easy to int
 </html>
 ```
 
+### Mode 3: General-purpose assistant (ai-customer-service-agent / Node)
+
+Mode 2 above talks to **this** repo's `ChatbotService` → `AgentService` (Python,
+LangGraph) — a narrow order-status/cancel microservice, English-hardcoded,
+no RAG, no configurable business tone. That's the right target when you
+specifically need order-related chat.
+
+For a general-purpose customer-service assistant per client — configurable
+tone, RAG over a knowledge base, handoff rules, rate limiting, all editable
+from a settings screen — point the **same widget file, unmodified**, at a
+deployed `ai-customer-service-agent` (Node) instance's `web` channel
+instead. The widget always `POST`s to `` `${chatbotServiceUrl}/message` ``
+with `{ message, sessionId, userId }` and reads `response.message` —
+`src/channels/web.ts` on the Node side accepts that exact shape (as an
+alias of its own `{ conversationId, text }` contract) and replies with both
+`reply` and `message` fields, so no widget code changes are needed, only
+config:
+
+```html
+<script src="https://your-chatbot-service.example.com/api/chatwidget/chat-widget.min.js"></script>
+<script>
+    window.chatWidgetConfig = {
+        useBffRouting: false,
+        // Points at the Node orchestrator's web channel, not ChatbotService.
+        // CORS must allow this page's origin - see WIDGET_ALLOWED_ORIGINS in
+        // that repo's .env (docs/artifacts/widget-embarcavel.html).
+        chatbotServiceUrl: 'https://cliente-x.rizzatotech.com/webhook/web',
+        theme: 'light'
+    };
+</script>
+```
+
+Each client gets their own Node instance (business name, tone, knowledge
+base all configured independently via that instance's `settings.html`) -
+there's no shared "one AgentService for everyone" tenant model here, same
+as the existing `order` capability routing. `AgentService` itself is
+unaffected either way: Node still calls it, server-to-server, only when a
+message is order-related.
+
 ## ⚙️ Advanced Configuration
 
 ### Full Configuration Options
@@ -278,10 +317,10 @@ dotnet watch --project src/ChatbotService
 - **Endpoint**: `https://chatbot-service.com/api/chat/*`
 
 ### Scenario 3: Corporate Website
-- **Routing**: CDN or static hosting
-- **Authentication**: Optional
-- **Context**: General support
-- **Endpoint**: Configurable cross-origin
+- **Routing**: Direct, but to an `ai-customer-service-agent` (Node) instance, not ChatbotService — see Mode 3 above
+- **Authentication**: None today (CORS allowlist via `WIDGET_ALLOWED_ORIGINS` on the Node side)
+- **Context**: General support, RAG-backed, configurable tone per client
+- **Endpoint**: `https://<client>.rizzatotech.com/webhook/web/message`
 
 ## 🚦 Troubleshooting
 
