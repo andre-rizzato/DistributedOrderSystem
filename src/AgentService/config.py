@@ -27,6 +27,17 @@ SECRET_ENV_VARS = {
     "STRIPE_SECRET_KEY": "stripe-secret-key",
     "ORDER_API_AUTH_VALUE": "order-api-auth-value",
     "CATALOG_API_AUTH_VALUE": "catalog-api-auth-value",
+    # Order History RAG Agent - QDRANT_URL/QDRANT_API_KEY point at the
+    # hosted Qdrant on Azure Container Apps (ca-qdrant, rg-agente-atendimento)
+    # once Key Vault is enabled; local dev talks to the unauthenticated
+    # Docker container instead (rag/config.py's localhost default) and
+    # never reaches this file. Standing up the hosted Qdrant does NOT by
+    # itself turn retrieval on in production - ORDER_HISTORY_RAG_ENABLED
+    # (rag/config.py) is the separate switch for that, deliberately left
+    # off until a decision is made to use it.
+    "VOYAGE_API_KEY": "voyage-api-key",
+    "QDRANT_URL": "qdrant-url",
+    "QDRANT_API_KEY": "qdrant-api-key",
 }
 
 

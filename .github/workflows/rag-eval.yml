@@ -1,0 +1,89 @@
+# RAGAS-based retrieval quality gate for the Order History RAG Agent
+# (src/AgentService/rag/). Deliberately NOT part of deploy-agent-service.yml's
+# push-triggered pytest run - every case here calls Claude (via the graph)
+# AND Claude again (via the RAGAS judge), real API cost on every run, plus
+# LLM-judge variance (see tests/rag_eval/test_rag_quality.py's own comments
+# on why the pass thresholds aren't 1.0) makes this unsuitable as a hard
+# gate on every push the way the fast contract tests are.
+#
+# Runs on a GitHub-hosted runner, not the shared VM - this workflow never
+# touches vm-agente at all, on purpose (that VM's fragility under
+# concurrent load is exactly why this is split out, see rag/config.py's
+# top comment).
+#
+# Secrets come from kv-agente-atendimento (the SAME Key Vault the VM
+# already uses) via Azure AD federated credentials (OIDC) - no GitHub
+# Secret ever stores ANTHROPIC_API_KEY/VOYAGE_API_KEY/QDRANT_API_KEY. The
+# only repo-level values needed are AZURE_CLIENT_ID/AZURE_TENANT_ID/
+# AZURE_SUBSCRIPTION_ID, which identify the federated App Registration
+# (gh-rag-eval-distributedordersystem) - not secrets themselves, just
+# public identifiers; GitHub's OIDC token proves this specific workflow
+# run's identity, Azure AD checks it against the federated credential's
+# subject claim (repo:andre-rizzato/DistributedOrderSystem:pull_request or
+# :ref:refs/heads/dev), and only then issues a short-lived access token.
+# That token is scoped to exactly one role (Key Vault Secrets User) on
+# exactly one Key Vault - nothing else in the subscription is reachable
+# with it.
+#
+# Queries the HOSTED Qdrant (ca-qdrant, Azure Container Apps,
+# rg-agente-atendimento) - not a throwaway service-container Qdrant - so
+# this also doubles as a smoke test that the production Qdrant is healthy
+# and the seed corpus is current, independent of whether
+# ORDER_HISTORY_RAG_ENABLED is actually turned on for real traffic.
+name: RAG quality eval (RAGAS)
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - "src/AgentService/rag/**"
+      - "src/AgentService/rag_node.py"
+      - "src/AgentService/tests/rag_eval/**"
+      - "src/AgentService/intent_classifier.py"
+      - "src/AgentService/graph.py"
+
+permissions:
+  id-token: write   # required for azure/login's OIDC federation
+  contents: read
+
+jobs:
+  rag-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Azure login (OIDC, no stored secret)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Fetch secrets from Key Vault
+        id: kv
+        run: |
+          for pair in "anthropic:anthropic-api-key" "voyage:voyage-api-key" "qdrant-url:qdrant-url" "qdrant-key:qdrant-api-key"; do
+            name="${pair%%:*}"
+            secret="${pair##*:}"
+            value=$(az keyvault secret show --vault-name kv-agente-atendimento --name "$secret" --query value -o tsv)
+            echo "::add-mask::$value"
+            echo "${name}=${value}" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Install dependencies
+        working-directory: src/AgentService
+        run: pip install -r requirements.txt
+
+      - name: Run RAGAS quality tests against the hosted Qdrant
+        working-directory: src/AgentService
+        env:
+          ANTHROPIC_API_KEY: ${{ steps.kv.outputs.anthropic }}
+          VOYAGE_API_KEY: ${{ steps.kv.outputs.voyage }}
+          QDRANT_URL: ${{ steps.kv.outputs.qdrant-url }}
+          QDRANT_API_KEY: ${{ steps.kv.outputs.qdrant-key }}
+          ORDER_HISTORY_RAG_ENABLED: "true"
+        run: python -m pytest tests/rag_eval/ -m rag_eval -v

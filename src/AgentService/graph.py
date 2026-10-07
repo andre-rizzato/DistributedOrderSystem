@@ -14,6 +14,7 @@ from langgraph.graph import END, START, StateGraph
 
 from connectors import get_order_backend
 from intent_classifier import classify_intent_node
+from rag_node import retrieve_knowledge_node
 from state import AgentState
 
 anthropic_client = Anthropic()
@@ -99,10 +100,42 @@ def generate_reply_node(state: AgentState) -> dict:
     # missing), never here.
     data = state.get("order_data")
     order_number = state.get("order_number")
-    print(f"  [NODE generate_reply] order_data={'present' if data else 'absent'}, order_number={order_number}")
+    # retrieved_context: filled in by retrieve_knowledge_node (rag_node.py)
+    # for general_question/order_history_query intents - None either means
+    # that node never ran (order_info/cancel_order/stub intents don't route
+    # through it) or it ran and found/was allowed to return nothing (see
+    # rag_node.py's privacy guardrail). Checked AFTER order_data on purpose:
+    # order_info_agent_node's single-record lookup takes priority when both
+    # happen to be present, since it's the more specific, already-verified
+    # data source for that intent.
+    retrieved = state.get("retrieved_context")
+    print(
+        f"  [NODE generate_reply] order_data={'present' if data else 'absent'}, "
+        f"order_number={order_number}, retrieved_context={len(retrieved) if retrieved else 0} chunk(s)"
+    )
 
     if data is not None:
         context = f"Real data for the order looked up in the system: {data}"
+    elif retrieved:
+        # Joined as a bulleted list, same augmentation shape as the
+        # course's week3-4 RAG-from-scratch exercise - each chunk's text
+        # only, not its score/payload (those are retrieval-internal, not
+        # something the LLM needs to see to answer).
+        context = "Relevant information found:\n" + "\n".join(f"- {chunk['text']}" for chunk in retrieved)
+    elif retrieved is not None and state.get("intent") == "order_history_query":
+        # retrieved == [] specifically (not None) means retrieval WAS
+        # attempted (identity was verified) but found nothing matching -
+        # different from the "identity not verified" case below, worth
+        # distinguishing in case this ever needs separate handling, even
+        # though today both branches lead to a similar honest non-answer.
+        context = "No matching order history was found for this question."
+    elif state.get("intent") == "order_history_query":
+        # retrieved is None AND the intent needed identity verification -
+        # this is rag_node.py's privacy guardrail firing (no
+        # requester_phone on this channel). Telling the customer the truth
+        # here, not a generic failure message - same "ground honestly,
+        # never fabricate" principle as every other branch in this function.
+        context = "I can't look up your order history on this channel without verifying your identity first."
     elif order_number:
         context = f"Order number {order_number} was not found in the system."
     else:
@@ -111,7 +144,11 @@ def generate_reply_node(state: AgentState) -> dict:
     system = (
         "You are the support assistant for DistributedOrderSystem. Reply in English, "
         "briefly and courteously, using ONLY the context provided. If the context says no "
-        "data is available, say so clearly instead of making up an answer."
+        "data is available, say so clearly instead of making up an answer. Do not add "
+        "suggestions, recommendations, or next steps that are not themselves stated in the "
+        "context - e.g. if the context says a card was declined, don't add \"you may want to "
+        "contact your bank\" unless the context itself says to. Every sentence in your reply "
+        "should be traceable to something in the context, not generic customer-service advice."
     )
     response = anthropic_client.messages.create(
         model="claude-sonnet-4-6",
@@ -142,7 +179,20 @@ def route_by_confidence(state: AgentState) -> str:
     elif intent == "get_info":
         destination = "order_info" if state.get("order_number") else "product_info_stub"
     elif intent == "general_question":
-        destination = "general_question"
+        # Used to go straight to "generate_reply" with zero context (see
+        # this file's git history before the Order History RAG Agent) -
+        # now routes through retrieve_knowledge first, which queries the
+        # public faq_policy collection for this intent (see rag_node.py).
+        destination = "retrieve_knowledge"
+    elif intent == "order_history_query":
+        # Same destination node as general_question above - rag_node.py's
+        # retrieve_knowledge_node branches internally on `intent` to pick
+        # which Qdrant collection to query (and, for this intent only,
+        # whether requester_phone is present before querying at all). One
+        # node, not two, because the only difference between the two paths
+        # is WHICH corpus and WHETHER a privacy check applies - not the
+        # shape of the work being done.
+        destination = "retrieve_knowledge"
     else:
         destination = "clarify"  # an unexpected label should never reach here - safety guard
 
@@ -161,6 +211,7 @@ def build_graph():
     graph.add_node("product_info_stub", product_info_stub_node)
     graph.add_node("clarify", clarify_node)
     graph.add_node("generate_reply", generate_reply_node)
+    graph.add_node("retrieve_knowledge", retrieve_knowledge_node)
 
     graph.add_edge(START, "classify_intent")
 
@@ -174,11 +225,20 @@ def build_graph():
             "create_stub": "create_stub",
             "update_stub": "update_stub",
             "product_info_stub": "product_info_stub",
-            "general_question": "generate_reply",
+            # Both general_question and order_history_query land here -
+            # see route_by_confidence's comments on why one node covers
+            # both.
+            "retrieve_knowledge": "retrieve_knowledge",
         },
     )
 
     graph.add_edge("order_info_agent", "generate_reply")
+    # retrieve_knowledge always flows into generate_reply next, whether it
+    # found 3 chunks, 0 chunks, or skipped retrieval entirely (flag off /
+    # privacy guardrail) - generate_reply_node's branches on
+    # retrieved_context (see its comments above) are what turn each of
+    # those outcomes into an honest reply.
+    graph.add_edge("retrieve_knowledge", "generate_reply")
     # cancel_order_agent routes straight to END, not generate_reply (security
     # review 2026-10-04, item #4) - it never calls the model, since the
     # outcome (human handoff) never depends on any data generate_reply_node

@@ -60,7 +60,13 @@ jobs:
             pm2 stop agente-atendimento agent-service || true
             cd ~/agent-service
             .venv/bin/pip install -q -r requirements.txt
-            .venv/bin/python -m pytest tests/ -q
+            # -m "not rag_eval" excludes the RAGAS-based retrieval quality
+            # tests (tests/rag_eval/) - they call paid Claude + Voyage APIs
+            # TWICE per case (once through the real graph, once through the
+            # RAGAS judge) and carry real LLM-judge variance, so they are
+            # not a fit for "must pass on every push" the way the contract
+            # tests are. See rag-eval.yml for where they run instead.
+            .venv/bin/python -m pytest tests/ -q -m "not rag_eval"
             pm2 restart agente-atendimento agent-service --update-env
             pm2 save
           '
