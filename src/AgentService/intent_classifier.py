@@ -28,7 +28,28 @@ class IntentClassification(BaseModel):
         "update_order",
         "get_info",
         "general_question",
-    ] = Field(description="The single label that best describes what the user wants.")
+        # Order History RAG Agent (rag_node.py): distinct from
+        # general_question specifically because it requires a verified
+        # requester_phone before any retrieval happens (a customer's own
+        # support history is private; FAQ/policy content under
+        # general_question is public) - see the implementation plan's
+        # section 1.4 and rag_node.py's privacy guardrail for the full
+        # reasoning on why this needed to be its own label instead of a
+        # branch inside general_question.
+        "order_history_query",
+    ] = Field(description=(
+        "The single label that best describes what the user wants. "
+        "IMPORTANT distinctions between labels that can all appear with no order number: "
+        "get_info (no number) is ONLY for questions about the PRODUCT CATALOG (e.g. 'do you have product Y in stock?'). "
+        "order_history_query is for questions about something that ACTUALLY HAPPENED on the customer's OWN "
+        "account - status, delays, payment problems, damaged items, refunds already requested, 'why IS my order "
+        "late', etc. general_question covers POLICY/HYPOTHETICAL questions even when phrased in first person or "
+        "about 'an order' - 'IF I cancel an order, is there a fee', 'what's the refund window', 'can I get a "
+        "refund for an order cancelled a month after delivery' (asking what the RULE is, not reporting something "
+        "that happened to them) all stay general_question. The test: does answering require looking up THIS "
+        "customer's actual records (order_history_query), or just stating a policy that applies to everyone "
+        "(general_question)?"
+    ))
 
     order_number: Optional[str] = Field(
         default=None,
@@ -56,6 +77,26 @@ FEW_SHOT_EXAMPLES = [
      IntentClassification(intent="get_info", order_number=None, confidence=0.9)),
     ("What's your refund policy?",
      IntentClassification(intent="general_question", order_number=None, confidence=0.9)),
+    ("Did I have any payment problems with my past orders?",
+     IntentClassification(intent="order_history_query", order_number=None, confidence=0.93)),
+    # Distinguishes this from "Do you have product Y in stock?" above - both
+    # are get_info-shaped questions with no order number, but this one is
+    # about the customer's OWN order (needs order_support_notes + identity),
+    # not the product catalog. Without this example, a question like this
+    # was observed to get classified as get_info -> product_info_stub (a
+    # "not available yet" stub reply), which is wrong on two counts: it's
+    # not a product question, and a real answer was available all along.
+    ("Why is my order taking so long to arrive?",
+     IntentClassification(intent="order_history_query", order_number=None, confidence=0.9)),
+    # Contrast case for the example above: first-person phrasing ("an
+    # order I cancelled") that's actually asking about the POLICY/RULE,
+    # not reporting a real event on this customer's account - stays
+    # general_question. Without this example, a question shaped like this
+    # was observed to get misclassified as order_history_query, which
+    # wrongly triggers the identity-verification guardrail (rag_node.py)
+    # for a question that never needed to look up any real order.
+    ("Can I get a refund for an order I cancelled over a month after delivery?",
+     IntentClassification(intent="general_question", order_number=None, confidence=0.85)),
 ]
 
 

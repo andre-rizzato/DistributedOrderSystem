@@ -57,6 +57,7 @@ def handle_message(request: AgentRequest) -> AgentResponse:
         "confidence": None,
         "order_data": None,
         "final_reply": None,
+        "retrieved_context": None,
     }
 
     final_state = compiled_graph.invoke(initial_state)

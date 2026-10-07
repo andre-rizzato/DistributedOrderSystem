@@ -32,3 +32,13 @@ class AgentState(TypedDict):
 
     # filled in by generate_reply_node or clarify_node - this is what goes back to C#
     final_reply: Optional[str]
+
+    # filled in by retrieve_knowledge_node (rag_node.py) - never serialized
+    # into AgentResponse (main.py), only consumed internally by
+    # generate_reply_node to build its grounding context. None means either
+    # retrieval was never attempted (order_info/cancel_order/stub intents
+    # don't route through retrieve_knowledge_node at all) or it WAS
+    # attempted but found nothing / was refused (see rag_node.py's privacy
+    # guardrail) - generate_reply_node treats both the same way: ground
+    # honestly on "no context available", never fabricate.
+    retrieved_context: Optional[list[dict]]

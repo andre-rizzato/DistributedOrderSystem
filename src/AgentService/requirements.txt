@@ -1,13 +1,24 @@
-fastapi
-uvicorn[standard]
-langgraph
-anthropic
-instructor
-pydantic
-python-dotenv
-httpx
-google-auth
-requests
-azure-identity
-azure-keyvault-secrets
-pytest
+fastapi==0.142.3
+uvicorn[standard]==0.54.0
+langgraph==1.2.14
+anthropic==1.12.0
+instructor==1.17.0
+pydantic==2.13.5
+python-dotenv==1.2.4
+httpx==0.28.1
+google-auth==2.61.0
+requests==2.34.2
+azure-identity==1.26.0
+azure-keyvault-secrets==4.11.3
+pytest==9.1.1
+
+# RAG dependencies (Order History RAG Agent)
+qdrant-client==1.19.1
+voyageai==0.5.0
+ragas==0.4.3
+# ragas 0.4.3 unconditionally imports langchain_community.chat_models.vertexai,
+# a module that newer langchain-community releases dropped entirely (it's
+# being sunset in favor of standalone integration packages) - pinning below
+# 0.4.0 keeps that module present. See src/AgentService/rag/README.md for
+# the full story; this is a real upstream packaging bug, not a choice of ours.
+langchain-community<0.4.0
