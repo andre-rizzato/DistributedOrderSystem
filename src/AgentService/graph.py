@@ -14,6 +14,7 @@ from langgraph.graph import END, START, StateGraph
 
 from connectors import get_order_backend
 from intent_classifier import classify_intent_node
+from messages import message
 from rag_node import retrieve_knowledge_node
 from state import AgentState
 
@@ -56,33 +57,27 @@ def cancel_order_agent_node(state: AgentState) -> dict:
     # and more predictable.
     order_number = state.get("order_number")
     print(f"  [NODE cancel_order_agent] order_number={order_number} -> human handoff (agent never cancels directly)")
-    return {
-        "final_reply": (
-            "I understand you'd like to cancel this order. To make sure this is "
-            "handled correctly and securely, I'm connecting you with a human agent "
-            "who will confirm the cancellation with you directly."
-        )
-    }
+    return {"final_reply": message("cancel_order_handoff", state.get("language"))}
 
 
 def create_stub_node(state: AgentState) -> dict:
     print("  [NODE create_stub] (stub - no real GatewayBff endpoint yet)")
-    return {"final_reply": "Placing orders through the assistant isn't available yet - please complete your purchase on the site."}
+    return {"final_reply": message("create_stub", state.get("language"))}
 
 
 def update_stub_node(state: AgentState) -> dict:
     print("  [NODE update_stub] (stub - no real GatewayBff endpoint yet)")
-    return {"final_reply": "Changing orders through the assistant isn't available yet - please contact human support."}
+    return {"final_reply": message("update_stub", state.get("language"))}
 
 
 def product_info_stub_node(state: AgentState) -> dict:
     print("  [NODE product_info_stub] (stub - no product search endpoint yet)")
-    return {"final_reply": "Looking up products through the assistant isn't available yet - please check the catalog on the site."}
+    return {"final_reply": message("product_info_stub", state.get("language"))}
 
 
 def clarify_node(state: AgentState) -> dict:
     print(f"  [NODE clarify] confidence={state.get('confidence')} <= 0.70 -> asking for clarification")
-    return {"final_reply": "I'm not sure I understood - could you rephrase or give more detail about what you need?"}
+    return {"final_reply": message("clarify", state.get("language"))}
 
 
 def generate_reply_node(state: AgentState) -> dict:
@@ -141,8 +136,26 @@ def generate_reply_node(state: AgentState) -> dict:
     else:
         context = "No specific order data available for this question."
 
+    # Instrução de idioma: mesmo raciocínio do Node (promptBuilder.ts,
+    # bug corrigido lá em 06/10/2026) - sem isso, esta função respondia
+    # SEMPRE em inglês (valor fixo que ficava aqui antes), mesmo pra
+    # cliente que escreveu em português ou italiano. `state["language"]`
+    # vem do canal via Node orchestrator (agentServiceClient.ts ->
+    # AgentRequest.language, main.py); None quando o canal não informa
+    # nenhum (hoje: WhatsApp) - nesse caso, segue o idioma da própria
+    # mensagem do cliente, igual ao fallback do lado Node.
+    language = state.get("language")
+    language_names = {"pt": "Portuguese", "en": "English", "it": "Italian"}
+    language_instruction = (
+        f"Reply in {language_names.get(language, language)}, even if the context below is in "
+        "a different language (translate the information from the context)."
+        if language
+        else "Reply in the same language the customer used in their message, even if the "
+        "context below is in a different language (translate the information from the context)."
+    )
     system = (
-        "You are the support assistant for DistributedOrderSystem. Reply in English, "
+        "You are the support assistant for DistributedOrderSystem. "
+        f"{language_instruction} Reply "
         "briefly and courteously, using ONLY the context provided. If the context says no "
         "data is available, say so clearly instead of making up an answer. Do not add "
         "suggestions, recommendations, or next steps that are not themselves stated in the "

@@ -37,6 +37,16 @@ class AgentRequest(BaseModel):
     # since a Telegram chat id isn't a verified phone number - Optional with
     # a default so existing callers that don't send it don't break.
     requester_phone: Optional[str] = None
+    # Idioma do cliente já resolvido pelo canal, no Node orchestrator
+    # (promptBuilder.ts tem a mesma lógica pro RAG que roda do lado Node) -
+    # "pt" | "en" | "it", ou None quando o canal não informa nenhum (hoje:
+    # WhatsApp). Sem isso, generate_reply_node (graph.py) não tinha NENHUM
+    # sinal de idioma e respondia sempre em inglês, mesmo pra cliente que
+    # escreveu em português - bug encontrado em 07/10/2026 depois que o
+    # Order History RAG Agent passou a capturar muito mais mensagens nessa
+    # rota (antes, poucas perguntas chegavam até generate_reply_node sem
+    # contexto nenhum, então o bug raramente aparecia).
+    language: Optional[str] = None
 
 
 class AgentResponse(BaseModel):
@@ -52,6 +62,7 @@ def handle_message(request: AgentRequest) -> AgentResponse:
         "message": request.message,
         "session_id": request.session_id,
         "requester_phone": request.requester_phone,
+        "language": request.language,
         "intent": None,
         "order_number": None,
         "confidence": None,

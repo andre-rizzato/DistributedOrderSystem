@@ -20,6 +20,13 @@ class AgentState(TypedDict):
     # docstring) - plumbing only, no generic connector enforces it yet.
     requester_phone: Optional[str]
 
+    # "pt" | "en" | "it", set by main.py from AgentRequest.language - the
+    # same value the Node orchestrator's promptBuilder.ts already uses for
+    # its own RAG prompt. None on channels that don't inform a language
+    # today (WhatsApp) - generate_reply_node falls back to "match the
+    # customer's own message" in that case, same as the Node side.
+    language: Optional[str]
+
     # filled in by classify_intent_node (Week 8: few-shot + Pydantic)
     intent: Optional[str]
     order_number: Optional[str]

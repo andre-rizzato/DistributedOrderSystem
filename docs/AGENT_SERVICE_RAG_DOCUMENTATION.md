@@ -151,6 +151,26 @@ Two Qdrant collections, seeded via `rag/ingest.py` from
    actually `Cancelled`. Fixed by forbidding inference from indirect event
    descriptions in the field's description, plus a new few-shot example
    using the exact failing phrase.
+6. **`generate_reply_node`'s system prompt hardcoded "Reply in English"**
+   (pre-existing, not introduced by this build) — caught live, not by
+   RAGAS: it stayed mostly invisible before this build, since few messages
+   reached `generate_reply_node` with zero context to begin with. Once
+   `order_history_query` started routing "status do pedido"-style messages
+   here (privacy guardrail above, no `requester_phone` on Telegram), a
+   Portuguese-speaking customer got an English reply — reported from the
+   sibling Node product's own live test on 07/10/2026. Fixed by adding
+   `AgentRequest.language` (sent by `agentServiceClient.ts`, same value
+   `ai-customer-service-agent`'s own `promptBuilder.ts` already resolves per
+   channel) threaded through `AgentState.language`, and making every reply
+   path language-aware: `generate_reply_node`'s system prompt picks the
+   instruction from `language` (falls back to "match the customer's
+   message" when absent, e.g. WhatsApp today); the nodes that never call the
+   LLM at all (`cancel_order_agent`, `create/update/product_info_stub`,
+   `clarify`) now pull their fixed string from the new `messages.py`
+   (pt/en/it, mirrors the Node product's `messages.ts`, defaults to `pt`
+   when `language` is absent/unknown). `test_contract_agent_message.py`'s
+   cancel-order contract test now pins `language: "en"` explicitly, since
+   the key phrase it locks in only shows up in the English copy.
 
 ## Testing
 
