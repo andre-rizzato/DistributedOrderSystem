@@ -29,8 +29,17 @@ def test_cancel_order_contract_unchanged():
     orchestrator.ts's comment). Also locks in the fixed handoff message's
     key phrase, so a future refactor of cancel_order_agent_node can't
     accidentally soften or remove it without this test failing first.
+
+    language="en" pinned explicitly (07/10/2026): cancel_order_agent_node's
+    reply is now localized (messages.py), so the key phrase only shows up
+    in the English copy - without pinning this, the request would fall
+    back to DEFAULT_LANGUAGE ("pt", see messages.py) and this assertion
+    would fail for a reason unrelated to what this test actually guards.
     """
-    response = client.post("/agent/message", json={"message": "please cancel order 12345", "session_id": "contract-test-1"})
+    response = client.post(
+        "/agent/message",
+        json={"message": "please cancel order 12345", "session_id": "contract-test-1", "language": "en"},
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["intent"] == "cancel_order"
