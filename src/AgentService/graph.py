@@ -1,9 +1,13 @@
 # src/AgentService/graph.py
-# Order Orchestrator Agent - the LangGraph orchestration graph. Skeleton
-# agreed with Andre before writing it: Orchestrator (classify_intent)
-# + conditional-edge routing (route_by_confidence) + 2 real workers
-# (order_info_agent, cancel_order_agent) + 3 stub workers (create/update/product_info),
-# all converging on generate_reply or ending directly at END.
+# Orchestrator Agent - the LangGraph orchestration graph, grown past its
+# original "orders only" scope. Skeleton agreed with Andre before writing
+# it: Orchestrator (classify_intent) + conditional-edge routing
+# (route_by_confidence) + 2 real workers (order_info_agent, cancel_order_agent)
+# + 3 stub workers (create/update/product_info), all converging on
+# generate_reply or ending directly at END. Scheduling (calendar
+# integration, 2026-10-11, scheduling_node.py) is the second domain built on
+# the exact same skeleton: one more classify_intent label set, 3 more
+# workers, one more routing branch - no new graph-level concept needed.
 #
 # Design principle: the routing
 # decision lives in a function separate from the node that calls the LLM -
@@ -16,6 +20,12 @@ from connectors import get_order_backend
 from intent_classifier import classify_intent_node
 from messages import message
 from rag_node import retrieve_knowledge_node
+from scheduling_node import (
+    book_appointment_node,
+    cancel_reschedule_appointment_node,
+    check_availability_node,
+    route_after_booking,
+)
 from state import AgentState
 
 anthropic_client = Anthropic()
@@ -95,6 +105,13 @@ def generate_reply_node(state: AgentState) -> dict:
     # missing), never here.
     data = state.get("order_data")
     order_number = state.get("order_number")
+    # scheduling_result: filled in by check_availability_node/book_appointment_node
+    # (scheduling_node.py). Checked right after order_data/before retrieved_context
+    # because the two domains (orders, appointments) never overlap on a
+    # single message - classify_intent_node's Literal only ever picks one
+    # label - so there's no real priority question here, just keeping the
+    # order of checks mirrored to the order of imports above.
+    scheduling_result = state.get("scheduling_result")
     # retrieved_context: filled in by retrieve_knowledge_node (rag_node.py)
     # for general_question/order_history_query intents - None either means
     # that node never ran (order_info/cancel_order/stub intents don't route
@@ -106,11 +123,44 @@ def generate_reply_node(state: AgentState) -> dict:
     retrieved = state.get("retrieved_context")
     print(
         f"  [NODE generate_reply] order_data={'present' if data else 'absent'}, "
-        f"order_number={order_number}, retrieved_context={len(retrieved) if retrieved else 0} chunk(s)"
+        f"order_number={order_number}, scheduling_result={'present' if scheduling_result is not None else 'absent'}, "
+        f"retrieved_context={len(retrieved) if retrieved else 0} chunk(s)"
     )
 
     if data is not None:
         context = f"Real data for the order looked up in the system: {data}"
+    elif state.get("intent") in ("check_availability", "book_appointment") and scheduling_result is not None:
+        if isinstance(scheduling_result, list):
+            # check_availability_node's result - lista de slots livres
+            # (pode ser vazia de verdade: dia cheio, não é erro).
+            context = (
+                "Available appointment slots found: " + ", ".join(slot["start"] for slot in scheduling_result)
+                if scheduling_result
+                else "No available appointment slots were found for the requested service and date."
+            )
+        elif scheduling_result.get("booking_failed"):
+            # book_appointment_node's "slot taken / unknown service" case -
+            # diferente de scheduling_result is None (capacidade fora do
+            # ar), aqui a agenda respondeu normalmente, só não pôde
+            # confirmar ESSE horário específico.
+            context = (
+                "The requested time slot is no longer available (it may have just been booked by someone "
+                "else) or the requested service doesn't exist - ask the customer to pick a different time "
+                "or service, or offer to check availability again."
+            )
+        else:
+            # book_appointment_node's result - dict. "scheduling_link" já
+            # foi tratado com reply fixa por aquele próprio node e NUNCA
+            # chega aqui (ver route_after_booking) - um dict neste ponto é
+            # sempre uma reserva confirmada de verdade (Google/Microsoft).
+            context = f"The appointment was successfully booked: {scheduling_result}"
+    elif state.get("intent") in ("check_availability", "book_appointment"):
+        # scheduling_result is None: _get_backend() não conseguiu montar o
+        # conector (credencial ausente/errada) ou a chamada ao provedor
+        # falhou - erro de configuração/rede, nunca inventar "marcado com
+        # sucesso" nesse caso (mesmo principio de "nunca fabricar" do resto
+        # desta função).
+        context = "Scheduling isn't available right now - please try again later or ask for a human agent."
     elif retrieved:
         # Joined as a bulleted list, same augmentation shape as a
         # classic RAG-from-scratch pipeline - each chunk's text
@@ -206,6 +256,26 @@ def route_by_confidence(state: AgentState) -> str:
         # is WHICH corpus and WHETHER a privacy check applies - not the
         # shape of the work being done.
         destination = "retrieve_knowledge"
+    # Scheduling capability (calendar integration, 2026-10-11) - same shape
+    # as the order-domain branches above: a destructive/data-needing intent
+    # only proceeds when the message actually gave enough to act on,
+    # otherwise clarify_node asks for what's missing instead of guessing.
+    elif intent == "check_availability":
+        destination = "check_availability_agent" if state.get("requested_date") else "clarify"
+    elif intent == "book_appointment":
+        destination = (
+            "book_appointment_agent"
+            if state.get("service_id") and state.get("requested_slot")
+            else "clarify"
+        )
+    elif intent in ("cancel_appointment", "reschedule_appointment"):
+        # Nenhum dado é necessário aqui - diferente de cancel_order (que
+        # exige order_number pra identificar QUAL pedido), o handoff de
+        # agenda nem tenta identificar o agendamento sozinho; é o atendente
+        # humano que vai perguntar os detalhes. Replica cancel_order's
+        # "sempre vai pro node, nunca pro clarify" só que sem a checagem de
+        # order_number, porque não há um id equivalente sendo exigido aqui.
+        destination = "cancel_reschedule_appointment_agent"
     else:
         destination = "clarify"  # an unexpected label should never reach here - safety guard
 
@@ -225,6 +295,12 @@ def build_graph():
     graph.add_node("clarify", clarify_node)
     graph.add_node("generate_reply", generate_reply_node)
     graph.add_node("retrieve_knowledge", retrieve_knowledge_node)
+    # Scheduling capability (calendar integration, 2026-10-11) -
+    # scheduling_node.py's 3 workers, same registration shape as the
+    # order-domain nodes above.
+    graph.add_node("check_availability_agent", check_availability_node)
+    graph.add_node("book_appointment_agent", book_appointment_node)
+    graph.add_node("cancel_reschedule_appointment_agent", cancel_reschedule_appointment_node)
 
     graph.add_edge(START, "classify_intent")
 
@@ -242,6 +318,9 @@ def build_graph():
             # see route_by_confidence's comments on why one node covers
             # both.
             "retrieve_knowledge": "retrieve_knowledge",
+            "check_availability_agent": "check_availability_agent",
+            "book_appointment_agent": "book_appointment_agent",
+            "cancel_reschedule_appointment_agent": "cancel_reschedule_appointment_agent",
         },
     )
 
@@ -262,5 +341,26 @@ def build_graph():
     graph.add_edge("create_stub", END)
     graph.add_edge("update_stub", END)
     graph.add_edge("product_info_stub", END)
+
+    # check_availability_agent never sets final_reply itself - always needs
+    # generate_reply_node to turn its raw slot list into natural language
+    # (same shape as order_info_agent above).
+    graph.add_edge("check_availability_agent", "generate_reply")
+    # book_appointment_agent is conditional: it already built final_reply
+    # itself for a Calendly-style scheduling_link result (nothing left for
+    # the model to decide, same principle as cancel_order_agent), but for a
+    # real confirmed booking - or a failed/misconfigured attempt - it still
+    # needs generate_reply_node to phrase the outcome. route_after_booking
+    # (scheduling_node.py) is the pure function deciding which.
+    graph.add_conditional_edges(
+        "book_appointment_agent",
+        route_after_booking,
+        {"end": END, "generate_reply": "generate_reply"},
+    )
+    # cancel_reschedule_appointment_agent routes straight to END, never
+    # generate_reply - it never calls a SchedulingBackend, always returns
+    # the same fixed handoff message (see its own docstring), same as
+    # cancel_order_agent above.
+    graph.add_edge("cancel_reschedule_appointment_agent", END)
 
     return graph.compile()

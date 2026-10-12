@@ -37,6 +37,32 @@ class AgentState(TypedDict):
     # longer calls the backend at all, see its docstring in graph.py)
     order_data: Optional[dict]
 
+    # Scheduling capability (calendar integration, 2026-10-11) - filled in
+    # by classify_intent_node for the 4 new intents (check_availability,
+    # book_appointment, cancel_appointment, reschedule_appointment), read by
+    # scheduling_node.py's workers. service_id/requested_date/requested_slot
+    # are the LLM's best-effort extraction from the customer's own words
+    # ("corte às 15h na sexta") - None when the message didn't mention
+    # enough to resolve one deterministically, which is exactly what sends
+    # the conversation to clarify_node (route_by_confidence) instead of
+    # guessing a slot the customer never said.
+    service_id: Optional[str]
+    requested_date: Optional[str]
+    requested_slot: Optional[str]
+    # appointment_id: only ever read by cancel_reschedule_appointment_node
+    # for logging - that node never calls backend.cancel() itself (see
+    # connectors/base.py's SchedulingBackend.cancel docstring), so this is
+    # NOT a trigger for a real cancellation, just the id the customer quoted
+    # for the human attendant to find.
+    appointment_id: Optional[str]
+    # scheduling_result: whatever check_availability_node/book_appointment_node
+    # got back from the concrete SchedulingBackend - a list of open slots,
+    # a confirmed booking ({"confirmed": True, ...}), or a Calendly
+    # scheduling link ({"scheduling_link": url}). generate_reply_node reads
+    # this the same way it already reads order_data - raw backend output,
+    # formatted into natural language, never fabricated.
+    scheduling_result: Optional[dict | list]
+
     # filled in by generate_reply_node or clarify_node - this is what goes back to C#
     final_reply: Optional[str]
 

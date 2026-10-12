@@ -64,6 +64,48 @@ MESSAGES: dict[str, dict[str, str]] = {
         "it": "Non sono sicuro di aver capito - puoi riformulare o darmi più dettagli "
         "su cosa ti serve?",
     },
+    # Scheduling capability (calendar integration, 2026-10-11) - mirrors
+    # cancel_order_handoff above: cancel_reschedule_appointment_node
+    # (scheduling_node.py) never calls a SchedulingBackend, it only returns
+    # one of these two fixed strings and ends the graph. Two separate keys
+    # (not one shared "appointment_handoff") so the customer hears back the
+    # specific thing they asked for, even though the node's actual behavior
+    # is identical either way.
+    "cancel_appointment_handoff": {
+        "pt": "Entendi que você quer cancelar um agendamento — para garantir que "
+        "isso seja feito corretamente, vou te conectar com um atendente humano "
+        "que vai confirmar o cancelamento com você diretamente.",
+        "en": "I understand you'd like to cancel an appointment. To make sure "
+        "this is handled correctly, I'm connecting you with a human agent who "
+        "will confirm the cancellation with you directly.",
+        "it": "Ho capito che vuoi annullare un appuntamento. Per assicurarmi che "
+        "venga gestito correttamente, ti metto in contatto con un operatore che "
+        "confermerà l'annullamento direttamente con te.",
+    },
+    "reschedule_appointment_handoff": {
+        "pt": "Entendi que você quer reagendar um horário — para garantir que "
+        "isso seja feito corretamente, vou te conectar com um atendente humano "
+        "que vai combinar o novo horário com você diretamente.",
+        "en": "I understand you'd like to reschedule an appointment. To make "
+        "sure this is handled correctly, I'm connecting you with a human agent "
+        "who will arrange the new time with you directly.",
+        "it": "Ho capito che vuoi riprogrammare un appuntamento. Per assicurarmi "
+        "che venga gestito correttamente, ti metto in contatto con un operatore "
+        "che concorderà il nuovo orario direttamente con te.",
+    },
+    # Usada só pelo CalendlyBackend (ver connectors/scheduling_calendly.py e
+    # connectors/base.py's SchedulingBackend.book() docstring): quando o
+    # backend não cria o evento de verdade, só gera um link de uso único,
+    # book_appointment_node monta a resposta final AQUI, sem chamar o LLM -
+    # não há nada pro modelo "decidir", a mensagem é sempre a mesma com o
+    # link trocado. `{url}` é substituído via str.format() em
+    # scheduling_node.py, não pelo message() em si (que não interpola nada,
+    # igual messages.ts do lado Node).
+    "scheduling_link": {
+        "pt": "Para finalizar, escolha o horário que preferir neste link: {url}",
+        "en": "To finish, pick the time that works best for you at this link: {url}",
+        "it": "Per completare, scegli l'orario che preferisci a questo link: {url}",
+    },
 }
 
 

@@ -38,6 +38,14 @@ SECRET_ENV_VARS = {
     "VOYAGE_API_KEY": "voyage-api-key",
     "QDRANT_URL": "qdrant-url",
     "QDRANT_API_KEY": "qdrant-api-key",
+    # Scheduling capability (calendar integration, 2026-10-11) - only the
+    # two values that are real secrets. MICROSOFT_TENANT_ID/CLIENT_ID/
+    # CALENDAR_USER_ID and CALENDLY_EVENT_TYPE_URI are identifiers, not
+    # secrets (same reasoning as GOOGLE_CALENDAR_ID above - restricted by
+    # what's shared with the app/token, not by being unguessable), so they
+    # stay .env-only, never Key Vault.
+    "MICROSOFT_CLIENT_SECRET": "microsoft-client-secret",
+    "CALENDLY_API_TOKEN": "calendly-api-token",
 }
 
 

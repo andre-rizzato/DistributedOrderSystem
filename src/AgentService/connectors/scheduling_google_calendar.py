@@ -145,7 +145,13 @@ class GoogleCalendarBackend:
             # Google's own conflict signal if two bookings race the same slot.
             return None
         response.raise_for_status()
-        return response.json()
+        # "confirmed": True (calendar integration, 2026-10-11) - the uniform
+        # signal scheduling_node.py's book_appointment_node branches on to
+        # tell a real booking apart from CalendlyBackend's link-only result
+        # (see connectors/base.py's SchedulingBackend.book() docstring).
+        # The rest of Google's own event JSON (id, htmlLink, ...) is kept
+        # as-is underneath it.
+        return {"confirmed": True, **response.json()}
 
     def cancel(self, appointment_id: str) -> dict | None:
         with self._client() as client:

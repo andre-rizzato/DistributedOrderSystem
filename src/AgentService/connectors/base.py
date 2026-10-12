@@ -73,11 +73,40 @@ class SchedulingBackend(Protocol):
         ...
 
     def book(self, service_id: str, slot: str, customer: dict) -> dict | None:
-        """Books the slot; returns the created appointment, or None if it was taken."""
+        """Books the slot; returns the created appointment, or None if it was taken.
+
+        Extended contract (calendar integration, 2026-10-11): not every real
+        calendar product can create an arbitrary-time event through its API.
+        Google Calendar and Microsoft Graph can - they return a dict with
+        `"confirmed": True` and the provider's own event id. Calendly
+        deliberately does NOT expose a "create a scheduled event at this
+        exact time" endpoint to third parties - only the invitee, on
+        Calendly's own hosted page, can finish a booking. For a link-based
+        backend like CalendlyBackend, book() instead returns a dict with a
+        `"scheduling_link"` key (a single-use URL from Calendly's own
+        `POST /scheduling_links`) and no `"confirmed"` key. The caller
+        (scheduling_node.py's book_appointment_node) branches on which key is
+        present to decide whether to tell the customer "agendado" or hand
+        them a link to finish the job themselves - see that module's
+        docstring for the full reasoning. Every implementation still returns
+        None (never raises) when the requested slot/service genuinely
+        doesn't exist, same "not found is not an error" rule as before.
+        """
         ...
 
     def cancel(self, appointment_id: str) -> dict | None:
-        """Cancels an existing appointment; returns the result, or None if not found."""
+        """Cancels an existing appointment; returns the result, or None if not found.
+
+        NOTE (calendar integration, 2026-10-11, mirrors OrderBackend.cancel's
+        note above): the chatbot's own graph (scheduling_node.py's
+        cancel_reschedule_appointment_node) deliberately NEVER calls this
+        method either - canceling or rescheduling an appointment always
+        becomes a human handoff, same reasoning as order cancellation
+        (destructive, and this service has no reliable way to confirm the
+        requester owns the booking on every channel). This method stays on
+        the Protocol for a future human-operator tool to call once a person
+        has confirmed the request, not for the chatbot's automatic path.
+        """
         ...
 
 

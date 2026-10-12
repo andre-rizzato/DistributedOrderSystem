@@ -54,6 +54,18 @@ class AgentResponse(BaseModel):
     intent: Optional[str] = None
     confidence: Optional[float] = None
     order_id: Optional[str] = None
+    # Scheduling capability (calendar integration, 2026-10-11) - mirrors
+    # order_id above: optional, log/audit-only fields the Node orchestrator
+    # may record alongside the conversation history, never used by Node to
+    # decide flow (that decision is made purely from `intent`, same as
+    # cancel_order already works - see orchestrator.ts). appointment_id is
+    # the provider's own event id (Google/Microsoft) when book_appointment
+    # created a real event; scheduling_link is the single-use Calendly URL
+    # when the backend could only hand out a link instead (see
+    # connectors/base.py's SchedulingBackend.book() docstring for why the
+    # two are mutually exclusive, never both set).
+    appointment_id: Optional[str] = None
+    scheduling_link: Optional[str] = None
 
 
 @app.post("/agent/message", response_model=AgentResponse)
@@ -67,17 +79,37 @@ def handle_message(request: AgentRequest) -> AgentResponse:
         "order_number": None,
         "confidence": None,
         "order_data": None,
+        # Scheduling capability (calendar integration, 2026-10-11) - see
+        # state.py's comments on each field. Initialized to None like every
+        # other per-turn field above; classify_intent_node and
+        # scheduling_node.py's workers are the only ones that ever fill
+        # these in.
+        "service_id": None,
+        "requested_date": None,
+        "requested_slot": None,
+        "appointment_id": None,
+        "scheduling_result": None,
         "final_reply": None,
         "retrieved_context": None,
     }
 
     final_state = compiled_graph.invoke(initial_state)
 
+    # scheduling_result só existe pras 2 intents que de fato chamam um
+    # SchedulingBackend (check_availability_node/book_appointment_node) - é
+    # um dict só quando book_appointment_node rodou (lista de horários
+    # livres não tem "id" nem "scheduling_link" pra extrair aqui).
+    scheduling_result = final_state.get("scheduling_result")
+    appointment_id = scheduling_result.get("id") if isinstance(scheduling_result, dict) else None
+    scheduling_link = scheduling_result.get("scheduling_link") if isinstance(scheduling_result, dict) else None
+
     return AgentResponse(
         reply=final_state["final_reply"] or "Sorry, I couldn't generate a response.",
         intent=final_state.get("intent"),
         confidence=final_state.get("confidence"),
         order_id=final_state.get("order_number"),
+        appointment_id=appointment_id,
+        scheduling_link=scheduling_link,
     )
 
 
