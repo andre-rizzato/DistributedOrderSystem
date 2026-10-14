@@ -20,8 +20,10 @@
 #     this mirrors cancel_order_agent_node exactly (destructive, no
 #     reliable identity check on every channel, always human handoff).
 
+import os
 from typing import Optional
 
+from appointment_store import AppointmentStore
 from connectors import get_scheduling_backend
 from connectors.base import SchedulingBackend
 from messages import message
@@ -62,6 +64,22 @@ def _get_backend() -> Optional[SchedulingBackend]:
     return _backend_cache
 
 
+# Preâmbulo: o AppointmentStore (ver appointment_store.py) é construído sob
+# demanda igual o backend acima, mas por um motivo mais simples: não exige
+# nenhuma credencial, só precisa existir antes do primeiro book_appointment_node
+# bem-sucedido. APPOINTMENTS_STORE_PATH segue o mesmo padrão de env-com-
+# default que CONVERSATIONS_DIR já usa do lado Node (src/config.ts) - um
+# caminho sensato sem precisar configurar nada pro caso comum.
+_appointment_store_cache: Optional[AppointmentStore] = None
+
+
+def _get_appointment_store() -> AppointmentStore:
+    global _appointment_store_cache
+    if _appointment_store_cache is None:
+        _appointment_store_cache = AppointmentStore(os.getenv("APPOINTMENTS_STORE_PATH", "data/appointments.jsonl"))
+    return _appointment_store_cache
+
+
 def check_availability_node(state: AgentState) -> dict:
     service_id = state.get("service_id")
     requested_date = state.get("requested_date")
@@ -95,6 +113,20 @@ def book_appointment_node(state: AgentState) -> dict:
     if backend is None:
         return {"scheduling_result": None}
 
+    # Protocolo (calendar integration, 13/10/2026) gerado ANTES de chamar o
+    # backend, de propósito: scheduling_google_calendar.py's book() lê
+    # customer["protocolo"] pra gravar o código também no evento do Google
+    # (extendedProperties, redundância gratuita - ver aquele arquivo). Só
+    # gerar é barato e não grava nada (ver generate_protocolo() em
+    # appointment_store.py) - se o booking falhar duas linhas abaixo, o
+    # código simplesmente nunca é persistido, sem precisar de nenhum
+    # "desfazer". service_id desconhecido (backend.book() vai devolver None
+    # pra isso) não impede gerar o protocolo aqui - é só um código não
+    # utilizado, sem custo.
+    appointment_store = _get_appointment_store()
+    protocolo = appointment_store.generate_protocolo()
+    customer["protocolo"] = protocolo
+
     try:
         result = backend.book(service_id, slot, customer)
     except Exception as exc:
@@ -106,14 +138,18 @@ def book_appointment_node(state: AgentState) -> dict:
         # erro, é "não deu". `booking_failed` (não None puro) distingue
         # isso de "a capacidade está fora do ar" (ver _get_backend() acima
         # e o branch de None em generate_reply_node, graph.py) - são duas
-        # mensagens bem diferentes pro cliente ouvir.
+        # mensagens bem diferentes pro cliente ouvir. O protocolo gerado
+        # acima nunca foi persistido, então simplesmente some - nenhum
+        # registro órfão fica no arquivo.
         return {"scheduling_result": {"booking_failed": True}}
 
     if "scheduling_link" in result:
         # CalendlyBackend (ver connectors/base.py's SchedulingBackend.book()
-        # docstring): não há evento confirmado pra formatar, só um link -
-        # a resposta final já sai montada AQUI, sem chamar o LLM, porque não
-        # há nada pro modelo decidir (mesmo principio de
+        # docstring): não há evento confirmado pra registrar - o protocolo
+        # gerado acima também não é usado aqui (Calendly não tem conceito de
+        # evento criado por este serviço, só um link pro cliente finalizar
+        # sozinho) - a resposta final já sai montada AQUI, sem chamar o LLM,
+        # porque não há nada pro modelo decidir (mesmo principio de
         # cancel_order_agent_node em graph.py). route_after_booking (abaixo)
         # é quem manda o grafo direto pro END quando final_reply já existe.
         link = result["scheduling_link"]
@@ -124,10 +160,20 @@ def book_appointment_node(state: AgentState) -> dict:
         }
 
     # Google/Microsoft: evento de verdade já criado ("confirmed": True) -
-    # segue pro generate_reply_node formatar a confirmação em linguagem
-    # natural, mesmo caminho que order_data já percorre hoje.
-    print(f"  [NODE book_appointment] confirmed booking, id={result.get('id')}")
-    return {"scheduling_result": result}
+    # AGORA sim persiste o protocolo (depois do sucesso, nunca antes - ver
+    # comentário acima), e devolve ele junto no scheduling_result pra
+    # generate_reply_node citar na confirmação (graph.py) e pra main.py
+    # expor como appointment_code no contrato HTTP.
+    appointment_store.create(
+        protocolo=protocolo,
+        provider=os.getenv("SCHEDULING_BACKEND", "google_calendar"),
+        service_id=service_id,
+        slot=slot,
+        customer=customer,
+        backend_event_id=result.get("id"),
+    )
+    print(f"  [NODE book_appointment] confirmed booking, id={result.get('id')} protocolo={protocolo}")
+    return {"scheduling_result": {**result, "protocolo": protocolo}}
 
 
 def cancel_reschedule_appointment_node(state: AgentState) -> dict:

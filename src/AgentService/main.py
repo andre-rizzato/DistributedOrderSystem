@@ -66,6 +66,11 @@ class AgentResponse(BaseModel):
     # two are mutually exclusive, never both set).
     appointment_id: Optional[str] = None
     scheduling_link: Optional[str] = None
+    # appointment_code (13/10/2026): o "protocolo" curto de 6 dígitos
+    # (appointment_store.py) que o cliente de fato consegue anotar/repetir -
+    # appointment_id (acima) continua sendo o id de evento do provedor
+    # (Google/Microsoft), útil pra debug/auditoria, mas ilegível num chat.
+    appointment_code: Optional[str] = None
 
 
 @app.post("/agent/message", response_model=AgentResponse)
@@ -102,6 +107,10 @@ def handle_message(request: AgentRequest) -> AgentResponse:
     scheduling_result = final_state.get("scheduling_result")
     appointment_id = scheduling_result.get("id") if isinstance(scheduling_result, dict) else None
     scheduling_link = scheduling_result.get("scheduling_link") if isinstance(scheduling_result, dict) else None
+    # appointment_code (13/10/2026): o protocolo curto (appointment_store.py)
+    # - só existe junto com appointment_id (reserva confirmada de verdade),
+    # nunca com scheduling_link (Calendly não tem reserva pra registrar).
+    appointment_code = scheduling_result.get("protocolo") if isinstance(scheduling_result, dict) else None
 
     return AgentResponse(
         reply=final_state["final_reply"] or "Sorry, I couldn't generate a response.",
@@ -110,6 +119,7 @@ def handle_message(request: AgentRequest) -> AgentResponse:
         order_id=final_state.get("order_number"),
         appointment_id=appointment_id,
         scheduling_link=scheduling_link,
+        appointment_code=appointment_code,
     )
 
 

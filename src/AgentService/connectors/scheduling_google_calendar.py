@@ -133,12 +133,30 @@ class GoogleCalendarBackend:
 
         start = datetime.fromisoformat(slot)
         end = start + timedelta(minutes=duration)
+        # protocolo (calendar integration, 13/10/2026): quando quem chama já
+        # gerou o código curto de confirmação (ver appointment_store.py e
+        # scheduling_node.py's book_appointment_node, que gera ANTES de
+        # chamar book() exatamente pra poder passar aqui), ele entra tanto
+        # na descrição (legível por um humano abrindo o evento no Google
+        # Calendar) quanto em extendedProperties.private (metadado de app,
+        # invisível na UI normal do Calendar, mas consultável via API -
+        # ver events.list?privateExtendedProperty=). Nenhum dos dois é a
+        # fonte de verdade pra achar o agendamento de novo - isso é sempre o
+        # AppointmentStore local (appointment_store.py); aqui é só
+        # redundância gratuita, útil se algum dia alguém precisar olhar o
+        # evento direto no Google sem passar pelo arquivo.
+        protocolo = customer.get("protocolo")
+        description = f"Agendado via agente. Contato: {customer.get('phone') or customer.get('email', '')}"
+        if protocolo:
+            description += f" Protocolo: {protocolo}."
         event = {
             "summary": f"{customer.get('name', 'Cliente')} — {service_id}",
-            "description": f"Agendado via agente. Contato: {customer.get('phone') or customer.get('email', '')}",
+            "description": description,
             "start": {"dateTime": start.isoformat(), "timeZone": self.timezone_name},
             "end": {"dateTime": end.isoformat(), "timeZone": self.timezone_name},
         }
+        if protocolo:
+            event["extendedProperties"] = {"private": {"protocolo": protocolo}}
         with self._client() as client:
             response = client.post(f"/calendars/{self.calendar_id}/events", json=event)
         if response.status_code == 409:

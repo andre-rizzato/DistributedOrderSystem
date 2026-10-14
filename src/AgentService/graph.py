@@ -152,8 +152,16 @@ def generate_reply_node(state: AgentState) -> dict:
             # book_appointment_node's result - dict. "scheduling_link" já
             # foi tratado com reply fixa por aquele próprio node e NUNCA
             # chega aqui (ver route_after_booking) - um dict neste ponto é
-            # sempre uma reserva confirmada de verdade (Google/Microsoft).
-            context = f"The appointment was successfully booked: {scheduling_result}"
+            # sempre uma reserva confirmada de verdade (Google/Microsoft),
+            # sempre com "protocolo" (appointment_store.py) já embutido.
+            # Instrução explícita pro LLM mencionar o código - sem isso, o
+            # modelo tende a resumir o dict inteiro em prosa e esquecer o
+            # único dado que o cliente de fato precisa anotar.
+            context = (
+                f"The appointment was successfully booked: {scheduling_result}. "
+                f"Tell the customer their confirmation code (protocolo) is {scheduling_result.get('protocolo')} "
+                "and that they'll need to provide it if they want to cancel or reschedule later."
+            )
     elif state.get("intent") in ("check_availability", "book_appointment"):
         # scheduling_result is None: _get_backend() não conseguiu montar o
         # conector (credencial ausente/errada) ou a chamada ao provedor

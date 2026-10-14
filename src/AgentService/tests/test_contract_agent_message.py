@@ -54,15 +54,16 @@ def test_response_schema_has_no_new_fields():
     starts returning it (or any other new field) over HTTP, which would be
     a contract change Node was never told about.
 
-    appointment_id/scheduling_link (calendar integration, 2026-10-11) are a
-    DELIBERATE, documented extension of this contract - mirrors order_id,
-    see main.py's AgentResponse docstring - so they're added to the allowed
-    set here on purpose, not silently permitted by a loose assertion.
+    appointment_id/scheduling_link/appointment_code (calendar integration,
+    2026-10-11 and 2026-10-13) are a DELIBERATE, documented extension of
+    this contract - mirrors order_id, see main.py's AgentResponse docstring
+    - so they're added to the allowed set here on purpose, not silently
+    permitted by a loose assertion.
     """
     response = client.post("/agent/message", json={"message": "hi", "session_id": "contract-test-2"})
     assert response.status_code == 200
     assert set(response.json().keys()) <= {
-        "reply", "intent", "confidence", "order_id", "appointment_id", "scheduling_link",
+        "reply", "intent", "confidence", "order_id", "appointment_id", "scheduling_link", "appointment_code",
     }
 
 
