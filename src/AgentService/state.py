@@ -63,6 +63,26 @@ class AgentState(TypedDict):
     # formatted into natural language, never fabricated.
     scheduling_result: Optional[dict | list]
 
+    # Sales capability (catalog + checkout, 2026-10-20) - mirrors the
+    # scheduling fields above exactly. product_query/quantity are filled in
+    # by classify_intent_node for the 2 new intents (sales_check_product,
+    # sales_start_checkout); read by sales_node.py's workers. quantity stays
+    # a string (not int) because the LLM's best-effort extraction from free
+    # text ("quero 2 unidades") is parsed with a fallback-to-1 inside
+    # sales_node.py, not here - same "None means not applicable" convention
+    # as every other field on this class.
+    product_query: Optional[str]
+    quantity: Optional[str]
+    # sales_result: whatever sales_check_product_node/sales_start_checkout_node
+    # got back - a list of matching products (search), or a dict describing
+    # either a failure to resolve a single product
+    # ({"checkout_failed": "not_found" | "ambiguous" | "invalid_price", ...})
+    # or a successful checkout link ({"checkout_url": ..., "reference_id":
+    # ..., "reference_code": ...}). generate_reply_node reads this the same
+    # way it already reads scheduling_result - raw backend output, formatted
+    # into natural language, never fabricated.
+    sales_result: Optional[dict | list]
+
     # filled in by generate_reply_node or clarify_node - this is what goes back to C#
     final_reply: Optional[str]
 

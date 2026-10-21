@@ -106,6 +106,35 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "To finish, pick the time that works best for you at this link: {url}",
         "it": "Per completare, scegli l'orario che preferisci a questo link: {url}",
     },
+    # Sales capability (catalog + checkout, 2026-10-20) - mesmo papel de
+    # scheduling_link acima: sales_start_checkout_node (sales_node.py)
+    # monta a resposta final AQUI, sem chamar o LLM, quando o checkout foi
+    # emitido com sucesso - não há nada pro modelo decidir, só o link
+    # trocado via str.format().
+    "checkout_link": {
+        "pt": "Aqui está o link seguro pra finalizar sua compra: {url}",
+        "en": "Here's the secure link to complete your purchase: {url}",
+        "it": "Ecco il link sicuro per completare l'acquisto: {url}",
+    },
+    # Usada por generate_reply_node (graph.py) quando sales_guard.py
+    # (verify_sales_reply_prices) rejeita a resposta do LLM pra um dos dois
+    # intents de vendas - mesmo espírito do valueNotConfirmed do lado Node
+    # (outputGuard.ts), sem a segunda tentativa que aquele tem (ver
+    # preâmbulo de sales_guard.py sobre por que não há retry aqui).
+    # Importante: OFERECE um atendente, nunca afirma que já conectou -
+    # nada aqui de fato aciona handoff (isso é uma decisão do lado Node,
+    # que decidiria a partir do intent, não deste texto), e uma mensagem
+    # que PROMETE uma transferência que não acontece é exatamente o bug já
+    # corrigido em orchestrator.ts PASSO 5.5 ("o modelo dizia 'vou
+    # transferir' e o handoff nunca executava").
+    "sales_value_not_confirmed": {
+        "pt": "Não consigo confirmar esse valor com segurança por aqui — quer que eu "
+        "chame um atendente humano pra confirmar com você?",
+        "en": "I can't safely confirm that value here - would you like me to bring in "
+        "a human agent to confirm it with you?",
+        "it": "Non riesco a confermare questo valore in sicurezza da qui - vuoi che "
+        "chiami un operatore per confermarlo con te?",
+    },
 }
 
 

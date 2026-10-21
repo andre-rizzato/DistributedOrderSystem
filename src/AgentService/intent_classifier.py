@@ -2,12 +2,13 @@
 # Pattern: few-shot +
 # structured output via Instructor/Pydantic, response_model trades "give me
 # text" for "give me a validated IntentClassification instance". The Literal
-# guarantees only one of the 10 labels ever comes out of here, never a made-up label.
+# guarantees only one of the 12 labels ever comes out of here, never a
+# made-up label (6 order + 4 scheduling + 2 sales).
 #
 # Graph node: receives the AgentState, returns only the keys it fills in
 # (intent, order_number, service_id, requested_date, requested_slot,
-# confidence) - it doesn't decide routing, that's the job of the
-# conditional edge function in graph.py.
+# product_query, quantity, confidence) - it doesn't decide routing, that's
+# the job of the conditional edge function in graph.py.
 
 import os
 from typing import Literal, Optional
@@ -60,6 +61,22 @@ class IntentClassification(BaseModel):
         "book_appointment",
         "cancel_appointment",
         "reschedule_appointment",
+        # Sales capability (catalog + checkout, 2026-10-20) - a THIRD
+        # domain (products, not orders or appointments), same one-classifier
+        # reasoning as scheduling above. No cancel/refund label here on
+        # purpose: unlike cancel_order/cancel_appointment, there is no
+        # bot-triggered destructive action to guard against - the agent
+        # never charges anyone itself, it only ever hands out a checkout
+        # link for the customer to finish on the processor's own hosted
+        # page (same "nothing left to confirm" shape as a Calendly
+        # scheduling_link). sales_check_product: browsing/asking about a
+        # product, no commitment yet - distinct from get_info's existing
+        # product-question handling (which stays product_info_stub for any
+        # client that doesn't have "sales" enabled; see the contrast
+        # example below). sales_start_checkout: the customer has decided
+        # and wants to pay.
+        "sales_check_product",
+        "sales_start_checkout",
     ] = Field(description=(
         "The single label that best describes what the user wants. "
         "IMPORTANT distinctions between labels that can all appear with no order number: "
@@ -76,7 +93,15 @@ class IntentClassification(BaseModel):
         "specific time to take ('I'll take 3pm', 'can I book Friday at 3?'). cancel_appointment / "
         "reschedule_appointment are about an appointment that ALREADY EXISTS - canceling it outright vs. moving it "
         "to a different time; use reschedule_appointment only when the customer explicitly wants to move an "
-        "existing booking, not when they're simply picking a time for a new one (that's book_appointment)."
+        "existing booking, not when they're simply picking a time for a new one (that's book_appointment). "
+        "For the sales labels: sales_check_product and sales_start_checkout are ONLY for messages that read as "
+        "shopping intent - wanting to BUY something, asking for a payment/checkout link, mentioning quantity to "
+        "purchase. A plain product question with no buying intent ('do you have product Y in stock?') stays "
+        "get_info, even though both can mention a product by name - the test is whether the customer is trying "
+        "to complete a purchase (sales) or just asking a catalog question (get_info). sales_check_product is the "
+        "customer asking about or comparing a product before deciding ('how much is X', 'do you sell X'). "
+        "sales_start_checkout is the customer explicitly asking to buy/pay now ('I want to buy X', 'send me the "
+        "payment link', 'quero fazer um pedido novo')."
     ))
 
     order_number: Optional[str] = Field(
@@ -111,6 +136,30 @@ class IntentClassification(BaseModel):
             "The exact start time the customer wants to book, as an ISO 8601 datetime (YYYY-MM-DDTHH:MM:SS), only "
             "when both a date and a specific time were given or clearly implied ('Friday at 3pm'). None for "
             "check_availability (no commitment yet) or when the time wasn't specific enough to resolve."
+        ),
+    )
+
+    # Sales capability (catalog + checkout, 2026-10-20) - populated only for
+    # the 2 sales intents above, same "None means not applicable" convention
+    # as the scheduling fields. product_query is free text, not an id - the
+    # CatalogBackend's search_products(query) call is a free-text search,
+    # there's no fixed vocabulary of ids to match against (unlike
+    # service_id above, which IS validated against a client's own
+    # SCHEDULING_SERVICES hint) since a generic REST product catalog's ids
+    # aren't known at classification time.
+    product_query: Optional[str] = Field(
+        default=None,
+        description=(
+            "The product or service the customer is asking about or wants to buy, as free text in their own "
+            "words (e.g. 'FX200', 'ar condicionado inverter 12000 btus'), ONLY for the two sales intents. "
+            "None for every other intent, and None even for a sales intent if no product was named yet."
+        ),
+    )
+    quantity: Optional[str] = Field(
+        default=None,
+        description=(
+            "How many units the customer wants, as a plain number string (e.g. '2'), ONLY for "
+            "sales_start_checkout. None if not mentioned - sales_start_checkout_node then defaults to 1."
         ),
     )
 
@@ -186,6 +235,24 @@ FEW_SHOT_EXAMPLES = [
          intent="reschedule_appointment", order_number=None, service_id=None,
          requested_date=None, requested_slot=None, confidence=0.9,
      )),
+    # Sales capability (catalog + checkout, 2026-10-20) - one example per
+    # label, same format as the scheduling examples above.
+    ("How much is the FX200 and is it in stock?",
+     IntentClassification(intent="sales_check_product", product_query="FX200", confidence=0.92)),
+    ("I want to buy 2 units of the FX200, send me the payment link",
+     IntentClassification(intent="sales_start_checkout", product_query="FX200", quantity="2", confidence=0.95)),
+    # Contrast case: this is the exact phrasing from the get_info example
+    # above ("Do you have product Y in stock?") - still get_info, not
+    # sales_check_product, because there's no buying intent, just a stock
+    # question. Without this example, any mention of a product name risked
+    # pulling plain catalog questions into the sales intents, which would
+    # change behavior for clients that have "order" enabled but not
+    # "sales" (capabilityRouter.ts only forwards to this classifier as
+    # "sales" when salesKeywords matched, but the classifier itself has no
+    # signal of which capability triggered the call - see this file's
+    # module docstring).
+    ("Do you have product Y in stock?",
+     IntentClassification(intent="get_info", order_number=None, product_query=None, confidence=0.9)),
 ]
 
 
@@ -237,7 +304,8 @@ def classify_intent_node(state: AgentState) -> dict:
         f"  [NODE classify_intent] intent={result.intent} "
         f"order_number={result.order_number} confidence={result.confidence:.2f} "
         f"service_id={result.service_id} requested_date={result.requested_date} "
-        f"requested_slot={result.requested_slot}"
+        f"requested_slot={result.requested_slot} product_query={result.product_query} "
+        f"quantity={result.quantity}"
     )
 
     return {
@@ -246,5 +314,7 @@ def classify_intent_node(state: AgentState) -> dict:
         "service_id": result.service_id,
         "requested_date": result.requested_date,
         "requested_slot": result.requested_slot,
+        "product_query": result.product_query,
+        "quantity": result.quantity,
         "confidence": result.confidence,
     }

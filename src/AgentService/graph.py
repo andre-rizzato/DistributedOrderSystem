@@ -8,6 +8,10 @@
 # integration, 2026-10-11, scheduling_node.py) is the second domain built on
 # the exact same skeleton: one more classify_intent label set, 3 more
 # workers, one more routing branch - no new graph-level concept needed.
+# Sales (catalog + checkout, 2026-10-20, sales_node.py) is the third domain
+# on the same skeleton: 2 more workers (no destructive action to guard
+# against here, so no third "never touches the backend" worker like the
+# other two domains have).
 #
 # Design principle: the routing
 # decision lives in a function separate from the node that calls the LLM -
@@ -20,6 +24,8 @@ from connectors import get_order_backend
 from intent_classifier import classify_intent_node
 from messages import message
 from rag_node import retrieve_knowledge_node
+from sales_guard import verify_sales_reply_prices
+from sales_node import sales_check_product_node, sales_start_checkout_node
 from scheduling_node import (
     book_appointment_node,
     cancel_reschedule_appointment_node,
@@ -121,9 +127,16 @@ def generate_reply_node(state: AgentState) -> dict:
     # happen to be present, since it's the more specific, already-verified
     # data source for that intent.
     retrieved = state.get("retrieved_context")
+    # sales_result: filled in by sales_check_product_node/sales_start_checkout_node
+    # (sales_node.py). Checked right after the scheduling branch, same
+    # non-overlap reasoning as scheduling vs order above - classify_intent_node's
+    # Literal only ever picks one label, so order/scheduling/sales never
+    # compete for this function's attention on a single message.
+    sales_result = state.get("sales_result")
     print(
         f"  [NODE generate_reply] order_data={'present' if data else 'absent'}, "
         f"order_number={order_number}, scheduling_result={'present' if scheduling_result is not None else 'absent'}, "
+        f"sales_result={'present' if sales_result is not None else 'absent'}, "
         f"retrieved_context={len(retrieved) if retrieved else 0} chunk(s)"
     )
 
@@ -169,6 +182,45 @@ def generate_reply_node(state: AgentState) -> dict:
         # sucesso" nesse caso (mesmo principio de "nunca fabricar" do resto
         # desta função).
         context = "Scheduling isn't available right now - please try again later or ask for a human agent."
+    elif state.get("intent") in ("sales_check_product", "sales_start_checkout") and sales_result is not None:
+        if isinstance(sales_result, list):
+            # sales_check_product_node's result - lista de produtos
+            # encontrados (pode ser vazia de verdade: "nenhum produto bate
+            # com essa busca", não é erro). Instrução explícita pro modelo
+            # usar SÓ o que está na lista - mesmo principio de "nunca
+            # fabricar especificação ausente" do resto desta função; é
+            # exatamente o tipo de resposta que sales_guard.py (abaixo)
+            # confere depois.
+            context = (
+                f"Products found matching the search: {sales_result}. Describe only the name, price and "
+                "availability actually present in this data - never invent a detail (color, warranty, spec) "
+                "that isn't in the data itself."
+                if sales_result
+                else "No products were found matching the customer's search."
+            )
+        elif sales_result.get("checkout_failed") == "ambiguous":
+            # sales_start_checkout_node não conseguiu resolver pra um único
+            # produto - candidates é a mesma lista cortada em 5 que o node
+            # devolveu, nunca o catálogo inteiro.
+            context = (
+                f"More than one product matches the request: {sales_result.get('candidates')}. Ask the "
+                "customer to specify which one they mean, listing only the names actually present in this data."
+            )
+        elif sales_result.get("checkout_failed") == "invalid_price":
+            context = (
+                "The product was found but doesn't have a valid price configured for checkout - tell the "
+                "customer you can't generate a payment link for it right now and offer a human agent."
+            )
+        else:
+            # "not_found", ou um link sem checkout_url (ver sales_start_checkout_node) -
+            # honesto, mesmo espírito do "pedido não encontrado" de order acima.
+            context = "No product was found matching the customer's request."
+    elif state.get("intent") in ("sales_check_product", "sales_start_checkout"):
+        # sales_result is None: _get_catalog_backend()/_get_checkout_backend()
+        # não conseguiram montar o conector, ou a chamada ao provedor
+        # falhou - mesmo principio do branch de scheduling indisponível
+        # acima, nunca inventar "encontrado"/"comprado" nesse caso.
+        context = "Shopping isn't available right now - please try again later or ask for a human agent."
     elif retrieved:
         # Joined as a bulleted list, same augmentation shape as a
         # classic RAG-from-scratch pipeline - each chunk's text
@@ -230,7 +282,22 @@ def generate_reply_node(state: AgentState) -> dict:
             "content": f"Context:\n{context}\n\nCustomer question: {state['message']}",
         }],
     )
-    return {"final_reply": response.content[0].text}
+    reply = response.content[0].text
+
+    # Checagem de valores (sales capability, 2026-10-20, ver sales_guard.py) -
+    # só se aplica às duas intents de vendas, e só quando sales_result de
+    # fato tem dados (lista de produtos) pra conferir contra - os outros
+    # branches de vendas (ambiguous/not_found/invalid_price/indisponível)
+    # não citam preço nenhum, não há o que checar. SEM retry (ver preâmbulo
+    # de sales_guard.py): uma falha aqui vira direto a mensagem fixa, nunca
+    # uma segunda chamada ao modelo.
+    if state.get("intent") in ("sales_check_product", "sales_start_checkout"):
+        unsupported = verify_sales_reply_prices(reply, sales_result)
+        if unsupported:
+            print(f"  [NODE generate_reply] sales reply blocked, unsupported values: {unsupported}")
+            reply = message("sales_value_not_confirmed", state.get("language"))
+
+    return {"final_reply": reply}
 
 
 def route_by_confidence(state: AgentState) -> str:
@@ -284,6 +351,14 @@ def route_by_confidence(state: AgentState) -> str:
         # "sempre vai pro node, nunca pro clarify" só que sem a checagem de
         # order_number, porque não há um id equivalente sendo exigido aqui.
         destination = "cancel_reschedule_appointment_agent"
+    # Sales capability (catalog + checkout, 2026-10-20) - mesmo formato dos
+    # branches de scheduling acima: só prossegue quando a própria mensagem
+    # já deu o suficiente pra agir (um produto nomeado), senão clarify pede
+    # o que falta em vez de adivinhar.
+    elif intent == "sales_check_product":
+        destination = "sales_check_product_agent" if state.get("product_query") else "clarify"
+    elif intent == "sales_start_checkout":
+        destination = "sales_start_checkout_agent" if state.get("product_query") else "clarify"
     else:
         destination = "clarify"  # an unexpected label should never reach here - safety guard
 
@@ -309,6 +384,10 @@ def build_graph():
     graph.add_node("check_availability_agent", check_availability_node)
     graph.add_node("book_appointment_agent", book_appointment_node)
     graph.add_node("cancel_reschedule_appointment_agent", cancel_reschedule_appointment_node)
+    # Sales capability (catalog + checkout, 2026-10-20) - sales_node.py's 2
+    # workers, same registration shape as the scheduling-domain nodes above.
+    graph.add_node("sales_check_product_agent", sales_check_product_node)
+    graph.add_node("sales_start_checkout_agent", sales_start_checkout_node)
 
     graph.add_edge(START, "classify_intent")
 
@@ -329,6 +408,8 @@ def build_graph():
             "check_availability_agent": "check_availability_agent",
             "book_appointment_agent": "book_appointment_agent",
             "cancel_reschedule_appointment_agent": "cancel_reschedule_appointment_agent",
+            "sales_check_product_agent": "sales_check_product_agent",
+            "sales_start_checkout_agent": "sales_start_checkout_agent",
         },
     )
 
@@ -370,5 +451,22 @@ def build_graph():
     # the same fixed handoff message (see its own docstring), same as
     # cancel_order_agent above.
     graph.add_edge("cancel_reschedule_appointment_agent", END)
+
+    # Sales capability (catalog + checkout, 2026-10-20) - sales_check_product_agent
+    # never sets final_reply itself, always needs generate_reply_node (same
+    # shape as check_availability_agent above). sales_start_checkout_agent
+    # is conditional, exactly like book_appointment_agent - it may have
+    # already built final_reply itself (checkout link issued, nothing left
+    # for the model to decide) or still need generate_reply_node to phrase
+    # an ambiguous/not-found/unavailable outcome. route_after_booking
+    # (scheduling_node.py) is reused here as-is: it's a pure
+    # "final_reply is not None?" check with no scheduling-specific logic,
+    # so a second identical function would only duplicate it.
+    graph.add_edge("sales_check_product_agent", "generate_reply")
+    graph.add_conditional_edges(
+        "sales_start_checkout_agent",
+        route_after_booking,
+        {"end": END, "generate_reply": "generate_reply"},
+    )
 
     return graph.compile()

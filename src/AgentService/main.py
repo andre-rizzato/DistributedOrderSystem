@@ -71,6 +71,14 @@ class AgentResponse(BaseModel):
     # appointment_id (acima) continua sendo o id de evento do provedor
     # (Google/Microsoft), útil pra debug/auditoria, mas ilegível num chat.
     appointment_code: Optional[str] = None
+    # Sales capability (catalog + checkout, 2026-10-20) - mesmo papel de
+    # appointment_id/appointment_code acima: optional, log/audit-only,
+    # nunca usados pelo Node pra decidir fluxo (essa decisão é só por
+    # `intent`). checkout_url é o link que o cliente de fato recebeu;
+    # sale_reference é o código curto de 6 dígitos (sale_store.py) -
+    # ilegível seria o reference_id do próprio Stripe/PagSeguro.
+    checkout_url: Optional[str] = None
+    sale_reference: Optional[str] = None
 
 
 @app.post("/agent/message", response_model=AgentResponse)
@@ -94,6 +102,11 @@ def handle_message(request: AgentRequest) -> AgentResponse:
         "requested_slot": None,
         "appointment_id": None,
         "scheduling_result": None,
+        # Sales capability (catalog + checkout, 2026-10-20) - mesmo padrão
+        # de inicialização acima.
+        "product_query": None,
+        "quantity": None,
+        "sales_result": None,
         "final_reply": None,
         "retrieved_context": None,
     }
@@ -112,6 +125,15 @@ def handle_message(request: AgentRequest) -> AgentResponse:
     # nunca com scheduling_link (Calendly não tem reserva pra registrar).
     appointment_code = scheduling_result.get("protocolo") if isinstance(scheduling_result, dict) else None
 
+    # Sales capability (catalog + checkout, 2026-10-20) - mesma extração
+    # que scheduling_result acima. sales_result só é um dict com essas
+    # chaves quando sales_start_checkout_node emitiu um link com sucesso
+    # (ver sales_node.py) - uma lista de produtos (sales_check_product_node)
+    # não tem "checkout_url"/"reference_code" pra extrair aqui.
+    sales_result = final_state.get("sales_result")
+    checkout_url = sales_result.get("checkout_url") if isinstance(sales_result, dict) else None
+    sale_reference = sales_result.get("reference_code") if isinstance(sales_result, dict) else None
+
     return AgentResponse(
         reply=final_state["final_reply"] or "Sorry, I couldn't generate a response.",
         intent=final_state.get("intent"),
@@ -120,6 +142,8 @@ def handle_message(request: AgentRequest) -> AgentResponse:
         appointment_id=appointment_id,
         scheduling_link=scheduling_link,
         appointment_code=appointment_code,
+        checkout_url=checkout_url,
+        sale_reference=sale_reference,
     )
 
 
