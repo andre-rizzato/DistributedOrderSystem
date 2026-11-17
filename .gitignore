@@ -50,3 +50,10 @@ __pycache__/
 
 # MSBuild binary logs
 *.binlog
+# Local-only documentation and notes (kept out of the repository)
+docs/
+AI-Engineering-Course-for-Andre.md
+COMPREHENSIVE_SOLUTION_ARCHITECTURE_EN.md
+CHATBOT_WIDGET_DOCUMENTATION.md
+.github/upgrades/
+_backup/
