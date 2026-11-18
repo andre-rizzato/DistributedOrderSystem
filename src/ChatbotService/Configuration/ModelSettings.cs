@@ -3,7 +3,6 @@ namespace ChatbotService.Configuration;
 public class ModelSettings
 {
     public string BaseModelPath { get; set; } = "./Models/Downloaded";
-    public string FineTunedModelPath { get; set; } = "./Models/FineTuned/chatbot_model.onnx";
     public string EmbeddingModelName { get; set; } = "sentence-transformers/all-MiniLM-L6-v2";
     public int MaxTokens { get; set; } = 150;
     public float Temperature { get; set; } = 0.7f;
