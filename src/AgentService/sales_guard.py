@@ -29,9 +29,7 @@
 
 import re
 
-# Mesmos padrões de outputGuard.ts (src/orchestrator/outputGuard.ts do
-# repo ai-customer-service-agent), portados em miniatura - símbolo de moeda
-# obrigatório, senão "6x" ou "12 meses" virariam "valores".
+# Símbolo de moeda obrigatório, senão "6x" ou "12 meses" virariam "valores".
 _MONEY_RE = re.compile(
     r"(?:R\$|US\$|BRL|€|\$)\s?(\d{1,3}(?:[.,\s]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)"
 )

@@ -6,14 +6,13 @@
 # ever needs to move.
 #
 # The single most important thing in this file is ORDER_HISTORY_RAG_ENABLED:
-# it is the production kill switch. The shared deploy VM (vm-agente, a B1s -
-# 892MB RAM, 1 vCPU) already locked up once from the two services it runs
-# today doing concurrent installs; a third resident process (Qdrant) is a
-# real resource risk there, not a theoretical one. Until a deliberate
-# hosting decision is made (Qdrant Cloud free tier, a dedicated small VM,
-# or something else), production keeps this flag OFF - the graph falls
-# back to its current behavior (general_question -> generate_reply with no
-# context) exactly as it does today, see graph.py's conditional edges.
+# it is the production kill switch. Running a Qdrant instance alongside the
+# rest of the service is a real resource cost on a small deploy target, not
+# a theoretical one - until a deliberate hosting decision is made (Qdrant
+# Cloud free tier, a dedicated small VM, or something else), keep this flag
+# OFF. The graph falls back to its current behavior (general_question ->
+# generate_reply with no context) exactly as it does today, see graph.py's
+# conditional edges.
 
 import os
 

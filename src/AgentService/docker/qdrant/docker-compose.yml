@@ -1,17 +1,16 @@
 # Local Qdrant for AgentService dev (Order History RAG Agent).
 #
 # Lives next to AgentService, not in the repo-root docker/docker-compose.yml
-# - AgentService itself already runs outside that compose file (deployed to
-# a standalone VM via rsync+PM2, see .github/workflows/deploy-agent-service.yml),
-# so its dev dependencies follow the same "lives with the service" convention.
+# - AgentService itself already runs outside that compose file (it's a
+# standalone Python process, started with `uvicorn main:app`), so its dev
+# dependencies follow the same "lives with the service" convention.
 #
-# Production note: this is LOCAL-ONLY for now. The shared deploy VM
-# (vm-agente, a B1s with 892MB RAM) already locked up once under concurrent
-# load from the two services it already runs - adding a third resident
-# process there is a real risk, not a theoretical one. Production retrieval
-# stays behind the ORDER_HISTORY_RAG_ENABLED feature flag (see rag/config.py)
-# until a hosting decision (e.g. Qdrant Cloud free tier) is made deliberately,
-# not as a side effect of this change.
+# Production note: this is LOCAL-ONLY for now. Running Qdrant on a small
+# deploy target alongside the rest of the service is a real resource cost,
+# not a theoretical one. Production retrieval stays behind the
+# ORDER_HISTORY_RAG_ENABLED feature flag (see rag/config.py) until a hosting
+# decision (e.g. Qdrant Cloud free tier) is made deliberately, not as a
+# side effect of this change.
 #
 # Explicit top-level `name:` below is load-bearing, not decorative: Compose
 # defaults the project name to the directory's basename, and this directory

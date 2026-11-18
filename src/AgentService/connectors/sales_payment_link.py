@@ -2,8 +2,8 @@
 # CheckoutBackend implementations - the "Decisão · pagamento" piece of the
 # design doc. Each one does exactly one thing: take an order_summary and
 # return a URL to the processor's own hosted checkout page. Neither class
-# ever touches a card number - that's the whole point (see "Segurança do
-# checkout" in mapa-capacidades.html).
+# ever touches a card number - that's the whole point: the agent redirects
+# to the processor's own hosted page instead of collecting card data itself.
 #
 # StripeCheckoutBackend is implemented and matches Stripe's stable, widely
 # documented Checkout Sessions API (unchanged in shape for years) - safe to

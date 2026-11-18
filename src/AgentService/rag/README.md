@@ -43,12 +43,7 @@ hosted Qdrant (below) does NOT itself turn this on.
 | Environment | `QDRANT_URL` | Auth |
 |---|---|---|
 | Local dev | `http://localhost:6333` (default) - `docker/qdrant/docker-compose.yml` | none |
-| Production | Azure Container Apps (`ca-qdrant`, `rg-agente-atendimento`, `eastus2`) - via Key Vault (`qdrant-url` secret) | `qdrant-api-key` secret, same Key Vault |
-
-The hosted instance scales to zero (`minReplicas: 0`) when idle - cost is
-near-zero while `ORDER_HISTORY_RAG_ENABLED` stays off, since nothing ever
-queries it. Persistent storage: an Azure Files share (`qdrant-storage`,
-`stagenteatendimento` storage account), not ephemeral container disk.
+| Hosted (optional) | Any Qdrant instance reachable over HTTPS (e.g. Qdrant Cloud, or a self-hosted one) - via Key Vault (`qdrant-url` secret) once `KEY_VAULT_ENABLED=true` | `qdrant-api-key` secret, same Key Vault |
 
 `qdrant-client` quirk found standing this up: its `port` parameter defaults
 to `6333` and gets appended to the host even when `url` is already a full
@@ -57,16 +52,12 @@ to `6333` and gets appended to the host even when `url` is already a full
 embeds its port in the string), broke every request against the hosted
 instance (only reachable on the standard HTTPS port) until fixed.
 
-## CI
+## Running the quality tests
 
-`tests/rag_eval/` (RAGAS quality tests) run against the HOSTED Qdrant, not
-a throwaway one, via `.github/workflows/rag-eval.yml` - authenticated to
-`kv-agente-atendimento` through an Azure AD federated credential (OIDC),
-not a stored GitHub Secret. See that workflow's top comment for the full
-reasoning. `pytest -m rag_eval` to run locally; excluded by default
-(`-m "not rag_eval"`) from both the local default run and
-`deploy-agent-service.yml`'s push-triggered one - real API cost and
-LLM-judge variance make it unsuitable as a hard gate on every push.
+`tests/rag_eval/` (RAGAS quality tests) run against whatever Qdrant
+`QDRANT_URL` points at. `pytest -m rag_eval` to run locally; excluded by
+default (`-m "not rag_eval"`) from the local default run - real API cost
+and LLM-judge variance make it unsuitable as a hard gate on every run.
 
 ## Known rough edge
 

@@ -2,10 +2,9 @@
 #
 # CLI script that reads the two seed_data/*.jsonl files, embeds every
 # record, and upserts them into their respective Qdrant collections. Run
-# manually (python -m rag.ingest) whenever the seed corpus changes - same
-# spirit as the Node product's `npm run ingest`, not something that runs
-# automatically on every AgentService startup (embedding ~60 records on
-# every restart would be wasteful and slow).
+# manually (python -m rag.ingest) whenever the seed corpus changes - not
+# something that runs automatically on every AgentService startup
+# (embedding ~60 records on every restart would be wasteful and slow).
 
 import json
 from pathlib import Path

@@ -1,6 +1,7 @@
 # src/AgentService/connectors/base.py
-# The four domain-capability interfaces from the "Mapa de Capacidades" design
-# doc (ai-customer-service-agent/docs/artifacts/mapa-capacidades.html).
+# The four domain-capability interfaces this agent builds pluggable
+# backends for: OrderBackend, SchedulingBackend, CatalogBackend,
+# CheckoutBackend.
 #
 # Why four Protocols instead of one generic "SalesBackend": a payment
 # processor (PagSeguro, Stripe) can generate a checkout link but has no idea

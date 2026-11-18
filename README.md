@@ -33,7 +33,7 @@ flowchart LR
 | **NotificationService** | Email, SMS and push notifications, background jobs | PostgreSQL, Hangfire, SignalR |
 | **PaymentService** | Payment integration (in progress) | PostgreSQL |
 | **ChatbotService** | Chat widget backend | PostgreSQL, Redis |
-| **AgentService** | AI support/sales agent: intent routing, order lookup and cancellation, appointment scheduling, catalog and checkout | Python, LangGraph, Claude, Qdrant |
+| **AgentService** | Demo AI support/sales agent wired to the local GatewayBff: intent routing, order lookup and cancellation, appointment scheduling, catalog and checkout | Python, LangGraph, Claude, Qdrant |
 | **AppHost** | .NET Aspire orchestration for local development | — |
 
 ## Key design decisions
@@ -43,7 +43,7 @@ flowchart LR
 - **One gateway for the frontends:** the website never calls a service directly — everything goes through GatewayBff.
 - **Grounded AI agent:** the LLM only formats data it was given. Routing decisions are plain functions, testable without network calls.
 - **Hybrid RAG for order history:** BM25 + vector search fused with Reciprocal Rank Fusion, HyDE query expansion and a reranker, with a RAGAS-based quality gate in CI.
-- **Pluggable connectors:** the agent talks to order, scheduling (Google Calendar, Microsoft Graph, Calendly), catalog and checkout backends through small interfaces, with secrets in Azure Key Vault.
+- **Pluggable connectors:** the agent talks to order, scheduling (Google Calendar, Microsoft Graph, Calendly), catalog and checkout backends through small interfaces, swapped via `.env` — Azure Key Vault is supported but optional, off by default.
 
 ## Tech stack
 

@@ -117,6 +117,7 @@ Other services (ProductService, InventoryService, etc.) use simpler layering wit
 | ChatbotService | PostgreSQL + Redis | ONNX Runtime + TensorFlow inference |
 | PaymentService | PostgreSQL | Stub — no business logic yet |
 | GatewayBff | None | Stateless; MediatR + named HttpClients |
+| AgentService | None (Qdrant optional) | Python/LangGraph demo agent wired to the local GatewayBff; not part of `DistributedOrderSystem.sln` |
 
 ### Infrastructure
 
