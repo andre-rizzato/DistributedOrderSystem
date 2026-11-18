@@ -7,6 +7,7 @@ A distributed e-commerce backend built as a set of .NET 10 microservices, with a
 ```mermaid
 flowchart LR
     Web["CustomerWebsite (Razor)"] --> BFF["GatewayBff<br/>MediatR + typed clients"]
+    Admin["Admin app (Angular 20)"] --> BFF
     Chat["Chat widget"] --> Agent
     Agent["AgentService<br/>Python · LangGraph"] --> BFF
     BFF --> Product["ProductService"]
@@ -23,6 +24,7 @@ flowchart LR
 | Service | Responsibility | Storage / tech |
 |---|---|---|
 | **GatewayBff** | Single entry point for the frontends; MediatR commands/queries over typed `HttpClient`s | stateless |
+| **Admin app** | Back-office for managing products, inventory and orders; talks only to the GatewayBff | Angular 20, standalone components + Signals, SSR |
 | **OrderService** | Order lifecycle — full DDD (aggregate root, value objects, domain events), transactional outbox | PostgreSQL, Kafka producer |
 | **ProductService** | Catalog — Clean Architecture + CQRS | PostgreSQL, Redis |
 | **InventoryService** | Stock levels, order/inventory saga participant | PostgreSQL, Redis, Kafka consumer |
@@ -69,6 +71,9 @@ cd ../..
 # All .NET services via Aspire
 dotnet run --project src/AppHost
 
+# Admin app (products, inventory, orders)
+cd src/frontend/distributed-order-app && npm install && npm start
+
 # AI agent
 cd src/AgentService
 pip install -r requirements.txt
@@ -86,11 +91,12 @@ cd src/AgentService && pytest            # unit tests
 cd src/AgentService && pytest -m rag_eval  # RAG quality gate (calls the LLM)
 ```
 
+`dotnet test` includes `tests/OrderService.Tests` (Order aggregate and status transitions), `tests/InventoryService.Tests` (stock adjustment and cache-aside reads) and `tests/ProductService.Tests` (validators, command/query handlers).
+
 ## Roadmap
 
-- Unit and integration test projects for the .NET services (OrderService domain first)
+- Integration tests (Testcontainers) for the .NET services
 - Complete PaymentService with a real payment provider
 - Distributed tracing with OpenTelemetry across services and the agent
 - Dead-letter handling and retry policies for Kafka consumers
 - Kubernetes manifests / Helm chart
-- Move all local secrets to user-secrets and environment variables
