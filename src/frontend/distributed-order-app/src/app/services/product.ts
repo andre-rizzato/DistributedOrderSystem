@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap, map } from 'rxjs/operators';
 import { Product, CreateProductRequest, UpdateProductRequest, CatalogItem } from '../models/product';
+import { environment } from '../../environments/environment';
 
 /**
  * ProductService
@@ -18,18 +19,18 @@ import { Product, CreateProductRequest, UpdateProductRequest, CatalogItem } from
  * - Delete a product
  * - Centralized HTTP error handling
  *
- * All operations talk to the GatewayBff (Backend for Frontend)
- * running on localhost:5189, which acts as a mediator between the frontend
- * and the backend microservices (ProductService, InventoryService, etc.).
+ * All operations talk to the GatewayBff (Backend for Frontend),
+ * which acts as a mediator between the frontend and the backend
+ * microservices (ProductService, InventoryService, etc.).
  */
 @Injectable({
   providedIn: 'root',
 })
 export class ProductService {
   // Base URL of the GatewayBff for queries (reads)
-  private readonly queryApiUrl = 'http://localhost:5189/api/queries';
+  private readonly queryApiUrl = `${environment.gatewayBffUrl}/api/queries`;
   // Base URL of the GatewayBff for commands (writes)
-  private readonly commandApiUrl = 'http://localhost:5189/api/commands';
+  private readonly commandApiUrl = `${environment.gatewayBffUrl}/api/commands`;
 
   /**
    * Service constructor

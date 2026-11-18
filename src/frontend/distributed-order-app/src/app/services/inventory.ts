@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { AdjustInventoryRequest, SetInventoryRequest } from '../models/inventory';
+import { environment } from '../../environments/environment';
 
 /**
  * InventoryService
@@ -20,7 +21,7 @@ import { AdjustInventoryRequest, SetInventoryRequest } from '../models/inventory
 })
 export class InventoryService {
   // Base URL of the GatewayBff for inventory commands
-  private readonly commandApiUrl = 'http://localhost:5189/api/commands/inventory';
+  private readonly commandApiUrl = `${environment.gatewayBffUrl}/api/commands/inventory`;
 
   /**
    * Service constructor
