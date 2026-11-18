@@ -180,6 +180,9 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=UserServiceDb;Username=postgres;Password=YourStrong_Password123;
+      - Jwt__Secret=${JWT_SECRET}
+      - Encryption__Key=${ENCRYPTION_KEY}
+      - Encryption__IV=${ENCRYPTION_IV}
     depends_on:
       postgres:
         condition: service_healthy
@@ -215,6 +218,7 @@ services:
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__ChatbotDb=Host=postgres;Port=5432;Database=ChatbotDb_Dev;Username=postgres;Password=YourStrong_Password123;
       - ConnectionStrings__Redis=redis:6379
+      - Auth__SecretKey=${CHATBOT_AUTH_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
