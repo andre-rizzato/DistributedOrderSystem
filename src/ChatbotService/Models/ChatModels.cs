@@ -35,16 +35,6 @@ public record UserContext
     public Dictionary<string, object> Properties { get; init; } = new();
 }
 
-public record TrainingExample
-{
-    public string Input { get; init; } = string.Empty;
-    public string ExpectedOutput { get; init; } = string.Empty;
-    public string Intent { get; init; } = string.Empty;
-    public Dictionary<string, string> Entities { get; init; } = new();
-    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
-    public string? UserId { get; init; }
-}
-
 public record ChatSession
 {
     public string SessionId { get; init; } = string.Empty;

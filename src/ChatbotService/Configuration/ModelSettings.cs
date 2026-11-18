@@ -28,14 +28,3 @@ public class AuthSettings
     public string SecretKey { get; set; } = string.Empty;
     public int TokenExpirationMinutes { get; set; } = 60;
 }
-
-public class FineTuningSettings
-{
-    public string TrainingDataPath { get; set; } = "./Data/TrainingData";
-    public int MaxTrainingIterations { get; set; } = 1000;
-    public float LearningRate { get; set; } = 0.001f;
-    public int BatchSize { get; set; } = 16;
-    public float ValidationSplit { get; set; } = 0.2f;
-    public bool EnableEarlyStopping { get; set; } = true;
-    public int EarlyStoppingPatience { get; set; } = 5;
-}

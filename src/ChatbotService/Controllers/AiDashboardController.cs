@@ -16,18 +16,15 @@ using ChatbotService.Services;
 public class AiDashboardController : ControllerBase
 {
     private readonly INLPService _nlpService;
-    private readonly IFineTuningService _fineTuningService;
     private readonly ChatContext _context;
     private readonly ILogger<AiDashboardController> _logger;
 
     public AiDashboardController(
         INLPService nlpService,
-        IFineTuningService fineTuningService,
         ChatContext context,
         ILogger<AiDashboardController> logger)
     {
         _nlpService = nlpService;
-        _fineTuningService = fineTuningService;
         _context = context;
         _logger = logger;
     }
@@ -206,11 +203,6 @@ public class AiDashboardController : ControllerBase
                                 </button>
                             </div>
                             <div class='col-md-3'>
-                                <a href='/api/finetuning' class='btn btn-success w-100 mb-2'>
-                                    <i class='fas fa-cogs'></i> Fine-Tuning
-                                </a>
-                            </div>
-                            <div class='col-md-3'>
                                 <button class='btn btn-info w-100 mb-2' onclick='testModel()'>
                                     <i class='fas fa-vial'></i> Test Model
                                 </button>
@@ -266,7 +258,6 @@ public class AiDashboardController : ControllerBase
                             <li>✅ Sentiment Analysis</li>
                             <li>✅ Entity Extraction</li>
                             <li>✅ Response Generation</li>
-                            <li>✅ Fine-Tuning</li>
                         </ul>
                     </div>
                 </div>

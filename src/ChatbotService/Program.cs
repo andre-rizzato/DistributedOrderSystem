@@ -9,7 +9,6 @@
  * Main features:
  * - Intelligent chat with intent classification
  * - JWT authentication
- * - AI model fine-tuning
  * - Integration with other microservices
  * - Admin dashboard
  *
@@ -50,8 +49,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Uses PostgreSQL as the primary database to store:
 // - User chat sessions
 // - Message history
-// - AI training data
-// - Fine-tuning jobs
 builder.Services.AddDbContext<ChatContext>(options =>
     // Connect to PostgreSQL using the "ChatbotDb" connection string
     options.UseNpgsql(builder.Configuration.GetConnectionString("ChatbotDb")));
@@ -84,10 +81,6 @@ builder.Services.Configure<ServiceUrlsSettings>(builder.Configuration.GetSection
 // JWT authentication settings
 // Includes secret key, issuer, audience, token lifetime
 builder.Services.Configure<AuthSettings>(builder.Configuration.GetSection("Auth"));
-
-// Fine-tuning settings
-// Includes training parameters, learning rate, batch size, epochs
-builder.Services.Configure<FineTuningSettings>(builder.Configuration.GetSection("FineTuning"));
 
 /* ================================================================
  * HTTP CLIENTS FOR SERVICE INTEGRATION
@@ -128,13 +121,6 @@ builder.Services.AddHttpClient<AdvancedNLPService>();
 // Authentication service to handle user login and registration
 // Generates and validates JWT tokens for secure API access
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-
-// Fine-tuning service for custom AI model training
-builder.Services.AddScoped<IFineTuningService, FineTuningService>();
-
-// Background service that initializes AI models
-// Automatically downloads DialoGPT when the service starts
-builder.Services.AddHostedService<ModelInitializationService>();
 
 /* ================================================================
  * JWT AUTHENTICATION CONFIGURATION
@@ -405,9 +391,4 @@ await app.RunAsync();
  *     theme: 'dark'
  *   };
  * </script>
- *
- * Note: Some advanced services (the full ChatbotService and FineTuningService)
- * are temporarily commented out to keep the build clean during
- * development. They can be enabled gradually as the remaining
- * dependencies are implemented.
  */
