@@ -55,6 +55,17 @@ Prerequisites: .NET 10 SDK, Docker, Python 3.12.
 # Infrastructure (PostgreSQL, Redis, Kafka, Kafka UI)
 docker compose -f docker/docker-compose.yml up -d
 
+# UserService doesn't have an appsettings.Development.json override for its
+# DB connection string, JWT secret or encryption key — set them once via
+# user-secrets before running it locally:
+cd src/UserService
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=UserServiceDb;Username=postgres;Password=YourStrong_Password123;"
+dotnet user-secrets set "Jwt:Secret" "<a-strong-random-secret-at-least-32-chars>"
+dotnet user-secrets set "Encryption:Key" "<32-character-key>"
+dotnet user-secrets set "Encryption:IV" "<16-character-iv>"
+cd ../..
+
 # All .NET services via Aspire
 dotnet run --project src/AppHost
 
@@ -65,7 +76,7 @@ cp .env.example .env   # add your API keys
 uvicorn main:app --reload
 ```
 
-Connection strings in `appsettings.Development.json` point to the local Docker containers and are for development only.
+Connection strings in `appsettings.Development.json` point to the local Docker containers and are for development only. The base `appsettings.json` files (used outside Development) ship with empty values for `ConnectionStrings:ProductDb`, `ConnectionStrings:InventoryDb`, `ConnectionStrings:ChatbotDb` and `Auth:SecretKey` (ChatbotService) — each service fails fast on startup with a clear error if they aren't supplied via user-secrets or environment variables.
 
 ## Tests
 

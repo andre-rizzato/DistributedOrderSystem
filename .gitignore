@@ -27,6 +27,10 @@ logs/
 .env
 .env.local
 
+# Secrets / local-only credentials
+*.pem
+appsettings.*.local.json
+
 # Docker
 docker-compose.override.yml
 

@@ -49,9 +49,18 @@ var builder = WebApplication.CreateBuilder(args);
 // Uses PostgreSQL as the primary database to store:
 // - User chat sessions
 // - Message history
+var chatbotDbConnectionString = builder.Configuration.GetConnectionString("ChatbotDb");
+if (string.IsNullOrWhiteSpace(chatbotDbConnectionString))
+{
+    throw new InvalidOperationException(
+        "ConnectionStrings:ChatbotDb is not configured. Set it with " +
+        "'dotnet user-secrets set \"ConnectionStrings:ChatbotDb\" \"<value>\"' " +
+        "or the ConnectionStrings__ChatbotDb environment variable.");
+}
+
 builder.Services.AddDbContext<ChatContext>(options =>
     // Connect to PostgreSQL using the "ChatbotDb" connection string
-    options.UseNpgsql(builder.Configuration.GetConnectionString("ChatbotDb")));
+    options.UseNpgsql(chatbotDbConnectionString));
 
 /* ================================================================
  * REDIS CONFIGURATION
@@ -127,8 +136,13 @@ builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
  * ================================================================ */
 
 // Read authentication settings from the configuration file
-// Falls back to default settings if not found, to avoid errors
 var authSettings = builder.Configuration.GetSection("Auth").Get<AuthSettings>() ?? new AuthSettings();
+if (string.IsNullOrWhiteSpace(authSettings.SecretKey))
+{
+    throw new InvalidOperationException(
+        "Auth:SecretKey is not configured. Set it with 'dotnet user-secrets set \"Auth:SecretKey\" \"<value>\"' " +
+        "or the Auth__SecretKey environment variable.");
+}
 
 // JWT Bearer authentication service configuration
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

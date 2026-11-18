@@ -21,8 +21,15 @@ public class PaymentEncryptionService : IPaymentEncryptionService
     public PaymentEncryptionService(IConfiguration configuration)
     {
         // In production, use Azure Key Vault or AWS KMS
-        var encryptionKey = configuration["Encryption:Key"] ?? throw new InvalidOperationException("Encryption key not configured");
-        var encryptionIv = configuration["Encryption:IV"] ?? throw new InvalidOperationException("Encryption IV not configured");
+        var encryptionKey = configuration["Encryption:Key"];
+        var encryptionIv = configuration["Encryption:IV"];
+        if (string.IsNullOrWhiteSpace(encryptionKey) || string.IsNullOrWhiteSpace(encryptionIv))
+        {
+            throw new InvalidOperationException(
+                "Encryption:Key and Encryption:IV are not configured. Set them with " +
+                "'dotnet user-secrets set \"Encryption:Key\" \"<value>\"' (and the IV equivalent) " +
+                "or the Encryption__Key / Encryption__IV environment variables.");
+        }
         
         _key = Encoding.UTF8.GetBytes(encryptionKey);
         _iv = Encoding.UTF8.GetBytes(encryptionIv);

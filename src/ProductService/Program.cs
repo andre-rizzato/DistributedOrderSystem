@@ -14,12 +14,16 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Infrastructure: Database (EF Core + PostgreSQL) ──
-builder.Services.AddDbContext<ProductDbContext>(options =>
+var productDbConnectionString = builder.Configuration.GetConnectionString("ProductDb");
+if (string.IsNullOrWhiteSpace(productDbConnectionString))
 {
-    var cs = builder.Configuration.GetConnectionString("ProductDb")
-             ?? "Host=localhost;Port=5432;Database=ProductDb;Username=postgres;Password=YourStrong_Password123;";
-    options.UseNpgsql(cs);
-});
+    throw new InvalidOperationException(
+        "ConnectionStrings:ProductDb is not configured. Set it with " +
+        "'dotnet user-secrets set \"ConnectionStrings:ProductDb\" \"<value>\"' " +
+        "or the ConnectionStrings__ProductDb environment variable.");
+}
+
+builder.Services.AddDbContext<ProductDbContext>(options => options.UseNpgsql(productDbConnectionString));
 
 // ── Infrastructure: Redis ──
 builder.Services.Configure<RedisSettings>(

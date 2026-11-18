@@ -12,12 +12,16 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 
 // EF Core + PostgreSQL
-builder.Services.AddDbContext<InventoryContext>(options =>
+var inventoryDbConnectionString = builder.Configuration.GetConnectionString("InventoryDb");
+if (string.IsNullOrWhiteSpace(inventoryDbConnectionString))
 {
-    var cs = builder.Configuration.GetConnectionString("InventoryDb")
-             ?? "Host=localhost;Port=5432;Database=InventoryDb;Username=postgres;Password=YourStrong_Password123;";
-    options.UseNpgsql(cs);
-});
+    throw new InvalidOperationException(
+        "ConnectionStrings:InventoryDb is not configured. Set it with " +
+        "'dotnet user-secrets set \"ConnectionStrings:InventoryDb\" \"<value>\"' " +
+        "or the ConnectionStrings__InventoryDb environment variable.");
+}
+
+builder.Services.AddDbContext<InventoryContext>(options => options.UseNpgsql(inventoryDbConnectionString));
 
 // Redis
 builder.Services.Configure<RedisSettings>(
