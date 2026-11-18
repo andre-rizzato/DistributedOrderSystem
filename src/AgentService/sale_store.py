@@ -9,14 +9,14 @@
 #
 # WHY a short code instead of the processor's own reference_id: Stripe
 # session ids and PagSeguro checkout ids are long opaque strings - nothing a
-# customer could read back over WhatsApp/Telegram to ask about "pedido X". A
-# 6-digit code is.
+# customer could read back over a text-based chat channel to ask about
+# "pedido X". A 6-digit code is.
 #
 # WHY a local JSON Lines file instead of a database or the processor's own
-# metadata: this product already stores every other kind of per-turn
-# record this way (ConversationStore, audit-log.jsonl, usage-log.jsonl on
-# the Node side, appointment_store.py here) - same reasoning applies (zero
-# new infra, zero new ops burden, a human can `cat`/`grep` it directly).
+# metadata: a caller/orchestrator already stores every other kind of
+# per-turn record this way (conversation history, audit logs, usage logs,
+# appointment_store.py here) - same reasoning applies (zero new infra,
+# zero new ops burden, a human can `cat`/`grep` it directly).
 # Unlike appointment_store.py, there is nowhere on the processor's side to
 # ALSO stamp this code as a redundant copy (Stripe/PagSeguro don't expose an
 # equivalent to Google Calendar's extendedProperties here) - this file is

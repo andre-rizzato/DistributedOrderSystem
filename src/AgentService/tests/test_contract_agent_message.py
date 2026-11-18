@@ -1,7 +1,7 @@
 # src/AgentService/tests/test_contract_agent_message.py
 #
 # Guards the ONE thing that must never silently change: the /agent/message
-# HTTP contract that any client (a WhatsApp/chat orchestrator, a demo UI,
+# HTTP contract that any client (a chat orchestrator, a demo UI,
 # whatever calls this service) depends on - the whole point of putting
 # LangGraph behind a plain HTTP endpoint is that a caller only needs to
 # know this contract, never the graph internals. These tests are what
@@ -70,7 +70,8 @@ def test_response_schema_has_no_new_fields():
 
 def test_order_history_query_without_identity_never_crashes():
     """
-    A request with no requester_phone (every Telegram message today, see
+    A request with no requester_phone (every message on a channel with no
+    verified phone number today, see
     connectors/base.py) asking an order-history-style question must
     degrade to an honest reply, never a 500 - rag_node.py's privacy
     guardrail is a `return`, not a `raise`, and this test is what catches

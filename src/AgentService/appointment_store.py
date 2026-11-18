@@ -5,21 +5,21 @@
 # WHY a short code instead of the provider's own event id: Google Calendar
 # (and Microsoft Graph) event ids are long opaque strings
 # ("4h2j8f9qr2bk5l1m0n9p8q7r6s...") - nothing a customer could read back over
-# WhatsApp/Telegram to say "cancel appointment X". A 6-digit code is.
+# a text-based chat channel to say "cancel appointment X". A 6-digit code is.
 #
 # WHY a local JSON Lines file instead of a database or the calendar's own
-# extended properties: this product already stores every other kind of
-# per-turn record this way on the Node side (ConversationStore,
-# audit-log.jsonl, usage-log.jsonl) - same reasoning applies here (zero new
-# infra, zero new ops burden, a human can `cat`/`grep` it directly) AND,
-# unlike a Google-specific lookup, this works identically for Microsoft or
-# any future provider without changing how a code gets looked up. The
-# calendar event ALSO gets the protocolo stamped into its own
-# extendedProperties (see connectors/scheduling_google_calendar.py's book())
-# purely as a free, human-visible redundancy - this file is the real
-# source of truth for lookups (find()), never a Google API query.
+# extended properties: a caller/orchestrator already stores every other kind
+# of per-turn record this way (conversation history, audit logs, usage
+# logs) - same reasoning applies here (zero new infra, zero new ops burden,
+# a human can `cat`/`grep` it directly) AND, unlike a Google-specific
+# lookup, this works identically for Microsoft or any future provider
+# without changing how a code gets looked up. The calendar event ALSO gets
+# the protocolo stamped into its own extendedProperties (see
+# connectors/scheduling_google_calendar.py's book()) purely as a free,
+# human-visible redundancy - this file is the real source of truth for
+# lookups (find()), never a Google API query.
 #
-# Append-only, same shape as the Node side's audit-log.jsonl: nothing is
+# Append-only, same shape as any other audit-log style file: nothing is
 # ever rewritten in place, so a record already handed to a customer can
 # never silently change out from under them.
 

@@ -35,10 +35,10 @@ def retrieve_knowledge_node(state: AgentState) -> dict:
         # Privacy guardrail - deliberate design decision, not an
         # afterthought (see the implementation plan's section 1.4).
         # requester_phone is always None on channels with no verified
-        # identity (Telegram, today - see connectors/base.py's docstring on
-        # OrderBackend.get_status for the matching discussion on the
-        # order_info_agent_node side). Without it, this node must not even
-        # ATTEMPT a query against order_support_notes - a customer's
+        # identity (see connectors/base.py's docstring on
+        # OrderBackend.get_status for the matching discussion). Without it,
+        # this node must not even ATTEMPT a query against
+        # order_support_notes - a customer's
         # support history is private, and "no filter" would mean "every
         # customer's notes are candidates" (confirmed empirically while
         # building this: running retrieve() with no requester_phone filter

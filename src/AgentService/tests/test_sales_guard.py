@@ -1,7 +1,7 @@
 # src/AgentService/tests/test_sales_guard.py
 # Covers verify_sales_reply_prices (sales_guard.py) - a pure function, no
-# network, no model call. Mirrors the shape of outputGuard.ts's own tests
-# on the Node side: valor presente na referência passa, valor inventado
+# network, no model call. Mirrors the shape of similar deterministic
+# guard tests: valor presente na referência passa, valor inventado
 # bloqueia, referência vazia bloqueia qualquer valor.
 
 from sales_guard import verify_sales_reply_prices

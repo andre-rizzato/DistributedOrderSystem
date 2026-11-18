@@ -31,21 +31,21 @@ class AgentRequest(BaseModel):
     message: str
     session_id: str
     # Security review 2026-10-04, item #4: the phone number of whoever is
-    # texting, when the channel has a verified one to offer. The Node
-    # orchestrator (agentServiceClient.ts) sends the WhatsApp sender's wa_id
-    # here; it's None for Telegram and for anything older than this field,
-    # since a Telegram chat id isn't a verified phone number - Optional with
-    # a default so existing callers that don't send it don't break.
+    # texting, when the channel has a verified one to offer. The calling
+    # orchestrator sends the sender's verified phone number here when the
+    # channel provides one; it's None for channels whose chat id isn't a
+    # verified phone number, and for anything older than this field -
+    # Optional with a default so existing callers that don't send it don't
+    # break.
     requester_phone: Optional[str] = None
-    # Idioma do cliente já resolvido pelo canal, no Node orchestrator
-    # (promptBuilder.ts tem a mesma lógica pro RAG que roda do lado Node) -
-    # "pt" | "en" | "it", ou None quando o canal não informa nenhum (hoje:
-    # WhatsApp). Sem isso, generate_reply_node (graph.py) não tinha NENHUM
-    # sinal de idioma e respondia sempre em inglês, mesmo pra cliente que
-    # escreveu em português - bug encontrado em 07/10/2026 depois que o
-    # Order History RAG Agent passou a capturar muito mais mensagens nessa
-    # rota (antes, poucas perguntas chegavam até generate_reply_node sem
-    # contexto nenhum, então o bug raramente aparecia).
+    # Idioma do cliente já resolvido pelo canal que chama este serviço -
+    # "pt" | "en" | "it", ou None quando o canal não informa nenhum. Sem
+    # isso, generate_reply_node (graph.py) não tinha NENHUM sinal de idioma
+    # e respondia sempre em inglês, mesmo pra cliente que escreveu em
+    # português - bug encontrado em 07/10/2026 depois que o Order History
+    # RAG Agent passou a capturar muito mais mensagens nessa rota (antes,
+    # poucas perguntas chegavam até generate_reply_node sem contexto
+    # nenhum, então o bug raramente aparecia).
     language: Optional[str] = None
 
 
@@ -55,10 +55,10 @@ class AgentResponse(BaseModel):
     confidence: Optional[float] = None
     order_id: Optional[str] = None
     # Scheduling capability (calendar integration, 2026-10-11) - mirrors
-    # order_id above: optional, log/audit-only fields the Node orchestrator
-    # may record alongside the conversation history, never used by Node to
+    # order_id above: optional, log/audit-only fields a calling orchestrator
+    # may record alongside the conversation history, never used by it to
     # decide flow (that decision is made purely from `intent`, same as
-    # cancel_order already works - see orchestrator.ts). appointment_id is
+    # cancel_order already works). appointment_id is
     # the provider's own event id (Google/Microsoft) when book_appointment
     # created a real event; scheduling_link is the single-use Calendly URL
     # when the backend could only hand out a link instead (see

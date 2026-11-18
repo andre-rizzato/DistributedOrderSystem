@@ -1,21 +1,20 @@
 # src/AgentService/messages.py
 #
-# Fixed (non-LLM) messages the agent sends, per supported language -
-# mirrors the Node orchestrator's src/orchestrator/messages.ts (same
-# product, same pt/en/it set, same "undefined/unknown language falls
-# back to pt" rule). Created 07/10/2026 alongside the language bug fix in
-# graph.py's generate_reply_node: those nodes (cancel_order_agent,
-# create/update/product_info stubs, clarify) never call the LLM at all,
-# so there's no prompt to make language-aware - they returned a literal
-# English string regardless of state["language"].
+# Fixed (non-LLM) messages the agent sends, per supported language - same
+# pt/en/it set, same "undefined/unknown language falls back to pt" rule,
+# used consistently everywhere a fixed string is returned. Created
+# 07/10/2026 alongside the language bug fix in graph.py's
+# generate_reply_node: those nodes (cancel_order_agent, create/update/
+# product_info stubs, clarify) never call the LLM at all, so there's no
+# prompt to make language-aware - they returned a literal English string
+# regardless of state["language"].
 #
-# For cancel_order_agent_node specifically, the Node orchestrator already
-# overrides AgentResponse.reply with its own localized copy before it
-# ever reaches a Telegram/WhatsApp customer (orchestrator.ts, intent ==
-# "cancel_order" branch) - but main.py's /agent/message is also called
-# directly by the C# ChatbotService (see main.py's top comment), which
-# has no such override. These strings need to be right regardless of
-# which caller is listening.
+# For cancel_order_agent_node specifically, a calling orchestrator may
+# choose to override AgentResponse.reply with its own localized copy
+# before it ever reaches the customer - but main.py's /agent/message is
+# also called directly by the C# ChatbotService (see main.py's top
+# comment), which has no such override. These strings need to be right
+# regardless of which caller is listening.
 from typing import Optional
 
 DEFAULT_LANGUAGE = "pt"
@@ -99,8 +98,7 @@ MESSAGES: dict[str, dict[str, str]] = {
     # book_appointment_node monta a resposta final AQUI, sem chamar o LLM -
     # não há nada pro modelo "decidir", a mensagem é sempre a mesma com o
     # link trocado. `{url}` é substituído via str.format() em
-    # scheduling_node.py, não pelo message() em si (que não interpola nada,
-    # igual messages.ts do lado Node).
+    # scheduling_node.py, não pelo message() em si (que não interpola nada).
     "scheduling_link": {
         "pt": "Para finalizar, escolha o horário que preferir neste link: {url}",
         "en": "To finish, pick the time that works best for you at this link: {url}",
@@ -118,15 +116,14 @@ MESSAGES: dict[str, dict[str, str]] = {
     },
     # Usada por generate_reply_node (graph.py) quando sales_guard.py
     # (verify_sales_reply_prices) rejeita a resposta do LLM pra um dos dois
-    # intents de vendas - mesmo espírito do valueNotConfirmed do lado Node
-    # (outputGuard.ts), sem a segunda tentativa que aquele tem (ver
-    # preâmbulo de sales_guard.py sobre por que não há retry aqui).
-    # Importante: OFERECE um atendente, nunca afirma que já conectou -
-    # nada aqui de fato aciona handoff (isso é uma decisão do lado Node,
-    # que decidiria a partir do intent, não deste texto), e uma mensagem
-    # que PROMETE uma transferência que não acontece é exatamente o bug já
-    # corrigido em orchestrator.ts PASSO 5.5 ("o modelo dizia 'vou
-    # transferir' e o handoff nunca executava").
+    # intents de vendas - sem segunda tentativa (ver preâmbulo de
+    # sales_guard.py sobre por que não há retry aqui). Importante: OFERECE
+    # um atendente, nunca afirma que já conectou - nada aqui de fato aciona
+    # handoff (isso é uma decisão de quem chama este serviço, a partir do
+    # intent, não deste texto), e uma mensagem que PROMETE uma transferência
+    # que não acontece é exatamente o tipo de bug que esta mensagem existe
+    # pra evitar ("o modelo dizia 'vou transferir' e o handoff nunca
+    # executava").
     "sales_value_not_confirmed": {
         "pt": "Não consigo confirmar esse valor com segurança por aqui — quer que eu "
         "chame um atendente humano pra confirmar com você?",
@@ -139,9 +136,8 @@ MESSAGES: dict[str, dict[str, str]] = {
 
 
 # Preâmbulo: message() devolve o texto fixo no idioma pedido, caindo em
-# DEFAULT_LANGUAGE se `language` vier None/desconhecido - mesmo
-# comportamento de messages.ts (uma mensagem em português é melhor do que
-# o campo vir vazio pro cliente).
+# DEFAULT_LANGUAGE se `language` vier None/desconhecido (uma mensagem em
+# português é melhor do que o campo vir vazio pro cliente).
 def message(key: str, language: Optional[str]) -> str:
     lang = language if language in ("pt", "en", "it") else DEFAULT_LANGUAGE
     return MESSAGES[key].get(lang, MESSAGES[key][DEFAULT_LANGUAGE])

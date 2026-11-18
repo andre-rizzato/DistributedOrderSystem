@@ -163,8 +163,8 @@ def sales_start_checkout_node(state: AgentState) -> dict:
         # Produto existe mas o catálogo não devolveu um preço utilizável -
         # gerar um link sem preço de verdade seria pior que recusar (um
         # link de R$ 0,00, ou pior, chutado, é exatamente o tipo de valor
-        # inventado que este projeto trata como incidente, ver outputGuard.ts
-        # do lado Node). Honesto > inventado, mesmo aqui sem o LLM.
+        # inventado que este projeto trata como incidente). Honesto >
+        # inventado, mesmo aqui sem o LLM.
         print(f"  [NODE sales_start_checkout] product {product.get('id')!r} has no usable price")
         return {"sales_result": {"checkout_failed": "invalid_price"}}
 

@@ -246,14 +246,12 @@ def generate_reply_node(state: AgentState) -> dict:
     else:
         context = "No specific order data available for this question."
 
-    # Instrução de idioma: mesmo raciocínio do Node (promptBuilder.ts,
-    # bug corrigido lá em 06/10/2026) - sem isso, esta função respondia
-    # SEMPRE em inglês (valor fixo que ficava aqui antes), mesmo pra
-    # cliente que escreveu em português ou italiano. `state["language"]`
-    # vem do canal via Node orchestrator (agentServiceClient.ts ->
-    # AgentRequest.language, main.py); None quando o canal não informa
-    # nenhum (hoje: WhatsApp) - nesse caso, segue o idioma da própria
-    # mensagem do cliente, igual ao fallback do lado Node.
+    # Instrução de idioma: sem isso, esta função respondia SEMPRE em inglês
+    # (valor fixo que ficava aqui antes), mesmo pra cliente que escreveu em
+    # português ou italiano. `state["language"]` vem do canal que chama
+    # este serviço (main.py's AgentRequest.language); None quando o canal
+    # não informa nenhum - nesse caso, segue o idioma da própria mensagem
+    # do cliente.
     language = state.get("language")
     language_names = {"pt": "Portuguese", "en": "English", "it": "Italian"}
     language_instruction = (

@@ -12,19 +12,20 @@ class AgentState(TypedDict):
 
     # Phone number of whoever is asking, when the channel has one to offer
     # (security review 2026-10-04, item #4). Set by main.py from
-    # AgentRequest.requester_phone, which the Node orchestrator fills with
-    # the WhatsApp sender's wa_id - None for Telegram, since a chat id isn't
-    # a verified phone number. Threaded through to order_info_agent_node so
+    # AgentRequest.requester_phone, which the calling orchestrator fills
+    # with the sender's verified phone number when the channel provides
+    # one - None for channels whose chat id isn't a verified phone number.
+    # Threaded through to order_info_agent_node so
     # a client-specific OrderBackend CAN verify the requester owns the order
     # before returning real data (see connectors/base.py's OrderBackend.get_status
     # docstring) - plumbing only, no generic connector enforces it yet.
     requester_phone: Optional[str]
 
     # "pt" | "en" | "it", set by main.py from AgentRequest.language - the
-    # same value the Node orchestrator's promptBuilder.ts already uses for
-    # its own RAG prompt. None on channels that don't inform a language
-    # today (WhatsApp) - generate_reply_node falls back to "match the
-    # customer's own message" in that case, same as the Node side.
+    # same value a calling orchestrator may already use for its own RAG
+    # prompt. None on channels that don't inform a language -
+    # generate_reply_node falls back to "match the customer's own message"
+    # in that case.
     language: Optional[str]
 
     # filled in by classify_intent_node (few-shot + Pydantic)

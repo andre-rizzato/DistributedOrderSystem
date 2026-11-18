@@ -66,7 +66,7 @@ class GoogleCalendarBackend:
     ) -> None:
         # services maps service_id -> duration in minutes (e.g. {"corte": 30,
         # "coloracao": 90}) - the client defines this in their own config,
-        # same spirit as agent.config.json on the Node side.
+        # same spirit as any other per-client config file.
         self._credentials = service_account.Credentials.from_service_account_file(
             service_account_file, scopes=SCOPES
         )

@@ -104,7 +104,7 @@ class PagSeguroCheckoutBackend:
 
 def build_checkout_backend_from_env() -> StripeCheckoutBackend | PagSeguroCheckoutBackend:
     # CHECKOUT_PROCESSOR selects the connector, same "pick by env var" shape
-    # as LLM_PROVIDER / EMBEDDING_PROVIDER on the Node side. Decisão ·
+    # used elsewhere in this project for provider selection. Decisão ·
     # pagamento: "pagseguro" for domestic clients (Pix), "stripe" for
     # clients selling internationally.
     processor = os.getenv("CHECKOUT_PROCESSOR", "pagseguro").lower()

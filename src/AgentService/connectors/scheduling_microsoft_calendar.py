@@ -77,10 +77,10 @@ class MicrosoftCalendarBackend:
         self._token_expires_at: float = 0.0
 
     def _access_token(self) -> str:
-        # 60s de margem antes do vencimento real - mesma ideia de
-        # CLOCK_SKEW_SECONDS no login de admin (src/admin/firebaseAuth.ts do
-        # lado Node): preferível renovar um pouco antes da hora do que
-        # arriscar usar um token que o Azure AD já rejeitou.
+        # 60s de margem antes do vencimento real - mesma ideia de clock-skew
+        # usada em qualquer renovação de token: preferível renovar um pouco
+        # antes da hora do que arriscar usar um token que o Azure AD já
+        # rejeitou.
         if self._token and time.monotonic() < self._token_expires_at - 60:
             return self._token
         token_url = f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"

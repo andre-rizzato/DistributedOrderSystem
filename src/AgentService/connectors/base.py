@@ -30,9 +30,10 @@ class OrderBackend(Protocol):
 
         requester_phone (security review 2026-10-04, item #4): the phone
         number/channel identity of whoever is ASKING, threaded in from the
-        Node orchestrator's InboundMessage (WhatsApp: the sender's wa_id;
-        Telegram: None today - a Telegram chat id isn't a verified phone
-        number, so there's nothing trustworthy to compare yet). This
+        calling orchestrator's inbound message (a verified sender phone
+        number when the channel provides one; None when it doesn't - a
+        channel whose chat id isn't a verified phone number has nothing
+        trustworthy to compare yet). This
         parameter is accepted everywhere in the OrderBackend hierarchy so
         the plumbing exists end-to-end, but NO generic implementation here
         (RestOrderBackend) actually enforces a match - a generic REST client

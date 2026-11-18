@@ -3,8 +3,8 @@
 # module for scheduling/sales) imports factories from here instead of
 # reaching into order_rest.py / scheduling_google_calendar.py / etc.
 # directly - keeps the "which concrete backend is wired in" decision in one
-# place, selected by environment variables, same pattern config.ts uses on
-# the Node side of this product (LLM_PROVIDER, EMBEDDING_PROVIDER).
+# place, selected by environment variables (the same shape used elsewhere
+# in this project for provider selection, e.g. LLM/embedding providers).
 
 from .base import CatalogBackend, CheckoutBackend, OrderBackend, SchedulingBackend
 from .factory import get_order_backend, get_scheduling_backend, get_catalog_backend, get_checkout_backend

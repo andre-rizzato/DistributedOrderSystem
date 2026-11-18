@@ -68,8 +68,8 @@ def _get_backend() -> Optional[SchedulingBackend]:
 # demanda igual o backend acima, mas por um motivo mais simples: não exige
 # nenhuma credencial, só precisa existir antes do primeiro book_appointment_node
 # bem-sucedido. APPOINTMENTS_STORE_PATH segue o mesmo padrão de env-com-
-# default que CONVERSATIONS_DIR já usa do lado Node (src/config.ts) - um
-# caminho sensato sem precisar configurar nada pro caso comum.
+# default que outras partes deste projeto já usam para diretórios
+# semelhantes - um caminho sensato sem precisar configurar nada pro caso comum.
 _appointment_store_cache: Optional[AppointmentStore] = None
 
 

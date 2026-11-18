@@ -1,15 +1,13 @@
 # src/AgentService/config.py
-# Same Key Vault pattern as src/config.ts on the Node side (KEY_VAULT_ENABLED
-# + KEY_VAULT_NAME, DefaultAzureCredential, kebab-case secret names) - kept
-# as a near-literal port so the two services behave identically for anyone
-# who already read one of them. Called once, early in main.py's import
-# chain, right after load_dotenv() so KEY_VAULT_ENABLED/KEY_VAULT_NAME are
-# already in os.environ by the time this runs.
+# Standard Key Vault pattern: KEY_VAULT_ENABLED + KEY_VAULT_NAME,
+# DefaultAzureCredential, kebab-case secret names. Called once, early in
+# main.py's import chain, right after load_dotenv() so
+# KEY_VAULT_ENABLED/KEY_VAULT_NAME are already in os.environ by the time
+# this runs.
 #
-# DefaultAzureCredential resolves to the VM's Managed Identity in
-# production and to the local `az login` session in dev - same as the Node
-# side, same reason: one code path, no separate "how do I auth locally"
-# story to maintain.
+# DefaultAzureCredential resolves to the hosting environment's managed
+# identity in production and to the local `az login` session in dev - one
+# code path, no separate "how do I auth locally" story to maintain.
 
 import os
 
@@ -67,6 +65,6 @@ def load_secrets_from_key_vault() -> None:
                 os.environ[env_var] = secret.value
         except ResourceNotFoundError:
             # Not configured for this client - leave whatever (if anything)
-            # was already in the local .env, same "missing = skip" rule as
-            # the Node side's loadSecretsFromKeyVault().
+            # was already in the local .env; "missing = skip", never a hard
+            # failure, since not every client needs every secret here.
             continue

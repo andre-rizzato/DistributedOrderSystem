@@ -43,9 +43,9 @@ class IntentClassification(BaseModel):
         # Scheduling capability (calendar integration, 2026-10-11) - a
         # SEPARATE domain from the 6 labels above (appointments, not
         # orders), but classified by the same node/model: one LLM call per
-        # message is cheaper than running two classifiers, and the Node
-        # orchestrator's capabilityRouter.ts already guarantees this graph
-        # is only reached for a client that actually enabled "scheduling".
+        # message is cheaper than running two classifiers, and the calling
+        # orchestrator already guarantees this graph is only reached for a
+        # client that actually enabled "scheduling".
         # check_availability: "what times are open" - no destructive
         # action, always safe to answer directly. book_appointment: the
         # customer wants to take one of those times. cancel_appointment /
@@ -247,10 +247,10 @@ FEW_SHOT_EXAMPLES = [
     # question. Without this example, any mention of a product name risked
     # pulling plain catalog questions into the sales intents, which would
     # change behavior for clients that have "order" enabled but not
-    # "sales" (capabilityRouter.ts only forwards to this classifier as
-    # "sales" when salesKeywords matched, but the classifier itself has no
-    # signal of which capability triggered the call - see this file's
-    # module docstring).
+    # "sales" (the calling orchestrator only forwards to this classifier as
+    # "sales" when its own sales-keyword check matched, but the classifier
+    # itself has no signal of which capability triggered the call - see
+    # this file's module docstring).
     ("Do you have product Y in stock?",
      IntentClassification(intent="get_info", order_number=None, product_query=None, confidence=0.9)),
 ]
